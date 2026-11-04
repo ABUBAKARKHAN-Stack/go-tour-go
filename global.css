@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import 'uniwind';
+
+@layer theme {
+  :root {
+    /* 3 Core Swatch Tokens */
+    --royal-purple: 114 60 214;       /* #723CD6 */
+    --sunglow-gold: 237 177 88;       /* #EDB158 */
+    --crisp-white: 252 255 255;       /* #FCFFFF */
+
+    /* 60% Atmospheric Dark / Glass Environment */
+    --background: 22 11 46;           /* #160B2E Deep Royal Purple base */
+    --foreground: 252 255 255;        /* #FCFFFF Crisp White */
+
+    /* Semantic Primary: Royal Purple */
+    --primary: 114 60 214;            /* #723CD6 */
+    --primary-foreground: 252 255 255;/* #FCFFFF */
+
+    /* 10% Semantic Accent: Sunglow Gold */
+    --accent: 237 177 88;             /* #EDB158 */
+    --accent-foreground: 22 11 46;    /* #160B2E */
+
+    /* Semantic Secondary: Deep Translucent Purple */
+    --secondary: 44 24 82;            /* #2C1852 */
+    --secondary-foreground: 237 177 88;/* #EDB158 */
+
+    /* 30% Translucent Glass Surface */
+    --card: 32 16 64;
+    --card-foreground: 252 255 255;
+
+    --popover: 32 16 64;
+    --popover-foreground: 252 255 255;
+
+    /* Muted Elements */
+    --muted: 42 22 84;
+    --muted-foreground: 220 210 245;
+
+    /* Feedback & Rim Borders */
+    --destructive: 244 63 94;
+
+    --border: 140 102 214;
+    --input: 42 22 84;
+    --ring: 237 177 88;
+  }
+}
+
+@theme inline {
+  --color-primary: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-card: rgb(var(--card));
+  --color-secondary: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+  --color-background: rgb(var(--background));
+  --color-popover: rgb(var(--popover));
+  --color-popover-foreground: rgb(var(--popover-foreground));
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-destructive: rgb(var(--destructive));
+  --color-foreground: rgb(var(--foreground));
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+
+  /* Core 3 Palette Colors */
+  --color-royal-purple: #723CD6;
+  --color-sunglow-gold: #EDB158;
+  --color-crisp-white: #FCFFFF;
+}
