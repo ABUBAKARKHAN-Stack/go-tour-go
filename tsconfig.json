@@ -17,10 +17,19 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "uniwind-types.d.ts"
+    "uniwind-types.d.ts",
+    "global.d.ts"
   ],
   "exclude": [
     "node_modules",
-    "examples"
+    "examples",
+    "supabase/functions",
+    "components/ui/chat-ai",
+    "components/ui/table",
+    "components/ui/image-viewer",
+    "components/ui/date-time-picker",
+    "components/ui/bottomsheet",
+    "components/ui/checkbox",
+    "components/ui/switch"
   ]
 }

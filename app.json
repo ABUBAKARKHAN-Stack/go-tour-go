@@ -44,7 +44,9 @@
         {
           "locationWhenInUsePermission": "GoTourGo needs your location to display your position on the map."
         }
-      ]
+      ],
+      "expo-sqlite",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
