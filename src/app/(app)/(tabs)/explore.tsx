@@ -88,15 +88,16 @@ export default function ExploreScreen() {
     if (!routeStore.get().route) routeStore.restoreLast();
   }, []);
 
-  // ?focus=<id> from details/search.
+  // ?focus=<id> from details/search: select during render, move the camera in an effect.
+  const [handledFocus, setHandledFocus] = useState<string | undefined>(undefined);
+  if (params.focus && params.focus !== handledFocus && destinations.data) {
+    setHandledFocus(params.focus);
+    setSelectedId(params.focus);
+  }
   useEffect(() => {
-    if (!params.focus || !destinations.data) return;
-    const d = destinations.data.find((x) => x.id === params.focus);
-    if (d) {
-      setSelectedId(d.id);
-      map.current?.flyTo(d.longitude, d.latitude, 14);
-    }
-  }, [params.focus, destinations.data]);
+    const d = handledFocus ? destinations.data?.find((x) => x.id === handledFocus) : undefined;
+    if (d) map.current?.flyTo(d.longitude, d.latitude, 14);
+  }, [handledFocus, destinations.data]);
 
   // Fit the camera to a newly calculated route.
   const routeKey = routeState.route?.createdAt;

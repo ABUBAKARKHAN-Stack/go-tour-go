@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth/auth-provider';
 import { useFriendships } from '@/features/social/api';
@@ -43,7 +43,7 @@ export function useFriendLocations() {
     return () => unsubs.forEach((u) => u());
   }, [friendIds, qc]);
 
-  const now = Date.now();
+  const now = useNow(30_000);
   const locations: FriendLocation[] = (query.data ?? [])
     .filter((s) => s.is_active && (!s.expires_at || Date.parse(s.expires_at) > now))
     .map((s) => {
@@ -63,4 +63,14 @@ export function timeAgo(iso: string | number) {
   const h = Math.round(min / 60);
   if (h < 24) return `${h} h ago`;
   return `${Math.round(h / 24)} d ago`;
+}
+
+/** Current time that re-renders every `intervalMs` (for "stale" and "x min ago" labels). */
+export function useNow(intervalMs = 30_000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs]);
+  return now;
 }

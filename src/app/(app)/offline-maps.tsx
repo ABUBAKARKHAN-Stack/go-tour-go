@@ -1,6 +1,7 @@
 import { OfflineManager, type OfflinePack } from '@maplibre/maplibre-react-native';
 import { CheckCircle2, Download, Trash2 } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
@@ -29,12 +30,11 @@ type PackInfo = { pack: OfflinePack; percentage: number; state: string };
  * supported (the last calculated route is cached instead).
  */
 export default function OfflineMapsScreen() {
-  const [packs, setPacks] = useState<Record<string, PackInfo>>({});
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    try {
+  const packsQuery = useQuery({
+    queryKey: ['offline-packs'],
+    queryFn: async () => {
       const list = await OfflineManager.getPacks();
       const next: Record<string, PackInfo> = {};
       for (const p of list) {
@@ -43,21 +43,13 @@ export default function OfflineMapsScreen() {
         const status = await p.status().catch(() => null);
         next[key] = { pack: p, percentage: status?.percentage ?? 0, state: status?.state ?? 'inactive' };
       }
-      setPacks(next);
-    } catch (e) {
-      console.warn('getPacks failed', e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    refresh();
-    return () => {
-      Object.values(packs).forEach((p) => OfflineManager.removeListener(p.pack.id));
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh]);
+      return next;
+    },
+  });
+  const packs = packsQuery.data ?? {};
+  const loading = packsQuery.isLoading;
+  const setPacks = (fn: (prev: Record<string, PackInfo>) => Record<string, PackInfo>) =>
+    qc.setQueryData<Record<string, PackInfo>>(['offline-packs'], (prev) => fn(prev ?? {}));
 
   const download = async (region: (typeof REGIONS)[number]) => {
     setBusy(region.key);

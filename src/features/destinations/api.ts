@@ -92,15 +92,17 @@ export type DestinationWithDistance = Destination & { distance: number | null };
 export function useDestinationsByDistance() {
   const list = useDestinations();
   const location = useLastLocation();
+  // Recompute only when the user moved meaningfully (~100 m grid), not on every fix.
+  const latKey = location ? Math.round(location.latitude * 1000) : null;
+  const lngKey = location ? Math.round(location.longitude * 1000) : null;
   const sorted = useMemo<DestinationWithDistance[]>(() => {
     const rows = list.data ?? [];
-    if (!location) return rows.map((d) => ({ ...d, distance: null }));
+    if (latKey == null || lngKey == null) return rows.map((d) => ({ ...d, distance: null }));
+    const here = { latitude: latKey / 1000, longitude: lngKey / 1000 };
     return rows
-      .map((d) => ({ ...d, distance: distanceMeters(location, d) }))
+      .map((d) => ({ ...d, distance: distanceMeters(here, d) }))
       .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
-    // Recompute only when the user moved meaningfully (rounded ~100 m).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list.data, location ? Math.round(location.latitude * 1000) : null, location ? Math.round(location.longitude * 1000) : null]);
+  }, [list.data, latKey, lngKey]);
   return { ...list, sorted, location };
 }
 

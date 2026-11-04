@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance } from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { colors } from '@/lib/theme';
@@ -45,27 +46,27 @@ export async function configureNotifications() {
       Notifications.setNotificationChannelAsync(CHANNELS.proximity, {
         name: 'Nearby landmarks',
         description: 'When you arrive near a landmark or destination',
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: AndroidImportance.HIGH,
         lightColor: colors.accent,
         vibrationPattern: [0, 200, 120, 200],
       }),
       Notifications.setNotificationChannelAsync(CHANNELS.alerts, {
         name: 'Travel & road alerts',
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: AndroidImportance.HIGH,
         lightColor: colors.warning,
       }),
       Notifications.setNotificationChannelAsync(CHANNELS.social, {
         name: 'Friends & messages',
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: AndroidImportance.DEFAULT,
       }),
       Notifications.setNotificationChannelAsync(CHANNELS.safety, {
         name: 'Safety & SOS',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: AndroidImportance.MAX,
         lightColor: colors.destructive,
       }),
       Notifications.setNotificationChannelAsync(CHANNELS.sharing, {
         name: 'Location sharing status',
-        importance: Notifications.AndroidImportance.LOW,
+        importance: AndroidImportance.LOW,
       }),
     ]).catch((e) => console.warn('channel setup failed', e));
   }
