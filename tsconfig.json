@@ -30,6 +30,7 @@
     "components/ui/date-time-picker",
     "components/ui/bottomsheet",
     "components/ui/checkbox",
-    "components/ui/switch"
+    "components/ui/switch",
+    "**/*.test.ts"
   ]
 }

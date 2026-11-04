@@ -23,4 +23,9 @@ module.exports = defineConfig([
       'components/ui/tabs/**',
     ],
   },
+  {
+    // Unit tests run with Bun's built-in test runner.
+    files: ['**/*.test.ts'],
+    rules: { 'import/no-unresolved': ['error', { ignore: ['^bun:'] }] },
+  },
 ]);
