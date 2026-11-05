@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { ShieldCheck, TriangleAlert } from 'lucide-react-native';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
@@ -25,7 +26,7 @@ export default function AlertsScreen() {
           data={alerts.data ?? []}
           keyExtractor={(a) => a.id}
           contentContainerClassName="gap-3 px-4 pb-8"
-          refreshControl={<RefreshControl refreshing={alerts.isRefetching} onRefresh={() => void alerts.refetch()} tintColor={colors.accent} />}
+          refreshControl={<RefreshControl refreshing={alerts.isRefetching} onRefresh={() => void alerts.refetch()} tintColor={colors.primary} />}
           ListEmptyComponent={<EmptyState icon={ShieldCheck} title="No active alerts" message="Roads look clear. Have a safe trip!" />}
           renderItem={({ item: a }) => (
             <Pressable

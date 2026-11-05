@@ -1,7 +1,8 @@
 import { useLocalSearchParams } from 'expo-router';
 import { Search, SearchX, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, View } from 'react-native';
+import { TextInput } from '@/components/text';
 
 import { DestinationCard } from '@/components/destination-card';
 import { Chip } from '@/components/form';
@@ -27,7 +28,7 @@ export default function SearchScreen() {
   return (
     <Screen back title="Search" scroll={false} keyboard>
       <View className="px-4 pb-2">
-        <View className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border/40 bg-input px-4">
+        <View className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border bg-input px-4">
           <Search color={colors.mutedForeground} size={18} />
           <TextInput
             autoFocus={!params.category}

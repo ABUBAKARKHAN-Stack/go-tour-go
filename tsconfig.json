@@ -24,13 +24,6 @@
     "node_modules",
     "examples",
     "supabase/functions",
-    "components/ui/chat-ai",
-    "components/ui/table",
-    "components/ui/image-viewer",
-    "components/ui/date-time-picker",
-    "components/ui/bottomsheet",
-    "components/ui/checkbox",
-    "components/ui/switch",
     "**/*.test.ts"
   ]
 }

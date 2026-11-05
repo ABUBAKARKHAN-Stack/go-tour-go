@@ -2,7 +2,8 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Heart, MapPin, MessageCircle, Trash2 } from 'lucide-react-native';
 import { memo } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Avatar } from '@/components/avatar';
 import { useCommunityActions } from '@/features/community/api';
@@ -30,7 +31,7 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
     ]);
 
   return (
-    <View className="gap-3 rounded-3xl border border-border/20 bg-card p-4">
+    <View className="gap-3 rounded-3xl border border-border bg-card p-4">
       <View className="flex-row items-center gap-3">
         <Pressable onPress={() => router.push({ pathname: '/users/[id]', params: { id: post.author_id } })}>
           <Avatar profile={post.author} size={40} />
@@ -61,8 +62,8 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
           onPress={() => post.destination && router.push({ pathname: '/destination/[id]', params: { id: post.destination.id } })}
           className="flex-row items-center gap-1"
         >
-          <MapPin color={colors.accent} size={14} />
-          <Text className="text-xs font-medium text-accent">
+          <MapPin color={colors.primary} size={14} />
+          <Text className="text-xs font-medium text-primary">
             {place}
             {post.destination?.city ? `, ${post.destination.city}` : ''}
           </Text>

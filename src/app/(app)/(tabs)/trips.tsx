@@ -2,7 +2,8 @@ import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { CalendarDays, ClipboardList, NotebookPen, Plus, Search, Trash2, X } from 'lucide-react-native';
 import { memo, useMemo, useState } from 'react';
-import { Alert, FlatList, Modal, Platform, Pressable, RefreshControl, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Modal, Platform, Pressable, RefreshControl, View } from 'react-native';
+import { Text, TextInput } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
@@ -76,7 +77,7 @@ export default function TripsScreen() {
           data={items}
           keyExtractor={(t) => t.id}
           contentContainerClassName="gap-3 px-4 pb-6"
-          refreshControl={<RefreshControl refreshing={trips.isRefetching} onRefresh={() => void trips.refetch()} tintColor={colors.accent} />}
+          refreshControl={<RefreshControl refreshing={trips.isRefetching} onRefresh={() => void trips.refetch()} tintColor={colors.primary} />}
           ListEmptyComponent={
             <EmptyState
               icon={ClipboardList}
@@ -120,7 +121,7 @@ const TripRow = memo(function TripRow({
 }) {
   if (!d) return null;
   return (
-    <View className="gap-3 rounded-3xl border border-border/20 bg-card p-3">
+    <View className="gap-3 rounded-3xl border border-border bg-card p-3">
       <Pressable onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })} className="flex-row gap-3">
         <DestinationImage uri={d.image_url} category={d.category} className="h-16 w-16 rounded-2xl" iconSize={24} recyclingKey={d.id} />
         <View className="flex-1 gap-0.5">
@@ -130,7 +131,7 @@ const TripRow = memo(function TripRow({
           <Text className="text-xs text-muted-foreground">{d.city}</Text>
           {item.planned_date ? (
             <View className="flex-row items-center gap-1">
-              <CalendarDays color={colors.accent} size={12} />
+              <CalendarDays color={colors.primary} size={12} />
               <Text className="text-xs text-accent">{formatDate(item.planned_date)}</Text>
             </View>
           ) : null}
@@ -219,8 +220,8 @@ function EditTripModal({ item, destination, onClose }: { item: TripItem | null; 
           </View>
           {error ? <InlineError message={error} /> : null}
           <Segmented value={status} onChange={setStatus} options={TRIP_STATUSES} />
-          <Pressable onPress={pickDate} className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border/50 px-4">
-            <CalendarDays color={colors.accent} size={18} />
+          <Pressable onPress={pickDate} className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border px-4">
+            <CalendarDays color={colors.primary} size={18} />
             <Text className="flex-1 text-base text-foreground">{formatDate(date) ?? 'Add planned visit date'}</Text>
             {date ? (
               <Pressable accessibilityLabel="Clear date" onPress={() => setDate(null)} hitSlop={10}>
@@ -259,7 +260,7 @@ function AddDestinationModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center gap-2 px-4 py-3">
-          <View className="min-h-12 flex-1 flex-row items-center gap-2 rounded-2xl border border-border/40 bg-input px-4">
+          <View className="min-h-12 flex-1 flex-row items-center gap-2 rounded-2xl border border-border bg-input px-4">
             <Search color={colors.mutedForeground} size={18} />
             <TextInput
               autoFocus

@@ -18,7 +18,8 @@ import {
   X,
 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/components/text';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -172,12 +173,12 @@ export default function DestinationDetails() {
             <Text className="text-3xl font-extrabold text-foreground">{d.name}</Text>
             <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
               <View className="flex-row items-center gap-1">
-                <MapPin color={colors.accent} size={14} />
+                <MapPin color={colors.primary} size={14} />
                 <Text className="text-sm text-muted-foreground">
                   {d.city}, {d.region}
                 </Text>
               </View>
-              {distance != null ? <Text className="text-sm font-semibold text-accent">{formatDistance(distance)} away</Text> : null}
+              {distance != null ? <Text className="text-sm font-semibold text-primary">{formatDistance(distance)} away</Text> : null}
               {rating ? (
                 <View className="flex-row items-center gap-1">
                   <RatingStars value={rating.average_rating} size={12} />
@@ -225,13 +226,13 @@ export default function DestinationDetails() {
             <Card className="gap-2">
               {d.opening_hours ? (
                 <View className="flex-row gap-2">
-                  <Clock color={colors.accent} size={16} />
+                  <Clock color={colors.primary} size={16} />
                   <Text className="flex-1 text-sm text-foreground">{d.opening_hours}</Text>
                 </View>
               ) : null}
               {d.entry_fee ? (
                 <View className="flex-row gap-2">
-                  <Ticket color={colors.accent} size={16} />
+                  <Ticket color={colors.primary} size={16} />
                   <Text className="flex-1 text-sm text-foreground">{d.entry_fee}</Text>
                 </View>
               ) : null}

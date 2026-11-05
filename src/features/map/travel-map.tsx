@@ -8,7 +8,8 @@ import {
   type CameraRef,
 } from '@maplibre/maplibre-react-native';
 import { forwardRef, memo, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import type { Fix } from '@/features/location/location-store';

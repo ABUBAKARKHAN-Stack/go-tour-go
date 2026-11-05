@@ -1,53 +1,60 @@
 @import "tailwindcss";
 @import 'uniwind';
 
+/*
+ * GoTourGo design tokens: light, warm editorial theme (Figma file bO6d8RIpnNL3awG2lQQMA8).
+ * Hex mirrors live in src/lib/theme.ts for native props (map paint, icons, status bar). Keep in sync.
+ * Older semantic names (primary, accent, card, muted...) are kept so every screen picks up the new look.
+ */
 @layer theme {
   :root {
-    /* 3 Core Swatch Tokens */
-    --royal-purple: 114 60 214;       /* #723CD6 */
-    --sunglow-gold: 237 177 88;       /* #EDB158 */
-    --crisp-white: 252 255 255;       /* #FCFFFF */
+    --background: 251 248 243;        /* canvas  #FBF8F3 */
+    --foreground: 28 26 23;           /* text    #1C1A17 */
 
-    /* 60% Atmospheric Dark / Glass Environment */
-    --background: 22 11 46;           /* #160B2E Deep Royal Purple base */
-    --foreground: 252 255 255;        /* #FCFFFF Crisp White */
+    --card: 255 255 255;              /* surface #FFFFFF */
+    --card-foreground: 28 26 23;
+    --popover: 255 255 255;
+    --popover-foreground: 28 26 23;
 
-    /* Semantic Primary: Royal Purple */
-    --primary: 114 60 214;            /* #723CD6 */
-    --primary-foreground: 252 255 255;/* #FCFFFF */
+    --primary: 15 76 74;              /* teal    #0F4C4A */
+    --primary-foreground: 255 255 255;
+    --primary-pressed: 11 58 56;      /*         #0B3A38 */
+    --primary-soft: 220 235 232;      /*         #DCEBE8 */
 
-    /* 10% Semantic Accent: Sunglow Gold */
-    --accent: 237 177 88;             /* #EDB158 */
-    --accent-foreground: 22 11 46;    /* #160B2E */
+    --accent: 200 100 59;             /* terracotta #C8643B */
+    --accent-foreground: 255 255 255;
+    --accent-soft: 246 227 217;       /*         #F6E3D9 */
 
-    /* Semantic Secondary: Deep Translucent Purple */
-    --secondary: 44 24 82;            /* #2C1852 */
-    --secondary-foreground: 237 177 88;/* #EDB158 */
+    --secondary: 243 237 228;         /* sunken  #F3EDE4 */
+    --secondary-foreground: 28 26 23;
 
-    /* 30% Translucent Glass Surface */
-    --card: 32 16 64;
-    --card-foreground: 252 255 255;
+    --muted: 245 239 230;             /* sunken  #F5EFE6 */
+    --muted-foreground: 94 87 77;     /* text secondary #5E574D */
+    --faint: 138 129 116;             /* text muted     #8A8174 */
 
-    --popover: 32 16 64;
-    --popover-foreground: 252 255 255;
+    --border: 234 225 211;            /* #EAE1D3 */
+    --border-strong: 217 204 184;     /* #D9CCB8 */
+    --input: 217 204 184;
+    --ring: 15 76 74;
 
-    /* Muted Elements */
-    --muted: 42 22 84;
-    --muted-foreground: 220 210 245;
-
-    /* Feedback & Rim Borders */
-    --destructive: 244 63 94;
-
-    --border: 140 102 214;
-    --input: 42 22 84;
-    --ring: 237 177 88;
+    --destructive: 180 56 47;         /* #B4382F */
+    --destructive-soft: 248 226 223;  /* #F8E2DF */
+    --success: 47 125 91;             /* #2F7D5B */
+    --success-soft: 221 238 229;      /* #DDEEE5 */
+    --warning: 201 138 27;            /* #C98A1B */
+    --rating: 227 169 75;             /* #E3A94B */
+    --info: 47 111 163;               /* #2F6FA3 */
+    --inverse: 28 26 23;              /* #1C1A17 */
   }
 }
 
 @theme inline {
   --color-primary: rgb(var(--primary));
   --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-primary-pressed: rgb(var(--primary-pressed));
+  --color-primary-soft: rgb(var(--primary-soft));
   --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
   --color-secondary: rgb(var(--secondary));
   --color-secondary-foreground: rgb(var(--secondary-foreground));
   --color-background: rgb(var(--background));
@@ -55,16 +62,25 @@
   --color-popover-foreground: rgb(var(--popover-foreground));
   --color-muted: rgb(var(--muted));
   --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-faint: rgb(var(--faint));
   --color-destructive: rgb(var(--destructive));
+  --color-destructive-soft: rgb(var(--destructive-soft));
+  --color-success: rgb(var(--success));
+  --color-success-soft: rgb(var(--success-soft));
+  --color-warning: rgb(var(--warning));
+  --color-rating: rgb(var(--rating));
+  --color-info: rgb(var(--info));
+  --color-inverse: rgb(var(--inverse));
   --color-foreground: rgb(var(--foreground));
   --color-border: rgb(var(--border));
+  --color-border-strong: rgb(var(--border-strong));
   --color-input: rgb(var(--input));
   --color-ring: rgb(var(--ring));
   --color-accent: rgb(var(--accent));
   --color-accent-foreground: rgb(var(--accent-foreground));
+  --color-accent-soft: rgb(var(--accent-soft));
 
-  /* Core 3 Palette Colors */
-  --color-royal-purple: #723CD6;
-  --color-sunglow-gold: #EDB158;
-  --color-crisp-white: #FCFFFF;
+  /* Font families (loaded at runtime with expo-font, see src/lib/fonts.ts). */
+  --font-display: Fraunces_600SemiBold;
+  --font-sans: PlusJakartaSans_400Regular;
 }

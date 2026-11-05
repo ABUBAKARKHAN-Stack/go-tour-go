@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View, type ScrollViewProps } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View, type ScrollViewProps } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OfflineBanner } from '@/components/offline-banner';
+import { useTabBarSpace } from '@/components/tab-bar';
 import { colors } from '@/lib/theme';
 
 type HeaderProps = {
@@ -23,14 +25,14 @@ export function AppHeader({ title, subtitle, back, right }: HeaderProps) {
           accessibilityLabel="Go back"
           hitSlop={8}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          className="h-11 w-11 items-center justify-center rounded-full bg-secondary"
+          className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
         >
           <ArrowLeft color={colors.foreground} size={22} />
         </Pressable>
       ) : null}
       <View className="flex-1">
         {title ? (
-          <Text numberOfLines={1} className="text-xl font-bold text-foreground">
+          <Text numberOfLines={1} className="font-display text-2xl text-foreground">
             {title}
           </Text>
         ) : null}
@@ -73,7 +75,8 @@ export function Screen({
   ...header
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
-  const bottom = inTabs ? 16 : insets.bottom + 16;
+  const tabSpace = useTabBarSpace();
+  const bottom = inTabs ? tabSpace : insets.bottom + 16;
 
   const body = scroll ? (
     <ScrollView
@@ -86,7 +89,7 @@ export function Screen({
       {children}
     </ScrollView>
   ) : (
-    <View className={contentClassName ?? 'flex-1'} style={{ paddingBottom: footer ? 0 : inTabs ? 0 : insets.bottom }}>
+    <View className={contentClassName ?? 'flex-1'} style={{ paddingBottom: footer ? 0 : inTabs ? tabSpace : insets.bottom }}>
       {children}
     </View>
   );
@@ -97,7 +100,7 @@ export function Screen({
       <OfflineBanner />
       {body}
       {footer ? (
-        <View className="border-t border-border/30 bg-background px-4 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
+        <View className="border-t border-border bg-background px-4 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
           {footer}
         </View>
       ) : null}

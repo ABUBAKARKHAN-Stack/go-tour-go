@@ -1,7 +1,8 @@
 import { useLocalSearchParams } from 'expo-router';
 import { MapPinned, Navigation, Phone, Star } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { FlatList, Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { FlatList, Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Chip } from '@/components/form';
 import { Screen } from '@/components/screen';
@@ -51,7 +52,7 @@ export default function NearbyScreen() {
           data={query.data?.items ?? []}
           keyExtractor={(s) => s.id}
           contentContainerClassName="gap-3 px-4 pb-8"
-          refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} tintColor={colors.accent} />}
+          refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} tintColor={colors.primary} />}
           ListHeaderComponent={
             query.data?.source === 'seed' ? (
               <Text className="pb-1 text-xs text-muted-foreground">Live map data unavailable; showing GoTourGo&apos;s saved list.</Text>
@@ -65,7 +66,7 @@ export default function NearbyScreen() {
           renderItem={({ item }) => {
             const Icon = SERVICE_CATEGORIES[item.category].icon;
             return (
-              <View className="flex-row items-center gap-3 rounded-3xl border border-border/20 bg-card p-3">
+              <View className="flex-row items-center gap-3 rounded-3xl border border-border bg-card p-3">
                 <View className="h-11 w-11 items-center justify-center rounded-2xl bg-secondary">
                   <Icon color={SERVICE_CATEGORIES[item.category].color} size={20} />
                 </View>
@@ -77,7 +78,7 @@ export default function NearbyScreen() {
                     <Text className="text-xs text-accent">{formatDistance(item.distance)}</Text>
                     {item.rating ? (
                       <View className="flex-row items-center gap-0.5">
-                        <Star size={11} color={colors.accent} fill={colors.accent} />
+                        <Star size={11} color={colors.primary} fill={colors.accent} />
                         <Text className="text-xs text-muted-foreground">{item.rating.toFixed(1)}</Text>
                       </View>
                     ) : null}

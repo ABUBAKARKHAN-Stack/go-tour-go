@@ -13,7 +13,8 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react-native';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
@@ -32,7 +33,7 @@ function Row({ icon: Icon, label, onPress, value }: { icon: LucideIcon; label: s
   return (
     <Pressable accessibilityRole="button" onPress={onPress} className="min-h-14 flex-row items-center gap-3 py-2">
       <View className="h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-        <Icon color={colors.accent} size={18} />
+        <Icon color={colors.primary} size={18} />
       </View>
       <Text className="flex-1 text-base text-foreground">{label}</Text>
       {value ? <Text className="text-sm text-muted-foreground">{value}</Text> : null}
@@ -74,7 +75,7 @@ export default function ProfileScreen() {
           {email ? <Text className="text-xs text-muted-foreground">{email}</Text> : null}
           {profile?.home_city ? (
             <View className="flex-row items-center gap-1">
-              <MapPin color={colors.accent} size={14} />
+              <MapPin color={colors.primary} size={14} />
               <Text className="text-sm text-muted-foreground">{profile.home_city}</Text>
             </View>
           ) : null}

@@ -1,7 +1,8 @@
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Check, Lock, MapPin, MessageCircle, UserMinus, UserPlus } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
@@ -61,7 +62,7 @@ export default function UserProfileScreen() {
             <Text className="text-sm text-muted-foreground">@{profile.data.username}</Text>
             {profile.data.home_city ? (
               <View className="flex-row items-center gap-1">
-                <MapPin color={colors.accent} size={14} />
+                <MapPin color={colors.primary} size={14} />
                 <Text className="text-sm text-muted-foreground">{profile.data.home_city}</Text>
               </View>
             ) : null}

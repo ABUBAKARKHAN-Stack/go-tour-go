@@ -2,7 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { RotateCcw, Send, Sparkles } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
+import { Text, TextInput } from '@/components/text';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -114,7 +115,7 @@ export default function AssistantScreen() {
             <View className="gap-4 pt-6">
               <View className="items-center gap-2">
                 <View className="h-14 w-14 items-center justify-center rounded-full bg-secondary">
-                  <Sparkles color={colors.accent} size={26} />
+                  <Sparkles color={colors.primary} size={26} />
                 </View>
                 <Text className="text-center text-base font-semibold text-foreground">Ask about places, culture, food or travel tips</Text>
                 <Text className="text-center text-xs text-muted-foreground">
@@ -123,7 +124,7 @@ export default function AssistantScreen() {
               </View>
               <View className="gap-2">
                 {suggestions.map((s) => (
-                  <Pressable key={s} onPress={() => send(s)} className="min-h-11 justify-center rounded-2xl border border-border/30 bg-card px-4 py-2">
+                  <Pressable key={s} onPress={() => send(s)} className="min-h-11 justify-center rounded-2xl border border-border bg-card px-4 py-2">
                     <Text className="text-sm text-foreground">{s}</Text>
                   </Pressable>
                 ))}
@@ -145,7 +146,7 @@ export default function AssistantScreen() {
             <View className="gap-2 pt-2">
               {loading ? (
                 <View className="flex-row items-center gap-2 self-start rounded-3xl bg-card px-4 py-3">
-                  <ActivityIndicator color={colors.accent} size="small" />
+                  <ActivityIndicator color={colors.primary} size="small" />
                   <Text className="text-sm text-muted-foreground">Thinking...</Text>
                 </View>
               ) : null}
@@ -153,7 +154,7 @@ export default function AssistantScreen() {
             </View>
           }
         />
-        <View className="flex-row items-end gap-2 border-t border-border/20 px-3 pt-2" style={{ paddingBottom: insets.bottom + 8 }}>
+        <View className="flex-row items-end gap-2 border-t border-border px-3 pt-2" style={{ paddingBottom: insets.bottom + 8 }}>
           <TextInput
             value={input}
             onChangeText={setInput}

@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { Camera, Save } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';

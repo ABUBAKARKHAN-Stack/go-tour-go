@@ -1,35 +1,35 @@
-import { Compass, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react-native';
-import { useRef, useState } from 'react';
-import { FlatList, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { useRef, useState, type ComponentType } from 'react';
+import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
+import { ArrivalScene, LandmarkScene, SafetyScene } from '@/components/illustrations';
+import { Text } from '@/components/text';
 import { storage, StorageKeys } from '@/lib/storage';
-import { colors } from '@/lib/theme';
 
-type Slide = { key: string; title: string; body: string; icon: LucideIcon; points: string[] };
+type Slide = { key: string; overline: string; title: string; body: string; Art: ComponentType<{ size?: number }> };
 
 const SLIDES: Slide[] = [
   {
     key: 'discover',
-    title: 'Discover',
-    body: 'Explore destinations and nearby places on a travel-aware map.',
-    icon: Compass,
-    points: ['Landmarks light up as you approach', 'Routes from where you are', 'Nearby food, hotels and services'],
+    overline: 'Discover',
+    title: 'Stories wait around every corner',
+    body: 'GoTourGo notices the landmarks you pass and tells you why they matter: history, food and local tips, right when you arrive.',
+    Art: LandmarkScene,
   },
   {
-    key: 'ai',
-    title: 'AI Companion',
-    body: 'Get travel information and assistance whenever you need it.',
-    icon: Sparkles,
-    points: ['Ask about history, culture and tips', 'Point your camera with Visual Lens', 'Guides in English and Urdu'],
+    key: 'journey',
+    overline: 'On the way',
+    title: 'Landmarks speak up as you travel',
+    body: 'Plan a journey anywhere in Pakistan. Famous places and road alerts along your route reach you as you get close, even offline.',
+    Art: ArrivalScene,
   },
   {
     key: 'safe',
-    title: 'Stay Safe',
-    body: 'Use location sharing, friends and SOS while you travel.',
-    icon: ShieldCheck,
-    points: ['Share live location for a set time', 'See friends on the map', 'One-press SOS to trusted contacts'],
+    overline: 'Travel safe',
+    title: 'Your people, one tap away',
+    body: 'Share your live location for as long as you choose, and send an SOS with your position to the people you trust.',
+    Art: SafetyScene,
   },
 ];
 
@@ -38,6 +38,7 @@ export default function Onboarding() {
   const insets = useSafeAreaInsets();
   const list = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
+  const art = Math.min(width - 32, 420);
 
   const finish = () => storage.set(StorageKeys.onboardingDone, true);
   const next = () => {
@@ -47,10 +48,9 @@ export default function Onboarding() {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}>
-      <View className="flex-row items-center justify-between px-5 py-2">
-        <Text className="text-sm font-bold uppercase tracking-widest text-accent">GoTourGo</Text>
+      <View className="flex-row items-center justify-end px-5">
         <Pressable accessibilityRole="button" onPress={finish} hitSlop={12} className="min-h-11 justify-center px-2">
-          <Text className="text-sm font-semibold text-muted-foreground">Skip</Text>
+          <Text className="text-sm font-semibold text-faint">Skip</Text>
         </Pressable>
       </View>
 
@@ -62,37 +62,28 @@ export default function Onboarding() {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(s) => s.key}
         onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
-        renderItem={({ item }) => {
-          const Icon = item.icon;
-          return (
-            <View style={{ width }} className="flex-1 justify-center gap-6 px-8">
-              <View className="h-28 w-28 items-center justify-center self-center rounded-full border border-accent/40 bg-secondary">
-                <Icon color={colors.accent} size={52} strokeWidth={1.6} />
-              </View>
-              <View className="gap-2">
-                <Text className="text-center text-3xl font-extrabold text-foreground">{item.title}</Text>
-                <Text className="text-center text-base text-muted-foreground">{item.body}</Text>
-              </View>
-              <View className="gap-3 rounded-3xl bg-card p-5">
-                {item.points.map((p) => (
-                  <View key={p} className="flex-row items-center gap-3">
-                    <View className="h-2 w-2 rounded-full bg-accent" />
-                    <Text className="flex-1 text-sm text-foreground">{p}</Text>
-                  </View>
-                ))}
-              </View>
+        renderItem={({ item }) => (
+          <View style={{ width }} className="flex-1 gap-6 px-4">
+            <View className="self-center overflow-hidden rounded-[32px]" style={{ width: art, height: art * 0.94 }}>
+              <item.Art size={art} />
             </View>
-          );
-        }}
+            <View className="gap-2 px-4">
+              <Text className="text-xs font-bold uppercase tracking-[2px] text-accent">{item.overline}</Text>
+              <Text className="font-display text-[34px] leading-[40px] text-foreground">{item.title}</Text>
+              <Text className="text-base leading-6 text-muted-foreground">{item.body}</Text>
+            </View>
+          </View>
+        )}
       />
 
-      <View className="gap-5 px-6">
-        <View className="flex-row justify-center gap-2">
+      <View className="gap-4 px-6">
+        <View className="flex-row gap-1.5" accessibilityLabel={`Page ${index + 1} of ${SLIDES.length}`}>
           {SLIDES.map((s, i) => (
-            <View key={s.key} className={`h-2 rounded-full ${i === index ? 'w-6 bg-accent' : 'w-2 bg-muted'}`} />
+            <View key={s.key} className={`h-2 rounded-full ${i === index ? 'w-6 bg-primary' : 'w-2 bg-border-strong'}`} />
           ))}
         </View>
-        <AppButton label={index === SLIDES.length - 1 ? 'Get started' : 'Next'} onPress={next} variant="accent" />
+        <AppButton label={index === SLIDES.length - 1 ? 'Get started' : 'Next'} onPress={next} />
+        <AppButton label="I already have an account" variant="ghost" onPress={finish} />
       </View>
     </View>
   );

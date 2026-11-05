@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
-import { MailCheck, Send } from 'lucide-react-native';
+import { Mail, MailCheck } from 'lucide-react-native';
 import { useState } from 'react';
-import { Text } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { TextField } from '@/components/form';
 import { Screen } from '@/components/screen';
 import { EmptyState, InlineError } from '@/components/states';
 import { sendPasswordReset, validateEmail } from '@/features/auth/api';
+import { AuthShell } from '@/features/auth/auth-shell';
+import { colors } from '@/lib/theme';
 import { errorMessage } from '@/lib/errors';
 
 export default function ForgotPassword() {
@@ -48,8 +49,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <Screen keyboard back title="Reset password" contentClassName="px-6 gap-4">
-      <Text className="text-base text-muted-foreground">Enter your email and we will send you a link to reset your password.</Text>
+    <AuthShell back compact title="Reset password" subtitle="Enter your email and we will send you a link to choose a new password.">
       {error ? <InlineError message={error} /> : null}
       <TextField
         label="Email"
@@ -60,8 +60,9 @@ export default function ForgotPassword() {
         autoComplete="email"
         placeholder="you@example.com"
         onSubmitEditing={submit}
+        left={<Mail color={colors.faint} size={20} />}
       />
-      <AppButton label="Send reset link" icon={Send} onPress={submit} loading={loading} variant="accent" />
-    </Screen>
+      <AppButton label="Send reset link" onPress={submit} loading={loading} />
+    </AuthShell>
   );
 }

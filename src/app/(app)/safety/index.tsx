@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { Info, MapPin, MessageCircle, Phone, Radio, Share2, ShieldAlert, Square, UserPlus, Users } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Linking, Pressable, Share, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, Share, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Card, SectionHeader } from '@/components/form';
@@ -123,7 +124,7 @@ export default function SafetyScreen() {
           <Text className="text-base font-bold text-foreground">Send your SOS</Text>
           {sos.lat != null ? (
             <Pressable onPress={() => Linking.openURL(mapsLink(sos.lat!, sos.lng!))} className="flex-row items-center gap-1">
-              <MapPin color={colors.accent} size={14} />
+              <MapPin color={colors.primary} size={14} />
               <Text className="text-xs text-accent">
                 {sos.lat.toFixed(5)}, {sos.lng!.toFixed(5)}
               </Text>
@@ -216,7 +217,7 @@ export default function SafetyScreen() {
         ) : (
           contacts.data!.map((c) => (
             <View key={c.id} className="flex-row items-center gap-2">
-              <Users color={colors.accent} size={14} />
+              <Users color={colors.primary} size={14} />
               <Text className="flex-1 text-sm text-foreground">
                 {c.name}
                 {c.relationship ? ` (${c.relationship})` : ''}

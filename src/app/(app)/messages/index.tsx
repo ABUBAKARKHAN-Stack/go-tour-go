@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { MessagesSquare, Users } from 'lucide-react-native';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Avatar } from '@/components/avatar';
 import { Screen } from '@/components/screen';
@@ -26,7 +27,7 @@ export default function ConversationsScreen() {
           data={q.data ?? []}
           keyExtractor={(c) => c.id}
           contentContainerClassName="gap-2 px-4 pb-8"
-          refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} tintColor={colors.accent} />}
+          refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} tintColor={colors.primary} />}
           ListEmptyComponent={
             <EmptyState
               icon={MessagesSquare}
@@ -61,7 +62,7 @@ export default function ConversationsScreen() {
           ListFooterComponent={
             q.data?.length ? (
               <Pressable onPress={() => router.push('/friends')} className="min-h-12 flex-row items-center justify-center gap-2">
-                <Users color={colors.accent} size={16} />
+                <Users color={colors.primary} size={16} />
                 <Text className="text-sm text-accent">Message another friend</Text>
               </Pressable>
             ) : undefined

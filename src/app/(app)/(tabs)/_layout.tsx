@@ -1,41 +1,22 @@
-import { NativeTabs } from 'expo-router/native-tabs';
+import { Tabs } from 'expo-router/tabs';
 
+import { TabBar } from '@/components/tab-bar';
 import { useUnreadCount } from '@/features/inbox/api';
 import { colors } from '@/lib/theme';
 
-/** Material 3 bottom navigation on Android (native tabs). */
+/** Five main sections with the floating tab bar from the redesign. */
 export default function TabsLayout() {
   const unread = useUnreadCount();
   return (
-    <NativeTabs
-      backgroundColor={colors.card}
-      tintColor={colors.accent}
-      iconColor={{ default: colors.mutedForeground, selected: colors.accentForeground }}
-      indicatorColor={colors.accent}
-      labelStyle={{ default: { color: colors.mutedForeground }, selected: { color: colors.accent } }}
-      labelVisibilityMode="labeled"
+    <Tabs
+      tabBar={(props) => <TabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
     >
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon sf="house.fill" md="home" />
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        {unread > 0 ? <NativeTabs.Trigger.Badge>{unread > 9 ? '9+' : String(unread)}</NativeTabs.Trigger.Badge> : null}
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Icon sf="map.fill" md="map" />
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="trips">
-        <NativeTabs.Trigger.Icon sf="checklist" md="checklist" />
-        <NativeTabs.Trigger.Label>Trips</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="community">
-        <NativeTabs.Trigger.Icon sf="person.3.fill" md="groups" />
-        <NativeTabs.Trigger.Label>Community</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Icon sf="person.crop.circle" md="account_circle" />
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+      <Tabs.Screen name="index" options={{ title: 'Home', tabBarBadge: unread > 0 ? (unread > 9 ? '9+' : unread) : undefined }} />
+      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="trips" options={{ title: 'Trips' }} />
+      <Tabs.Screen name="community" options={{ title: 'Community' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+    </Tabs>
   );
 }
