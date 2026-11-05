@@ -14,6 +14,7 @@ set -euo pipefail
 
 # Everything is built inside map-build/, which ignores itself so the large
 # downloads and outputs are never committed by accident.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="${WORK_DIR:-map-build}"
 mkdir -p "$WORK" && printf '*\n' > "$WORK/.gitignore"
 cd "$WORK"
@@ -39,7 +40,22 @@ fetch() {
 
 fetch "$PLANETILER_URL" planetiler.jar
 fetch "https://download.geofabrik.de/asia/pakistan-latest.osm.pbf" "$SRC/pakistan.osm.pbf"
-fetch "https://osmdata.openstreetmap.de/download/water-polygons-split-3857.zip" "$SRC/water-polygons-split-3857.zip"
+
+# Ocean polygons: the official file lives on osmdata.openstreetmap.de, which
+# refuses connections from GitHub Actions runners. Try it briefly, then build an
+# equivalent file for Pakistan's coast from the coastline in the extract.
+WATER="$SRC/water-polygons-split-3857.zip"
+if [ ! -s "$WATER" ]; then
+  if ! curl -4 -fL --retry 1 --connect-timeout 20 --max-time 1800 -o "$WATER.part" \
+      "https://osmdata.openstreetmap.de/download/water-polygons-split-3857.zip"; then
+    rm -f "$WATER.part"
+    echo "osmdata.openstreetmap.de unreachable; building water polygons from the OSM coastline"
+    python3 -m venv .venv-water
+    .venv-water/bin/pip install --quiet osmium shapely pyshp numpy
+    .venv-water/bin/python "$SCRIPT_DIR/make-water-polygons.py" "$SRC/pakistan.osm.pbf" "$WATER.part"
+  fi
+  mv "$WATER.part" "$WATER"
+fi
 fetch "https://naciscdn.org/naturalearth/packages/natural_earth_vector.sqlite.zip" "$SRC/natural_earth_vector.sqlite.zip"
 fetch "https://github.com/acalcutt/osm-lakelines/releases/download/v12/lake_centerline.shp.zip" "$SRC/lake_centerline.shp.zip"
 ls -lh "$SRC"
