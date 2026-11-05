@@ -50,12 +50,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "gotourgo.expo.app",
+              "host": "go-tour-go-development.expo.app",
               "pathPrefix": "/sos"
             },
             {
               "scheme": "https",
-              "host": "gotourgo.expo.app",
+              "host": "go-tour-go-development.expo.app",
               "pathPrefix": "/live"
             }
           ],

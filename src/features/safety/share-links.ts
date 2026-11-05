@@ -6,12 +6,12 @@ import { storage, useStorage } from '@/lib/storage';
 import { isValidPhone, normalizePhone } from './phone-helpers';
 
 /**
- * Links that show where a traveller is: SOS links (gotourgo.expo.app/sos?t=…)
+ * Links that show where a traveller is: SOS links (go-tour-go-development.expo.app/sos?t=…)
  * and live-location links (/live?t=…). With GoTourGo installed they open the
  * in-app screen (Android App Links); without it, a small web page. Links last
  * at most 24 hours and can be ended early by the sender.
  */
-export const SHARE_SITE = 'https://gotourgo.expo.app';
+export const SHARE_SITE = 'https://go-tour-go-development.expo.app';
 
 export type ShareKind = 'sos' | 'live';
 
