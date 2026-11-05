@@ -44,4 +44,6 @@ export const fonts = {
   medium: 'PlusJakartaSans_500Medium',
   semibold: 'PlusJakartaSans_600SemiBold',
   bold: 'PlusJakartaSans_700Bold',
+  urdu: 'NotoNastaliqUrdu_400Regular',
+  urduBold: 'NotoNastaliqUrdu_700Bold',
 } as const;

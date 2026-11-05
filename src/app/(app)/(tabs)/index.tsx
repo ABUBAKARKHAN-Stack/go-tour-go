@@ -40,19 +40,20 @@ import { TRIP_STATUSES, useTrips } from '@/features/trips/api';
 import { useWeather } from '@/features/weather/api';
 import { formatDistance } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 const SHORTCUTS: { label: string; icon: LucideIcon; href: string }[] = [
-  { label: 'Nearby', icon: MapPinned, href: '/nearby' },
-  { label: 'AI guide', icon: Sparkles, href: '/assistant' },
-  { label: 'Lens', icon: ScanEye, href: '/lens' },
-  { label: 'Scan', icon: ScanLine, href: '/scan' },
-  { label: 'Safety', icon: ShieldAlert, href: '/safety' },
-  { label: 'Friends', icon: Users, href: '/friends' },
-  { label: 'Offline', icon: Download, href: '/offline-maps' },
-  { label: 'Saved', icon: Bookmark, href: '/saved' },
+  { label: tx('Nearby'), icon: MapPinned, href: '/nearby' },
+  { label: tx('AI guide'), icon: Sparkles, href: '/assistant' },
+  { label: tx('Lens'), icon: ScanEye, href: '/lens' },
+  { label: tx('Scan'), icon: ScanLine, href: '/scan' },
+  { label: tx('Safety'), icon: ShieldAlert, href: '/safety' },
+  { label: tx('Friends'), icon: Users, href: '/friends' },
+  { label: tx('Offline'), icon: Download, href: '/offline-maps' },
+  { label: tx('Saved'), icon: Bookmark, href: '/saved' },
 ];
 
-const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const WEEKDAYS = [tx('SUNDAY'), tx('MONDAY'), tx('TUESDAY'), tx('WEDNESDAY'), tx('THURSDAY'), tx('FRIDAY'), tx('SATURDAY')];
 /** Within this distance the nearest landmark's city names "where you are". */
 const CITY_RADIUS_M = 40_000;
 /** The highlighted card shows the closest landmark within this distance. */
@@ -60,7 +61,7 @@ const SPOTLIGHT_RADIUS_M = 5_000;
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  return h < 12 ? tx('Good morning') : h < 17 ? tx('Good afternoon') : tx('Good evening');
 }
 
 export default function Home() {
@@ -90,7 +91,7 @@ export default function Home() {
   const context = [WEEKDAYS[new Date().getDay()], weather.data ? `${Math.round(weather.data.temperature)}°` : null, city?.toUpperCase()]
     .filter(Boolean)
     .join(' · ');
-  const firstName = profile?.full_name?.split(' ')[0] ?? 'traveller';
+  const firstName = profile?.full_name?.split(' ')[0] ?? tx('traveller');
 
   return (
     <Screen
@@ -118,8 +119,8 @@ export default function Home() {
           </Text>
         </View>
         <View className="flex-row items-center gap-2 pt-1">
-          <IconButton icon={Bell} label="Notifications" badge={unread} onPress={() => router.push('/notifications')} />
-          <Pressable accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => router.navigate('/profile')}>
+          <IconButton icon={Bell} label={tx('Notifications')} badge={unread} onPress={() => router.push('/notifications')} />
+          <Pressable accessibilityRole="button" accessibilityLabel={tx('Your profile')} onPress={() => router.navigate('/profile')}>
             <Avatar profile={profile} size={44} />
           </Pressable>
         </View>
@@ -127,13 +128,13 @@ export default function Home() {
 
       <Pressable
         accessibilityRole="search"
-        accessibilityLabel="Search places and plan a journey"
+        accessibilityLabel={tx('Search places and plan a journey')}
         onPress={() => router.push('/search')}
         className="min-h-14 flex-row items-center gap-3 rounded-full border border-border bg-card pl-5 pr-2"
         style={{ boxShadow: '0 2px 8px rgba(28, 26, 23, 0.05)' }}
       >
         <Search color={colors.faint} size={20} />
-        <Text className="flex-1 text-base text-faint">Where to next?</Text>
+        <Text className="flex-1 text-base text-faint">{tx('Where to next?')}</Text>
         <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
           <SlidersHorizontal color={colors.primary} size={18} />
         </View>
@@ -149,7 +150,7 @@ export default function Home() {
           <DestinationImage uri={spotlight.image_url} category={spotlight.category} className="h-16 w-16 rounded-2xl" iconSize={24} recyclingKey={spotlight.id} />
           <View className="flex-1 gap-0.5">
             <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-accent">
-              {insideId ? "You're near" : 'Closest landmark'}
+              {insideId ? tx('You\'re near') : tx('Closest landmark')}
               {spotlight.distance != null ? ` · ${formatDistance(spotlight.distance)}` : ''}
             </Text>
             <Text numberOfLines={1} className="text-base font-semibold text-foreground">
@@ -161,7 +162,7 @@ export default function Home() {
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Navigate to ${spotlight.name}`}
+            accessibilityLabel={tx('Navigate to {0}', { 0: spotlight.name })}
             hitSlop={6}
             onPress={() => navigateTo(spotlight)}
             className="h-11 w-11 items-center justify-center rounded-full bg-primary"
@@ -174,7 +175,7 @@ export default function Home() {
       <LocationStatusCard />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-2 px-5">
-        <Chip label="All" selected onPress={() => router.push('/search')} />
+        <Chip label={tx('All')} selected onPress={() => router.push('/search')} />
         {CATEGORY_ORDER.map((c) => (
           <Chip key={c} label={DESTINATION_CATEGORIES[c].label} onPress={() => router.push({ pathname: '/search', params: { category: c } })} />
         ))}
@@ -182,7 +183,7 @@ export default function Home() {
 
       {urgent.length ? (
         <View className="gap-2">
-          <SectionHeader title="Travel alerts" actionLabel="See all" onAction={() => router.push('/alerts')} />
+          <SectionHeader title={tx('Travel alerts')} actionLabel={tx('See all')} onAction={() => router.push('/alerts')} />
           {urgent.map((a) => (
             <Pressable key={a.id} onPress={() => router.push('/alerts')} className="flex-row items-center gap-3 rounded-2xl bg-destructive-soft p-3">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-card">
@@ -202,28 +203,28 @@ export default function Home() {
       ) : null}
 
       {isLoading && sorted.length === 0 ? (
-        <LoadingState label="Loading destinations..." />
+        <LoadingState label={tx('Loading destinations...')} />
       ) : isError && sorted.length === 0 ? (
         <ErrorState error={error} onRetry={refetch} />
       ) : (
         <>
           {near.length ? (
             <View className="gap-3">
-              <SectionHeader title="Near you" actionLabel="See map" onAction={() => router.navigate('/explore')} />
+              <SectionHeader title={tx('Near you')} actionLabel={tx('See map')} onAction={() => router.navigate('/explore')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
                 {near.map((d) => (
                   <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.get(d.id)?.average_rating} />
                 ))}
               </ScrollView>
               {near[0]?.distance != null && near[0].distance > 50_000 ? (
-                <Text className="text-xs text-muted-foreground">The closest GoTourGo destination is {formatDistance(near[0].distance)} away.</Text>
+                <Text className="text-xs text-muted-foreground">{tx('The closest GoTourGo destination is {0} away.', { 0: formatDistance(near[0].distance) })}</Text>
               ) : null}
             </View>
           ) : null}
 
           {current.length || upcoming.length ? (
             <Card className="gap-2">
-              <SectionHeader title="Your trip" actionLabel="Open" onAction={() => router.navigate('/trips')} />
+              <SectionHeader title={tx('Your trip')} actionLabel={tx('Open')} onAction={() => router.navigate('/trips')} />
               {[...current, ...upcoming].slice(0, 3).map((t) => {
                 const d = byId.get(t.destination_id);
                 if (!d) return null;
@@ -245,7 +246,7 @@ export default function Home() {
           ) : null}
 
           <View className="gap-3">
-            <SectionHeader title="Explore more" />
+            <SectionHeader title={tx('Explore more')} />
             <View className="flex-row flex-wrap justify-between gap-y-3">
               {SHORTCUTS.map((s) => (
                 <Pressable
@@ -266,10 +267,10 @@ export default function Home() {
             </View>
           </View>
 
-          <WeatherCard point={location} title="Weather where you are" />
+          <WeatherCard point={location} title={tx('Weather where you are')} />
 
           <View className="gap-3">
-            <SectionHeader title="Popular in Pakistan" actionLabel="See all" onAction={() => router.push('/search')} />
+            <SectionHeader title={tx('Popular in Pakistan')} actionLabel={tx('See all')} onAction={() => router.push('/search')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
               {popular.map((d) => (
                 <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.get(d.id)?.average_rating} />
@@ -279,7 +280,7 @@ export default function Home() {
 
           {savedPlaces.length ? (
             <View className="gap-3">
-              <SectionHeader title="Saved places" actionLabel="See all" onAction={() => router.push('/saved')} />
+              <SectionHeader title={tx('Saved places')} actionLabel={tx('See all')} onAction={() => router.push('/saved')} />
               <View className="gap-2.5">
                 {savedPlaces.slice(0, 3).map((d) => (
                   <DestinationCard key={d.id} variant="row" destination={d} distance={d.distance} />

@@ -10,6 +10,7 @@ import { sendPasswordReset, validateEmail } from '@/features/auth/api';
 import { AuthShell } from '@/features/auth/auth-shell';
 import { colors } from '@/lib/theme';
 import { errorMessage } from '@/lib/errors';
+import { tx } from '@/lib/i18n';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -36,12 +37,12 @@ export default function ForgotPassword() {
 
   if (sent) {
     return (
-      <Screen back title="Reset password">
+      <Screen back title={tx('Reset password')}>
         <EmptyState
           icon={MailCheck}
-          title="Check your inbox"
-          message="If an account exists for this email, you will receive a reset link. Open it on this phone to choose a new password."
-          actionLabel="Back to sign in"
+          title={tx('Check your inbox')}
+          message={tx('If an account exists for this email, you will receive a reset link. Open it on this phone to choose a new password.')}
+          actionLabel={tx('Back to sign in')}
           onAction={() => router.replace('/sign-in')}
         />
       </Screen>
@@ -49,10 +50,10 @@ export default function ForgotPassword() {
   }
 
   return (
-    <AuthShell back compact title="Reset password" subtitle="Enter your email and we will send you a link to choose a new password.">
+    <AuthShell back compact title={tx('Reset password')} subtitle={tx('Enter your email and we will send you a link to choose a new password.')}>
       {error ? <InlineError message={error} /> : null}
       <TextField
-        label="Email"
+        label={tx('Email')}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -62,7 +63,7 @@ export default function ForgotPassword() {
         onSubmitEditing={submit}
         left={<Mail color={colors.faint} size={20} />}
       />
-      <AppButton label="Send reset link" onPress={submit} loading={loading} />
+      <AppButton label={tx('Send reset link')} onPress={submit} loading={loading} />
     </AuthShell>
   );
 }

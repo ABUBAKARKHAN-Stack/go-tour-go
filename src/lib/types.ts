@@ -52,6 +52,8 @@ export type Destination = DestinationSummary & {
   image_credit: string | null;
   image_license: string | null;
   image_page_url: string | null;
+  /** Set when parts of the text shown are AI translations. */
+  machine_translated?: boolean;
 };
 
 /** A searchable place (city, town, neighbourhood, university...). */
@@ -74,8 +76,14 @@ export type DestinationTranslation = {
   short_description: string | null;
   description: string | null;
   history: string | null;
+  culture?: string | null;
   significance: string | null;
+  local_customs?: string | null;
+  food?: string | null;
+  shopping?: string | null;
   tips: string | null;
+  /** Some sections were translated by AI (shown to the reader). */
+  machine_translated?: boolean;
 };
 
 export type ServiceCategory =

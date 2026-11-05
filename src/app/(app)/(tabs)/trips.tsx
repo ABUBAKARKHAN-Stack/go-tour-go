@@ -18,6 +18,7 @@ import { TRIP_STATUSES, useTripActions, useTrips } from '@/features/trips/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 import type { DestinationSummary, TripItem, TripStatus } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 type Filter = TripStatus | 'all';
 
@@ -47,29 +48,29 @@ export default function TripsScreen() {
   const add = (d: DestinationSummary) => {
     setAdding(false);
     if (!online) {
-      Alert.alert('No internet connection', 'Connect to the internet to add to your trip.');
+      Alert.alert(tx('No internet connection'), tx('Connect to the internet to add to your trip.'));
       return;
     }
-    actions.add.mutate({ destinationId: d.id }, { onError: (e) => Alert.alert('Could not add', errorMessage(e)) });
+    actions.add.mutate({ destinationId: d.id }, { onError: (e) => Alert.alert(tx('Could not add'), errorMessage(e)) });
   };
 
   return (
     <Screen
       inTabs
-      title="My trip"
-      subtitle={`${counts.visited} visited · ${counts.in_progress} in progress · ${counts.todo} to do`}
-      right={<IconButton icon={Plus} label="Add destination" onPress={() => setAdding(true)} active />}
+      title={tx('My trip')}
+      subtitle={tx('{0} visited · {1} in progress · {2} to do', { 0: counts.visited, 1: counts.in_progress, 2: counts.todo })}
+      right={<IconButton icon={Plus} label={tx('Add destination')} onPress={() => setAdding(true)} active />}
       scroll={false}
     >
       <View className="px-4 pb-3">
         <Segmented<Filter>
           value={filter}
           onChange={setFilter}
-          options={[{ value: 'all', label: 'All' }, ...TRIP_STATUSES]}
+          options={[{ value: 'all', label: tx('All') }, ...TRIP_STATUSES]}
         />
       </View>
       {trips.isLoading ? (
-        <LoadingState label="Loading your trip..." />
+        <LoadingState label={tx('Loading your trip...')} />
       ) : trips.isError && !trips.data ? (
         <ErrorState error={trips.error} onRetry={trips.refetch} />
       ) : (
@@ -81,9 +82,9 @@ export default function TripsScreen() {
           ListEmptyComponent={
             <EmptyState
               icon={ClipboardList}
-              title={filter === 'all' ? 'Your trip is empty' : 'Nothing here yet'}
-              message="Add destinations you want to visit and track your progress."
-              actionLabel="Add destination"
+              title={filter === 'all' ? tx('Your trip is empty') : tx('Nothing here yet')}
+              message={tx('Add destinations you want to visit and track your progress.')}
+              actionLabel={tx('Add destination')}
               onAction={() => setAdding(true)}
             />
           }
@@ -141,7 +142,7 @@ const TripRow = memo(function TripRow({
             </Text>
           ) : null}
         </View>
-        <IconButton icon={NotebookPen} label={`Edit ${d.name}`} onPress={onEdit} />
+        <IconButton icon={NotebookPen} label={tx('Edit {0}', { 0: d.name })} onPress={onEdit} />
       </Pressable>
       <View className="flex-row gap-2">
         {TRIP_STATUSES.map((s) => (
@@ -198,10 +199,10 @@ function EditTripModal({ item, destination, onClose }: { item: TripItem | null; 
 
   const remove = () => {
     if (!item) return;
-    Alert.alert('Remove from trip?', destination?.name, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tx('Remove from trip?'), destination?.name, [
+      { text: tx('Cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: tx('Remove'),
         style: 'destructive',
         onPress: () => actions.remove.mutate(item.id, { onSuccess: onClose, onError: (e) => setError(errorMessage(e)) }),
       },
@@ -214,25 +215,25 @@ function EditTripModal({ item, destination, onClose }: { item: TripItem | null; 
         <View className="gap-4 rounded-t-3xl bg-card p-5" style={{ paddingBottom: insets.bottom + 16 }}>
           <View className="flex-row items-center justify-between">
             <Text numberOfLines={1} className="flex-1 text-lg font-bold text-foreground">
-              {destination?.name ?? 'Trip item'}
+              {destination?.name ?? tx('Trip item')}
             </Text>
-            <IconButton icon={X} label="Close" onPress={onClose} />
+            <IconButton icon={X} label={tx('Close')} onPress={onClose} />
           </View>
           {error ? <InlineError message={error} /> : null}
           <Segmented value={status} onChange={setStatus} options={TRIP_STATUSES} />
           <Pressable onPress={pickDate} className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border px-4">
             <CalendarDays color={colors.primary} size={18} />
-            <Text className="flex-1 text-base text-foreground">{formatDate(date) ?? 'Add planned visit date'}</Text>
+            <Text className="flex-1 text-base text-foreground">{formatDate(date) ?? tx('Add planned visit date')}</Text>
             {date ? (
-              <Pressable accessibilityLabel="Clear date" onPress={() => setDate(null)} hitSlop={10}>
+              <Pressable accessibilityLabel={tx('Clear date')} onPress={() => setDate(null)} hitSlop={10}>
                 <X color={colors.mutedForeground} size={16} />
               </Pressable>
             ) : null}
           </Pressable>
-          <TextField label="Notes" value={notes} onChangeText={setNotes} multiline maxLength={1000} placeholder="Opening times, who to go with, what to try..." />
+          <TextField label={tx('Notes')} value={notes} onChangeText={setNotes} multiline maxLength={1000} placeholder={tx('Opening times, who to go with, what to try...')} />
           <View className="flex-row gap-2">
-            <AppButton label="Remove" icon={Trash2} variant="outline" onPress={remove} className="flex-1" />
-            <AppButton label="Save" variant="accent" onPress={save} loading={actions.update.isPending} className="flex-1" />
+            <AppButton label={tx('Remove')} icon={Trash2} variant="outline" onPress={remove} className="flex-1" />
+            <AppButton label={tx('Save')} variant="accent" onPress={save} loading={actions.update.isPending} className="flex-1" />
           </View>
         </View>
       </View>
@@ -266,12 +267,12 @@ function AddDestinationModal({
               autoFocus
               value={term}
               onChangeText={setTerm}
-              placeholder="Search a destination to add"
+              placeholder={tx('Search a destination to add')}
               placeholderTextColor={`${colors.mutedForeground}99`}
               className="flex-1 text-base text-foreground"
             />
           </View>
-          <IconButton icon={X} label="Close" onPress={onClose} />
+          <IconButton icon={X} label={tx('Close')} onPress={onClose} />
         </View>
         <FlatList
           data={results}
@@ -279,9 +280,9 @@ function AddDestinationModal({
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="gap-3 px-4"
           contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
-          ListEmptyComponent={<EmptyState title="No destinations found" message="Try another name or city." />}
+          ListEmptyComponent={<EmptyState title={tx('No destinations found')} message={tx('Try another name or city.')} />}
           renderItem={({ item }) => (
-            <DestinationCard destination={item} variant="row" right={<IconButton icon={Plus} label={`Add ${item.name}`} onPress={() => onPick(item)} active />} />
+            <DestinationCard destination={item} variant="row" right={<IconButton icon={Plus} label={tx('Add {0}', { 0: item.name })} onPress={() => onPick(item)} active />} />
           )}
         />
       </View>

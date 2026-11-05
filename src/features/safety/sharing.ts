@@ -17,6 +17,7 @@ import { distanceMeters } from '@/lib/geo';
 import { storage, StorageKeys } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export const SHARING_TASK = 'gotourgo-location-sharing';
 const MIN_INTERVAL_MS = 30_000;
@@ -32,9 +33,9 @@ export type SharingSession = {
 };
 
 export const SHARING_DURATIONS = [
-  { label: '15 minutes', ms: 15 * 60_000 },
-  { label: '1 hour', ms: 60 * 60_000 },
-  { label: 'Until I stop', ms: null },
+  { label: tx('15 minutes'), ms: 15 * 60_000 },
+  { label: tx('1 hour'), ms: 60 * 60_000 },
+  { label: tx('Until I stop'), ms: null },
 ] as const;
 
 const inactive: SharingSession = { active: false, startedAt: 0, expiresAt: null, lastSentAt: null, lastSent: null };
@@ -117,8 +118,8 @@ async function startBackgroundUpdates() {
     distanceInterval: MIN_DISTANCE_M,
     showsBackgroundLocationIndicator: true,
     foregroundService: {
-      notificationTitle: 'GoTourGo is sharing your location',
-      notificationBody: 'Your friends can see where you are. Open the app to stop sharing.',
+      notificationTitle: tx('GoTourGo is sharing your location'),
+      notificationBody: tx('Your friends can see where you are. Open the app to stop sharing.'),
       notificationColor: colors.primary,
       killServiceOnDestroy: false,
     },

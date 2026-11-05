@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",
+    "@expo-google-fonts/noto-nastaliq-urdu": "^0.4.2",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/html-elements": "0.12.5",
     "@gluestack-ui/core": "5.0.0-alpha.0",

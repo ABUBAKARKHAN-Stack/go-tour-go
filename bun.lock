@@ -6,6 +6,7 @@
       "name": "go-tour-go-development",
       "dependencies": {
         "@expo-google-fonts/fraunces": "^0.4.1",
+        "@expo-google-fonts/noto-nastaliq-urdu": "^0.4.2",
         "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
         "@expo/html-elements": "0.12.5",
         "@gluestack-ui/core": "5.0.0-alpha.0",
@@ -241,6 +242,8 @@
     "@expo-google-fonts/fraunces": ["@expo-google-fonts/fraunces@0.4.1", "", {}, "sha512-gYc9P92ObyWvz1rWPOeWSvVKyBFIuA8hgOdhvo4DSiPBaWLbFA6v8uLIEIBwW+0oWTlXbBzjeBReHQI2H7UNjQ=="],
 
     "@expo-google-fonts/material-symbols": ["@expo-google-fonts/material-symbols@0.4.52", "", {}, "sha512-iC9GRpj7WV0GENbHTYPtJqGjyy/7yI3soG9SrKTY1ta19cbMZm2HA0nUdIK8d6OD9uv1BZHAh3Zn/UWV57IeWg=="],
+
+    "@expo-google-fonts/noto-nastaliq-urdu": ["@expo-google-fonts/noto-nastaliq-urdu@0.4.2", "", {}, "sha512-ciSPIxljdusLFb66Ov5uP8vXNuP2/CPAxwHqF2lIHqQwxZ8YtYf1B9VGiK0hcwp4XqmX6/hog8QNgViWoY9KGg=="],
 
     "@expo-google-fonts/plus-jakarta-sans": ["@expo-google-fonts/plus-jakarta-sans@0.4.2", "", {}, "sha512-6LYVmVGwjQvH+uzzWlVc9+oMj4lkNQ41aymVDjO+x8aFk8kCye20wOyLomYMZaMezA++Uf1mZRCw3W3Fy/hxEA=="],
 

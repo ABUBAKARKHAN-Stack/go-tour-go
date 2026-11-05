@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { missingEnv } from '@/lib/env';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 /** Shown instead of crashing when the build was made without Supabase env vars. */
 export function SetupRequired() {
@@ -14,10 +15,9 @@ export function SetupRequired() {
       <View className="h-16 w-16 items-center justify-center rounded-full bg-secondary">
         <Settings color={colors.primary} size={30} />
       </View>
-      <Text className="text-center text-xl font-bold text-foreground">Backend not configured</Text>
+      <Text className="text-center text-xl font-bold text-foreground">{tx('Backend not configured')}</Text>
       <Text className="text-center text-sm text-muted-foreground">
-        This build is missing required environment variables. Add them to .env.local (local) or the EAS environment
-        (cloud builds) and rebuild:
+        {tx('This build is missing required environment variables. Add them to .env.local (local) or the EAS environment (cloud builds) and rebuild:')}
       </Text>
       {missingEnv.map((name) => (
         <Text key={name} className="rounded-lg bg-muted px-3 py-1 font-mono text-xs text-accent">

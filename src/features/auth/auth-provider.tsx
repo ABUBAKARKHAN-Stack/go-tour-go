@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { isBackendConfigured } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 type AuthState = {
   /** True until the persisted session has been loaded and verified. */
@@ -87,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  if (!ctx) throw new Error(tx('useAuth must be used inside AuthProvider'));
   return ctx;
 }
 

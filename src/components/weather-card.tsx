@@ -4,6 +4,7 @@ import { Text } from '@/components/text';
 
 import { describeWeather, useWeather } from '@/features/weather/api';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 function Stat({ icon: Icon, label, value }: { icon: typeof Sun; label: string; value: string }) {
   return (
@@ -29,20 +30,20 @@ export function WeatherCard({ point, title = 'Weather' }: { point: { latitude: n
         {data ? <Text className="text-2xl font-bold text-foreground">{Math.round(data.temperature)}°C</Text> : null}
       </View>
       {!point ? (
-        <Text className="text-sm text-muted-foreground">Turn on location to see local weather.</Text>
+        <Text className="text-sm text-muted-foreground">{tx('Turn on location to see local weather.')}</Text>
       ) : isLoading ? (
         <ActivityIndicator color={colors.primary} />
       ) : isError || !data ? (
-        <Text className="text-sm text-muted-foreground">Weather is unavailable right now.</Text>
+        <Text className="text-sm text-muted-foreground">{tx('Weather is unavailable right now.')}</Text>
       ) : (
         <>
           <Text className="text-sm text-muted-foreground">{describeWeather(data.code)}</Text>
           <View className="flex-row flex-wrap gap-2">
-            <Stat icon={Droplets} label="Humidity" value={`${Math.round(data.humidity)}%`} />
-            <Stat icon={Wind} label="Wind" value={`${Math.round(data.wind)} km/h`} />
-            <Stat icon={Eye} label="Visibility" value={data.visibility != null ? `${(data.visibility / 1000).toFixed(1)} km` : '—'} />
-            <Stat icon={Sun} label="UV index" value={data.uv != null ? data.uv.toFixed(1) : '—'} />
-            <Stat icon={Thermometer} label="Feels" value={data.isDay ? 'Daytime' : 'Night'} />
+            <Stat icon={Droplets} label={tx('Humidity')} value={`${Math.round(data.humidity)}%`} />
+            <Stat icon={Wind} label={tx('Wind')} value={`${Math.round(data.wind)} km/h`} />
+            <Stat icon={Eye} label={tx('Visibility')} value={data.visibility != null ? `${(data.visibility / 1000).toFixed(1)} km` : '—'} />
+            <Stat icon={Sun} label={tx('UV index')} value={data.uv != null ? data.uv.toFixed(1) : '—'} />
+            <Stat icon={Thermometer} label={tx('Feels')} value={data.isDay ? 'Daytime' : 'Night'} />
           </View>
         </>
       )}

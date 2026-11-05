@@ -21,6 +21,7 @@ import { env } from '@/lib/env';
 import { boundsOf, circleRing } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
 import type { DestinationSummary, RoadAlert } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 export type TravelMapHandle = {
   flyTo: (lng: number, lat: number, zoom?: number) => void;
@@ -254,7 +255,7 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
 const FriendMarker = memo(function FriendMarker({ friend }: { friend: FriendLocation }) {
   const name = displayName(friend.profile);
   return (
-    <View className="items-center" accessibilityLabel={`${name}, updated ${timeAgo(friend.updated_at)}`}>
+    <View className="items-center" accessibilityLabel={tx('{0}, updated {1}', { 0: name, 1: timeAgo(friend.updated_at) })}>
       <View
         className={`rounded-xl px-2 py-1 ${friend.stale ? 'bg-muted' : 'bg-card'}`}
         style={{ borderWidth: 1, borderColor: friend.stale ? colors.mutedForeground : colors.friend }}
@@ -262,7 +263,7 @@ const FriendMarker = memo(function FriendMarker({ friend }: { friend: FriendLoca
         <Text numberOfLines={1} className="max-w-28 text-[11px] font-semibold text-foreground">
           {name}
         </Text>
-        <Text className="text-[10px] text-muted-foreground">{friend.stale ? `Last seen ${timeAgo(friend.updated_at)}` : timeAgo(friend.updated_at)}</Text>
+        <Text className="text-[10px] text-muted-foreground">{friend.stale ? tx('Last seen {0}', { 0: timeAgo(friend.updated_at) }) : timeAgo(friend.updated_at)}</Text>
       </View>
       <View
         className="mt-0.5 h-4 w-4 rounded-full border-2 border-white"

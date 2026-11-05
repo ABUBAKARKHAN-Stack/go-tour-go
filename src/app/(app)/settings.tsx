@@ -17,8 +17,9 @@ import { CHANNELS, notifyNow, requestNotificationPermission } from '@/features/n
 import { registerGeofences, stopGeofences } from '@/features/proximity/geofence-task';
 import { simulator, useSimulator } from '@/features/proximity/simulator';
 import { formatDistance } from '@/lib/geo';
-import { LOCALES, usePreferences } from '@/lib/preferences';
+import { AI_LANGUAGES, LOCALES, usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
+import { changeLanguage, tx } from '@/lib/i18n';
 
 export default function SettingsScreen() {
   const [prefs, setPrefs] = usePreferences();
@@ -39,30 +40,30 @@ export default function SettingsScreen() {
     }
     const notif = await requestNotificationPermission();
     if (!notif) {
-      Alert.alert('Notifications are off', 'Allow notifications for GoTourGo to get landmark alerts.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open settings', onPress: () => Linking.openSettings() },
+      Alert.alert(tx('Notifications are off'), tx('Allow notifications for GoTourGo to get landmark alerts.'), [
+        { text: tx('Cancel'), style: 'cancel' },
+        { text: tx('Open settings'), onPress: () => Linking.openSettings() },
       ]);
       return;
     }
     Alert.alert(
-      'Allow location all the time',
-      'To alert you about nearby landmarks while GoTourGo is closed, Android needs location access "All the time". GoTourGo uses battery-friendly geofences, not continuous GPS.',
+      tx('Allow location all the time'),
+      tx('To alert you about nearby landmarks while GoTourGo is closed, Android needs location access "All the time". GoTourGo uses battery-friendly geofences, not continuous GPS.'),
       [
-        { text: 'Not now', style: 'cancel' },
+        { text: tx('Not now'), style: 'cancel' },
         {
-          text: 'Continue',
+          text: tx('Continue'),
           onPress: async () => {
             const granted = await requestBackgroundPermission();
             if (!granted) {
-              Alert.alert('Background location not allowed', 'Landmark alerts will still work while the app is open. You can enable "Allow all the time" in Settings.', [
+              Alert.alert(tx('Background location not allowed'), tx('Landmark alerts will still work while the app is open. You can enable "Allow all the time" in Settings.'), [
                 { text: 'OK' },
-                { text: 'Open settings', onPress: () => Linking.openSettings() },
+                { text: tx('Open settings'), onPress: () => Linking.openSettings() },
               ]);
               return;
             }
             setPrefs({ backgroundAlerts: true });
-            await registerGeofences(locationStore.get().fix, true).catch((e) => Alert.alert('Geofencing unavailable', String(e?.message ?? e)));
+            await registerGeofences(locationStore.get().fix, true).catch((e) => Alert.alert(tx('Geofencing unavailable'), String(e?.message ?? e)));
           },
         },
       ],
@@ -72,60 +73,81 @@ export default function SettingsScreen() {
   const testNotification = async () => {
     const ok = await requestNotificationPermission();
     if (!ok) {
-      Alert.alert('Notifications are off', 'Enable notifications for GoTourGo in Settings.');
+      Alert.alert(tx('Notifications are off'), tx('Enable notifications for GoTourGo in Settings.'));
       return;
     }
-    notifyNow({ title: 'GoTourGo notifications work', body: 'You will be alerted near landmarks like this.', channel: CHANNELS.proximity, data: { type: 'test' } });
+    notifyNow({ title: tx('GoTourGo notifications work'), body: tx('You will be alerted near landmarks like this.'), channel: CHANNELS.proximity, data: { type: 'test' } });
   };
 
   return (
-    <Screen back title="Settings">
+    <Screen back title={tx('Settings')}>
       <Card className="gap-1">
-        <Text className="text-base font-semibold text-foreground">Landmark alerts</Text>
+        <Text className="text-base font-semibold text-foreground">{tx('Landmark alerts')}</Text>
         <ToggleRow
-          title="Alerts when the app is closed"
+          title={tx('Alerts when the app is closed')}
           description={
             location.background === 'granted'
-              ? 'Uses Android geofencing (battery-friendly)'
-              : 'Needs notifications and location "All the time"'
+              ? tx('Uses Android geofencing (battery-friendly)')
+              : tx('Needs notifications and location "All the time"')
           }
           value={prefs.backgroundAlerts}
           onChange={setBackgroundAlerts}
         />
-        <ToggleRow title="Show landmark card in the app" description="Contextual info when you arrive" value={prefs.inAppProximityCard} onChange={(v) => setPrefs({ inAppProximityCard: v })} />
-        <ToggleRow title="Road alert notifications" description="High and critical alerts near you" value={prefs.roadAlertNotifications} onChange={(v) => setPrefs({ roadAlertNotifications: v })} />
-        <Text className="pt-2 text-sm text-foreground">Notify me again about the same place after</Text>
+        <ToggleRow title={tx('Show landmark card in the app')} description={tx('Contextual info when you arrive')} value={prefs.inAppProximityCard} onChange={(v) => setPrefs({ inAppProximityCard: v })} />
+        <ToggleRow title={tx('Road alert notifications')} description={tx('High and critical alerts near you')} value={prefs.roadAlertNotifications} onChange={(v) => setPrefs({ roadAlertNotifications: v })} />
+        <Text className="pt-2 text-sm text-foreground">{tx('Notify me again about the same place after')}</Text>
         <Segmented
           value={String(prefs.proximityCooldownHours)}
           onChange={(v) => setPrefs({ proximityCooldownHours: Number(v) })}
           options={[
-            { value: '1', label: '1 hour' },
-            { value: '6', label: '6 hours' },
-            { value: '24', label: '1 day' },
+            { value: '1', label: tx('1 hour') },
+            { value: '6', label: tx('6 hours') },
+            { value: '24', label: tx('1 day') },
           ]}
         />
-        <AppButton label="Send a test notification" icon={Bell} variant="ghost" size="sm" onPress={testNotification} />
+        <AppButton label={tx('Send a test notification')} icon={Bell} variant="ghost" size="sm" onPress={testNotification} />
       </Card>
 
       <Card className="gap-3">
-        <Text className="text-base font-semibold text-foreground">Guide language</Text>
+        <Text className="text-base font-semibold text-foreground">{tx('App language')}</Text>
         <View className="flex-row flex-wrap gap-2">
           {LOCALES.map((l) => (
-            <Chip key={l.value} label={l.label} selected={prefs.locale === l.value} onPress={() => setPrefs({ locale: l.value })} />
+            <Chip
+              key={l.value}
+              label={l.label}
+              selected={prefs.locale === l.value}
+              onPress={() => {
+                if (l.value === prefs.locale) return;
+                Alert.alert(tx('Change language?'), tx('GoTourGo will restart to switch the language and layout.'), [
+                  { text: tx('Cancel'), style: 'cancel' },
+                  { text: tx('Restart'), onPress: () => changeLanguage(l.value) },
+                ]);
+              }}
+            />
           ))}
         </View>
-        <Text className="text-xs text-muted-foreground">Destination names and descriptions use this language where translations exist; the AI guide answers in it too.</Text>
+        <Text className="text-xs text-muted-foreground">{tx('Menus, buttons and landmark guides appear in this language. Urdu uses right-to-left layout.')}</Text>
       </Card>
 
       <Card className="gap-3">
-        <Text className="text-base font-semibold text-foreground">Default travel mode</Text>
+        <Text className="text-base font-semibold text-foreground">{tx('AI guide reply language')}</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {AI_LANGUAGES.map((l) => (
+            <Chip key={l.value} label={l.label} selected={prefs.aiLanguage === l.value} onPress={() => setPrefs({ aiLanguage: l.value })} />
+          ))}
+        </View>
+        <Text className="text-xs text-muted-foreground">{tx('The AI guide and Visual Lens can also answer in Chinese or Arabic for visitors.')}</Text>
+      </Card>
+
+      <Card className="gap-3">
+        <Text className="text-base font-semibold text-foreground">{tx('Default travel mode')}</Text>
         <Segmented
           value={prefs.travelMode}
           onChange={(v) => setPrefs({ travelMode: v })}
           options={[
-            { value: 'driving', label: 'Drive' },
-            { value: 'cycling', label: 'Bike' },
-            { value: 'walking', label: 'Walk' },
+            { value: 'driving', label: tx('Drive') },
+            { value: 'cycling', label: tx('Bike') },
+            { value: 'walking', label: tx('Walk') },
           ]}
         />
       </Card>
@@ -133,23 +155,16 @@ export default function SettingsScreen() {
       <Card className="gap-3">
         <View className="flex-row items-center gap-2">
           <Database color={colors.primary} size={18} />
-          <Text className="flex-1 text-base font-semibold text-foreground">Offline data</Text>
+          <Text className="flex-1 text-base font-semibold text-foreground">{tx('Offline data')}</Text>
         </View>
-        <Text className="text-xs text-muted-foreground">
-          {dataSync.counts.destinations.toLocaleString()} landmarks and {dataSync.counts.places.toLocaleString()} places are saved on this
-          phone for offline search, the map and landmark alerts.
-          {dataSync.lastSyncAt ? ` Checked ${new Date(dataSync.lastSyncAt).toLocaleString()}.` : ''}
-        </Text>
+        <Text className="text-xs text-muted-foreground">{tx('{0} landmarks and {1} places are saved on this phone for offline search, the map and landmark alerts. {2}', { 0: dataSync.counts.destinations.toLocaleString(), 1: dataSync.counts.places.toLocaleString(), 2: dataSync.lastSyncAt ? tx(' Checked {0}.', { 0: new Date(dataSync.lastSyncAt).toLocaleString() }) : '' })}</Text>
         {dataSync.status === 'syncing' ? (
-          <Text className="text-sm text-foreground">
-            Updating {dataSync.dataset === 'places' ? 'places' : 'landmarks'}: {dataSync.loaded.toLocaleString()}
-            {dataSync.total ? ` of ${dataSync.total.toLocaleString()}` : ''}
-          </Text>
+          <Text className="text-sm text-foreground">{tx('Updating {0}: {1} {2}', { 0: dataSync.dataset === 'places' ? 'places' : 'landmarks', 1: dataSync.loaded.toLocaleString(), 2: dataSync.total ? tx(' of {0}', { 0: dataSync.total.toLocaleString() }) : '' })}</Text>
         ) : dataSync.status === 'error' ? (
-          <Text className="text-sm text-destructive">Last update failed: {dataSync.error}</Text>
+          <Text className="text-sm text-destructive">{tx('Last update failed: {0}', { 0: dataSync.error })}</Text>
         ) : null}
         <AppButton
-          label="Update now"
+          label={tx('Update now')}
           icon={RefreshCw}
           variant="secondary"
           loading={dataSync.status === 'syncing'}
@@ -160,24 +175,21 @@ export default function SettingsScreen() {
       <Card className="gap-3">
         <View className="flex-row items-center gap-2">
           <FlaskConical color={colors.primary} size={18} />
-          <Text className="flex-1 text-base font-semibold text-foreground">Demo tools</Text>
+          <Text className="flex-1 text-base font-semibold text-foreground">{tx('Demo tools')}</Text>
         </View>
         <Text className="text-xs text-muted-foreground">
-          Simulate travelling towards a landmark to test geofencing, notifications, the contextual card and navigation without moving.
-          Real GPS is paused while it runs.
+          {tx('Simulate travelling towards a landmark to test geofencing, notifications, the contextual card and navigation without moving. Real GPS is paused while it runs.')}
         </Text>
         {sim.running ? (
           <>
-            <Text className="text-sm text-foreground">
-              Travelling to {sim.targetName} · step {sim.step}/{sim.total}
-            </Text>
-            <AppButton label="Stop simulation" icon={Square} variant="secondary" onPress={() => simulator.stop()} />
+            <Text className="text-sm text-foreground">{tx('Travelling to {0} · step {1}/{2}', { 0: sim.targetName, 1: sim.step, 2: sim.total })}</Text>
+            <AppButton label={tx('Stop simulation')} icon={Square} variant="secondary" onPress={() => simulator.stop()} />
           </>
         ) : (
           <>
-            <AppButton label="Simulate journey" icon={Play} variant="secondary" onPress={() => setPicking(true)} />
+            <AppButton label={tx('Simulate journey')} icon={Play} variant="secondary" onPress={() => setPicking(true)} />
             <AppButton
-              label={journey.phase === 'active' ? `Drive the journey to ${journey.target?.name}` : 'Drive the active journey'}
+              label={journey.phase === 'active' ? tx('Drive the journey to {0}', { 0: journey.target?.name }) : tx('Drive the active journey')}
               icon={Navigation}
               variant="secondary"
               disabled={journey.phase !== 'active' || !journey.route}
@@ -187,29 +199,29 @@ export default function SettingsScreen() {
                 router.push('/journey/navigate');
               }}
             />
-            <Text className="text-xs text-faint">Start a journey first (search a place, then Start journey), then come back here to drive it at 50 km/h.</Text>
+            <Text className="text-xs text-faint">{tx('Start a journey first (search a place, then Start journey), then come back here to drive it at 50 km/h.')}</Text>
           </>
         )}
         <AppButton
-          label="Reset landmark cooldowns"
+          label={tx('Reset landmark cooldowns')}
           icon={RotateCcw}
           variant="ghost"
           size="sm"
           onPress={() => {
             simulator.resetCooldowns();
-            Alert.alert('Cooldowns reset', 'Landmarks can notify you again.');
+            Alert.alert(tx('Cooldowns reset'), tx('Landmarks can notify you again.'));
           }}
         />
-        <AppButton label="Offline map engine test" variant="ghost" size="sm" onPress={() => router.push('/map-engine-test')} />
+        <AppButton label={tx('Offline map engine test')} variant="ghost" size="sm" onPress={() => router.push('/map-engine-test')} />
       </Card>
 
-      <Text className="text-center text-xs text-muted-foreground">GoTourGo FYP MVP · Map data © OpenStreetMap contributors</Text>
+      <Text className="text-center text-xs text-muted-foreground">{tx('GoTourGo FYP MVP · Map data © OpenStreetMap contributors')}</Text>
 
       <Modal visible={picking} animationType="slide" onRequestClose={() => setPicking(false)}>
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
           <View className="flex-row items-center gap-2 px-4 py-3">
-            <Text className="flex-1 text-xl font-bold text-foreground">Choose a landmark</Text>
-            <IconButton icon={X} label="Close" onPress={() => setPicking(false)} />
+            <Text className="flex-1 text-xl font-bold text-foreground">{tx('Choose a landmark')}</Text>
+            <IconButton icon={X} label={tx('Close')} onPress={() => setPicking(false)} />
           </View>
           <FlatList
             data={destinations.data ?? []}
@@ -227,9 +239,7 @@ export default function SettingsScreen() {
               >
                 <View className="flex-1">
                   <Text className="text-base font-semibold text-foreground">{item.name}</Text>
-                  <Text className="text-xs text-muted-foreground">
-                    {item.city} · radius {formatDistance(item.radius_m)}
-                  </Text>
+                  <Text className="text-xs text-muted-foreground">{tx('{0} · radius {1}', { 0: item.city, 1: formatDistance(item.radius_m) })}</Text>
                 </View>
                 <Play color={colors.primary} size={18} />
               </Pressable>

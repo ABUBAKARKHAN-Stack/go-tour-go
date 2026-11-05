@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { colors } from '@/lib/theme';
+import { flipX } from '@/lib/i18n';
 
 type Variant = 'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'destructive';
 
@@ -94,12 +95,15 @@ export function IconButton({
   onPress,
   active,
   badge,
+  flip,
 }: {
   icon: LucideIcon;
   label: string;
   onPress?: () => void;
   active?: boolean;
   badge?: number;
+  /** Mirror the icon in right-to-left (back arrows, chevrons). */
+  flip?: boolean;
 }) {
   return (
     <Pressable
@@ -109,7 +113,7 @@ export function IconButton({
       onPress={onPress}
       className={`h-11 w-11 items-center justify-center rounded-full active:opacity-80 ${active ? 'bg-primary' : 'border border-border bg-card'}`}
     >
-      <Icon color={active ? colors.primaryForeground : colors.foreground} size={20} />
+      <Icon color={active ? colors.primaryForeground : colors.foreground} size={20} style={flip ? flipX : undefined} />
       {badge ? (
         <View className="absolute -right-0.5 -top-0.5 min-w-5 items-center rounded-full border-2 border-card bg-accent px-1">
           <Text className="text-[10px] font-bold text-white">{badge > 9 ? '9+' : badge}</Text>

@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
-import type { ContentLocale } from '@/lib/preferences';
+import type { AiLanguage } from '@/lib/preferences';
+import type { DestinationTranslation } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -16,7 +17,7 @@ export type ChatContext = {
   nearby?: { name: string; category?: string; distanceKm?: number }[];
   destinationSlug?: string;
   weather?: string;
-  locale?: ContentLocale;
+  locale?: AiLanguage;
 };
 
 export type LensResult = {
@@ -42,12 +43,18 @@ async function invoke<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+/** Urdu guide for a landmark: stored translation, or made once by the AI service and stored for everyone. */
+export async function translateDestination(destinationId: string): Promise<DestinationTranslation | null> {
+  const res = await invoke<{ translation: DestinationTranslation | null }>({ mode: 'translate', destinationId, locale: 'ur' });
+  return res.translation;
+}
+
 export async function askAssistant(messages: ChatTurn[], context: ChatContext): Promise<string> {
   const res = await invoke<{ text: string }>({ mode: 'chat', messages: messages.slice(-12), context });
   return res.text;
 }
 
-export async function analyzeImage(imageBase64: string, opts: { question?: string; locale?: ContentLocale }): Promise<LensResult> {
+export async function analyzeImage(imageBase64: string, opts: { question?: string; locale?: AiLanguage }): Promise<LensResult> {
   const res = await invoke<{ result: LensResult }>({
     mode: 'lens',
     image: imageBase64,

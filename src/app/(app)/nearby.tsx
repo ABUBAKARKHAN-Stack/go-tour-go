@@ -15,6 +15,7 @@ import { navigateTo } from '@/features/routing/navigate';
 import { formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 import type { ServiceCategory } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 const ORDER: ServiceCategory[] = ['restaurant', 'hotel', 'hospital', 'police', 'pharmacy', 'fuel', 'atm', 'shopping', 'attraction'];
 
@@ -32,7 +33,7 @@ export default function NearbyScreen() {
   const meta = SERVICE_CATEGORIES[category];
 
   return (
-    <Screen back title="Nearby" subtitle={params.name ? `Around ${params.name}` : 'Around you'} scroll={false}>
+    <Screen back title={tx('Nearby')} subtitle={params.name ? tx('Around {0}', { 0: params.name }) : tx('Around you')} scroll={false}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="max-h-14 grow-0" contentContainerClassName="gap-2 px-4 pb-2">
         {ORDER.map((c) => (
           <Chip key={c} label={SERVICE_CATEGORIES[c].label} selected={c === category} onPress={() => setCategory(c)} />
@@ -44,7 +45,7 @@ export default function NearbyScreen() {
           <LocationStatusCard />
         </View>
       ) : query.isLoading ? (
-        <LoadingState label={`Finding ${meta.label.toLowerCase()} nearby...`} />
+        <LoadingState label={tx('Finding {0} nearby...', { 0: meta.label.toLowerCase() })} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={query.refetch} />
       ) : (
@@ -55,13 +56,13 @@ export default function NearbyScreen() {
           refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} tintColor={colors.primary} />}
           ListHeaderComponent={
             query.data?.source === 'seed' ? (
-              <Text className="pb-1 text-xs text-muted-foreground">Live map data unavailable; showing GoTourGo&apos;s saved list.</Text>
+              <Text className="pb-1 text-xs text-muted-foreground">{tx('Live map data unavailable; showing GoTourGo\'s saved list.')}</Text>
             ) : (
-              <Text className="pb-1 text-xs text-muted-foreground">Data © OpenStreetMap contributors</Text>
+              <Text className="pb-1 text-xs text-muted-foreground">{tx('Data © OpenStreetMap contributors')}</Text>
             )
           }
           ListEmptyComponent={
-            <EmptyState icon={MapPinned} title={`No ${meta.label.toLowerCase()} found nearby`} message="Try another category or move to a different area." />
+            <EmptyState icon={MapPinned} title={tx('No {0} found nearby', { 0: meta.label.toLowerCase() })} message={tx('Try another category or move to a different area.')} />
           }
           renderItem={({ item }) => {
             const Icon = SERVICE_CATEGORIES[item.category].icon;
@@ -90,13 +91,13 @@ export default function NearbyScreen() {
                   </View>
                 </View>
                 {item.phone ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Call ${item.name}`} onPress={() => Linking.openURL(`tel:${item.phone}`)} className="h-11 w-11 items-center justify-center rounded-full bg-secondary">
+                  <Pressable accessibilityRole="button" accessibilityLabel={tx('Call {0}', { 0: item.name })} onPress={() => Linking.openURL(`tel:${item.phone}`)} className="h-11 w-11 items-center justify-center rounded-full bg-secondary">
                     <Phone color={colors.foreground} size={18} />
                   </Pressable>
                 ) : null}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Navigate to ${item.name}`}
+                  accessibilityLabel={tx('Navigate to {0}', { 0: item.name })}
                   onPress={() => navigateTo({ id: item.id, name: item.name, latitude: item.latitude, longitude: item.longitude })}
                   className="h-11 w-11 items-center justify-center rounded-full bg-accent"
                 >

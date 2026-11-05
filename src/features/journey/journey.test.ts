@@ -162,7 +162,7 @@ describe('voice', () => {
       route.from,
       route.to,
     );
-    expect(r.steps[0].instruction).toBe('At the roundabout, take the 2nd exit onto Club Road');
+    expect(r.steps[0].instruction).toBe('At the roundabout, take exit 2 onto Club Road');
   });
 });
 

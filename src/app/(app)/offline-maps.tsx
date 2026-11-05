@@ -11,6 +11,7 @@ import { Screen } from '@/components/screen';
 import { errorMessage } from '@/lib/errors';
 import { env } from '@/lib/env';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 /** Preset city regions [west, south, east, north] kept small for the demo. */
 const REGIONS = [
@@ -61,11 +62,11 @@ export default function OfflineMapsScreen() {
           setPacks((prev) => ({ ...prev, [region.key]: { pack, percentage: status.percentage, state: status.state } }));
         },
         (_pack, error) => {
-          Alert.alert('Download failed', error.message);
+          Alert.alert(tx('Download failed'), error.message);
         },
       );
     } catch (e) {
-      Alert.alert('Download failed', errorMessage(e));
+      Alert.alert(tx('Download failed'), errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -83,10 +84,9 @@ export default function OfflineMapsScreen() {
   };
 
   return (
-    <Screen back title="Offline maps" subtitle="Use the map without internet">
+    <Screen back title={tx('Offline maps')} subtitle={tx('Use the map without internet')}>
       <Text className="text-sm text-muted-foreground">
-        Download a city before you travel. GPS, saved places, your trip and the last calculated route also work offline.
-        Turn-by-turn offline navigation is not included.
+        {tx('Download a city before you travel. GPS, saved places, your trip and the last calculated route also work offline. Turn-by-turn offline navigation is not included.')}
       </Text>
       {loading ? <ActivityIndicator color={colors.primary} /> : null}
       {REGIONS.map((r) => {
@@ -104,21 +104,21 @@ export default function OfflineMapsScreen() {
                 <View className="h-2 overflow-hidden rounded-full bg-muted">
                   <View className="h-2 rounded-full bg-accent" style={{ width: `${Math.min(100, info.percentage)}%` }} />
                 </View>
-                <Text className="text-xs text-muted-foreground">Downloading... {Math.round(info.percentage)}%</Text>
+                <Text className="text-xs text-muted-foreground">{tx('Downloading... {0}%', { 0: Math.round(info.percentage) })}</Text>
               </View>
             ) : null}
-            {complete ? <Text className="text-xs text-success">Available offline</Text> : null}
+            {complete ? <Text className="text-xs text-success">{tx('Available offline')}</Text> : null}
             <View className="flex-row gap-2">
               {info ? (
-                <AppButton label="Delete" icon={Trash2} variant="outline" size="sm" onPress={() => remove(r.key)} className="flex-1" />
+                <AppButton label={tx('Delete')} icon={Trash2} variant="outline" size="sm" onPress={() => remove(r.key)} className="flex-1" />
               ) : (
-                <AppButton label="Download" icon={Download} variant="secondary" size="sm" loading={busy === r.key} onPress={() => download(r)} className="flex-1" />
+                <AppButton label={tx('Download')} icon={Download} variant="secondary" size="sm" loading={busy === r.key} onPress={() => download(r)} className="flex-1" />
               )}
             </View>
           </Card>
         );
       })}
-      <Text className="text-xs text-muted-foreground">Map data © OpenStreetMap contributors, tiles by OpenFreeMap. Keep downloads small and personal.</Text>
+      <Text className="text-xs text-muted-foreground">{tx('Map data © OpenStreetMap contributors, tiles by OpenFreeMap. Keep downloads small and personal.')}</Text>
     </Screen>
   );
 }

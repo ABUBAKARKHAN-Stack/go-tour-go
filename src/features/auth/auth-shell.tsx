@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeroScene } from '@/components/illustrations';
 import { Text } from '@/components/text';
 import { colors } from '@/lib/theme';
+import { flipX, tx } from '@/lib/i18n';
 
 type Props = {
   title: string;
@@ -48,13 +49,13 @@ export function AuthShell({ title, subtitle, back, compact, children, footer }: 
           {back ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Go back"
+              accessibilityLabel={tx('Go back')}
               hitSlop={8}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}
               className="absolute left-5 h-11 w-11 items-center justify-center rounded-full bg-card/90"
               style={{ top: insets.top + 8 }}
             >
-              <ArrowLeft color={colors.foreground} size={20} />
+              <ArrowLeft color={colors.foreground} size={20} style={flipX} />
             </Pressable>
           ) : null}
         </View>
@@ -75,7 +76,7 @@ export function OrDivider() {
   return (
     <View className="flex-row items-center gap-3">
       <View className="h-px flex-1 bg-border" />
-      <Text className="text-xs text-faint">or</Text>
+      <Text className="text-xs text-faint">{tx('or')}</Text>
       <View className="h-px flex-1 bg-border" />
     </View>
   );

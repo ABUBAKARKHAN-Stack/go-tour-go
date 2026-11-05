@@ -11,6 +11,7 @@ import { signUp, validateEmail, validatePassword, validateUsername } from '@/fea
 import { AuthShell } from '@/features/auth/auth-shell';
 import { colors } from '@/lib/theme';
 import { errorMessage } from '@/lib/errors';
+import { tx } from '@/lib/i18n';
 
 export default function SignUp() {
   const [fullName, setFullName] = useState('');
@@ -48,12 +49,12 @@ export default function SignUp() {
 
   if (confirmSent) {
     return (
-      <Screen back title="Check your email">
+      <Screen back title={tx('Check your email')}>
         <EmptyState
           icon={MailCheck}
-          title="Confirm your email"
-          message={`We sent a confirmation link to ${email.trim()}. Open it on this phone, then sign in.`}
-          actionLabel="Back to sign in"
+          title={tx('Confirm your email')}
+          message={tx('We sent a confirmation link to {0}. Open it on this phone, then sign in.', { 0: email.trim() })}
+          actionLabel={tx('Back to sign in')}
           onAction={() => router.replace('/sign-in')}
         />
       </Screen>
@@ -61,22 +62,22 @@ export default function SignUp() {
   }
 
   return (
-    <AuthShell back compact title="Create your account" subtitle="Save places, plan journeys and travel with friends.">
+    <AuthShell back compact title={tx('Create your account')} subtitle={tx('Save places, plan journeys and travel with friends.')}>
       {error ? <InlineError message={error} /> : null}
-      <TextField label="Full name" value={fullName} onChangeText={setFullName} autoComplete="name" placeholder="Ayesha Khan" error={errors.fullName} left={<UserRound color={colors.faint} size={20} />} />
+      <TextField label={tx('Full name')} value={fullName} onChangeText={setFullName} autoComplete="name" placeholder={tx('Ayesha Khan')} error={errors.fullName} left={<UserRound color={colors.faint} size={20} />} />
       <TextField
-        label="Username"
+        label={tx('Username')}
         value={username}
         onChangeText={(t) => setUsername(t.toLowerCase())}
         autoCapitalize="none"
         autoComplete="username"
         placeholder="ayesha_travels"
         error={errors.username}
-        hint="Friends find you by this name."
+        hint={tx('Friends find you by this name.')}
         left={<AtSign color={colors.faint} size={20} />}
       />
       <TextField
-        label="Email"
+        label={tx('Email')}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -87,17 +88,17 @@ export default function SignUp() {
         left={<Mail color={colors.faint} size={20} />}
       />
       <TextField
-        label="Password"
+        label={tx('Password')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         autoComplete="new-password"
-        placeholder="At least 8 characters"
+        placeholder={tx('At least 8 characters')}
         error={errors.password}
         left={<Lock color={colors.faint} size={20} />}
       />
       <View className="pt-2">
-        <AppButton label="Create account" onPress={submit} loading={loading} />
+        <AppButton label={tx('Create account')} onPress={submit} loading={loading} />
       </View>
     </AuthShell>
   );

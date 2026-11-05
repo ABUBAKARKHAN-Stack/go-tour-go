@@ -11,6 +11,7 @@ import {
 import { useLocationState } from '@/features/location/location-store';
 import { requestNotificationPermission } from '@/features/notifications/local-notifications';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 /**
  * Explains and resolves every location state: not yet asked, denied,
@@ -29,7 +30,7 @@ export function LocationStatusCard({ compact }: { compact?: boolean }) {
     title = 'Turn on location';
     message = 'GoTourGo uses your location to show nearby landmarks, alert you when you arrive and calculate routes.';
     action = {
-      label: 'Allow location',
+      label: tx('Allow location'),
       // After location, ask for notifications so landmark arrival alerts can be shown.
       onPress: async () => {
         if (await requestLocationPermission()) await requestNotificationPermission();
@@ -39,15 +40,15 @@ export function LocationStatusCard({ compact }: { compact?: boolean }) {
   } else if (s.permission === 'denied') {
     title = 'Location permission denied';
     message = 'Enable location for GoTourGo in Settings to see where you are and get landmark alerts.';
-    action = { label: 'Open settings', onPress: () => Linking.openSettings(), icon: Settings };
+    action = { label: tx('Open settings'), onPress: () => Linking.openSettings(), icon: Settings };
   } else if (s.servicesEnabled === false) {
     title = 'Location services are off';
     message = 'Turn on your device location (GPS) to find nearby places.';
-    action = { label: 'Turn on location', onPress: openLocationSettings, icon: Settings };
+    action = { label: tx('Turn on location'), onPress: openLocationSettings, icon: Settings };
   } else if (s.status === 'error') {
     title = 'Location unavailable';
     message = s.error ?? 'We could not get a GPS fix. Move to an open area and try again.';
-    action = { label: 'Try again', onPress: startWatching, icon: LocateFixed };
+    action = { label: tx('Try again'), onPress: startWatching, icon: LocateFixed };
   } else if (s.status === 'locating' && !s.fix && !compact) {
     title = 'Finding your location...';
     message = 'This can take a moment the first time or indoors.';

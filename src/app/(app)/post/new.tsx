@@ -14,6 +14,7 @@ import { useDestinationsByDistance } from '@/features/destinations/api';
 import { errorMessage } from '@/lib/errors';
 import { chooseImageSource } from '@/lib/pick-image';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export default function NewPostScreen() {
   const actions = useCommunityActions();
@@ -43,23 +44,23 @@ export default function NewPostScreen() {
   };
 
   return (
-    <Screen back title="New post" keyboard>
+    <Screen back title={tx('New post')} keyboard>
       {error ? <InlineError message={error} /> : null}
-      <TextField label="What's happening?" value={body} onChangeText={setBody} multiline maxLength={2000} placeholder="Share a tip, a view or a great meal..." />
+      <TextField label={tx('What\'s happening?')} value={body} onChangeText={setBody} multiline maxLength={2000} placeholder={tx('Share a tip, a view or a great meal...')} />
       {image ? (
         <View>
           <Image source={{ uri: image }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" />
-          <Pressable accessibilityLabel="Remove photo" onPress={() => setImage(null)} className="absolute right-2 top-2 h-10 w-10 items-center justify-center rounded-full bg-black/60">
+          <Pressable accessibilityLabel={tx('Remove photo')} onPress={() => setImage(null)} className="absolute right-2 top-2 h-10 w-10 items-center justify-center rounded-full bg-black/60">
             <X color="#fff" size={18} />
           </Pressable>
         </View>
       ) : (
-        <AppButton label="Add photo" icon={ImagePlus} variant="outline" onPress={() => chooseImageSource(setImage)} />
+        <AppButton label={tx('Add photo')} icon={ImagePlus} variant="outline" onPress={() => chooseImageSource(setImage)} />
       )}
       <View className="gap-2">
         <View className="flex-row items-center gap-1">
           <MapPin color={colors.primary} size={14} />
-          <Text className="text-sm font-medium text-foreground">Tag a place {location ? '(nearest first)' : ''}</Text>
+          <Text className="text-sm font-medium text-foreground">{tx('Tag a place {0}', { 0: location ? tx('(nearest first)') : '' })}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
           {suggestions.map((d) => (
@@ -67,7 +68,7 @@ export default function NewPostScreen() {
           ))}
         </ScrollView>
       </View>
-      <AppButton label="Post" icon={Send} variant="accent" loading={actions.createPost.isPending} disabled={!body.trim()} onPress={submit} />
+      <AppButton label={tx('Post')} icon={Send} variant="accent" loading={actions.createPost.isPending} disabled={!body.trim()} onPress={submit} />
     </Screen>
   );
 }

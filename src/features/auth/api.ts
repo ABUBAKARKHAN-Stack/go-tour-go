@@ -1,6 +1,7 @@
 import * as Linking from 'expo-linking';
 
 import { supabase } from '@/lib/supabase';
+import { tx } from '@/lib/i18n';
 
 export const RESET_PASSWORD_REDIRECT = Linking.createURL('/reset-password');
 
@@ -8,10 +9,10 @@ export async function signIn(email: string, password: string) {
   const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   if (error) {
     if (/invalid login credentials/i.test(error.message)) {
-      throw new Error('Incorrect email or password.');
+      throw new Error(tx('Incorrect email or password.'));
     }
     if (/email not confirmed/i.test(error.message)) {
-      throw new Error('Please confirm your email first. Check your inbox for the link.');
+      throw new Error(tx('Please confirm your email first. Check your inbox for the link.'));
     }
     throw error;
   }
@@ -28,14 +29,14 @@ export async function signUp(params: { email: string; password: string; fullName
   });
   if (error) {
     if (/already registered|already exists/i.test(error.message)) {
-      throw new Error('An account with this email already exists. Try signing in.');
+      throw new Error(tx('An account with this email already exists. Try signing in.'));
     }
     throw error;
   }
   // With email confirmation enabled, Supabase returns a user with no identities
   // for an existing address (to prevent enumeration) and no session.
   if (data.user && data.user.identities?.length === 0) {
-    throw new Error('An account with this email already exists. Try signing in.');
+    throw new Error(tx('An account with this email already exists. Try signing in.'));
   }
   return { needsConfirmation: !data.session };
 }

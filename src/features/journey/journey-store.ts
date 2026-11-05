@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 import type { Landmark } from '@/features/destinations/api';
 import { fetchRoute, type Route, type TravelMode } from '@/features/routing/osrm';
 import { distanceMeters, type LatLng } from '@/lib/geo';
+import { isUrdu, tx, txEn } from '@/lib/i18n';
 
 import { storage, StorageKeys } from '@/lib/storage';
 import type { RoadAlert } from '@/lib/types';
@@ -129,21 +130,48 @@ function persist(force = false) {
 }
 
 /** Spoken + notified warning for a hazard coming up on the route (foreground and background). */
-export async function announceHazard(item: JourneyItem, metresAhead: number, voice: (text: string) => void) {
-  const where = metresAhead > 50 ? `in ${formatDistance(metresAhead)}` : 'here';
-  voice(`Caution. ${item.name} ${where}.`);
+export async function announceHazard(
+  item: JourneyItem,
+  metresAhead: number,
+  voice: (phrase: string, vars?: Record<string, string | number>) => void,
+) {
+  const near = metresAhead <= 50;
+  const vars = { 0: item.name, 1: formatDistance(metresAhead) };
+  voice(near ? 'Caution. {0} here.' : 'Caution. {0} in {1}.', vars);
   await notifyNow({
-    title: `Hazard ahead ${where}: ${item.name}`,
-    body: item.detail || 'Reported on your route. Slow down and take care.',
+    title: near ? tx('Hazard here: {0}', vars) : tx('Hazard ahead in {1}: {0}', vars),
+    body: item.detail || tx('Reported on your route. Slow down and take care.'),
     channel: CHANNELS.alerts,
     data: { type: 'alert', alertId: item.id.replace(/^alert:/, '') },
   });
 }
 
-export function speak(text: string) {
+/** Whether this phone has an Urdu text-to-speech voice (checked once). */
+let urduVoice: boolean | null = null;
+if (isUrdu) {
+  Speech.getAvailableVoicesAsync()
+    .then((voices) => {
+      urduVoice = voices.some((v) => v.language?.toLowerCase().startsWith('ur'));
+    })
+    .catch(() => {
+      urduVoice = false;
+    });
+}
+
+/** Speak English unless the app is in Urdu and the phone can speak Urdu. */
+function speakEnglish() {
+  return !isUrdu || !urduVoice;
+}
+
+function say(text: string) {
   if (!state.voice) return;
   Speech.stop();
-  Speech.speak(text, { language: 'en-US', rate: 0.98 });
+  Speech.speak(text, { language: speakEnglish() ? 'en-US' : 'ur-PK', rate: 0.98 });
+}
+
+/** Speaks a phrase (English source text with placeholders) in the voice language. */
+export function speak(phrase: string, vars?: Record<string, string | number | null | undefined>) {
+  say(speakEnglish() ? txEn(phrase, vars) : tx(phrase, vars));
 }
 
 export const journeyStore = {
@@ -209,7 +237,10 @@ export const journeyStore = {
     set({ phase: 'active', startedAt: Date.now(), progress: null, rerouting: false, warned: [] });
     persist(true);
     const first = state.route.steps[0];
-    if (first) speak(`Starting your journey to ${state.target.name}. ${first.instruction}.`);
+    if (first) {
+      speak('Starting your journey to {0}.', { 0: state.target.name });
+      say(speakEnglish() ? first.instructionEn : first.instruction);
+    }
   },
 
   /** Resumes a journey saved before the app was closed. */
@@ -255,13 +286,13 @@ export const journeyStore = {
     if (upcoming && prev && prev.stepIndex === progress.stepIndex) {
       const thresholds = voiceThresholds(state.mode);
       const t = crossedThreshold(prev.toManeuver, progress.toManeuver, thresholds);
-      if (t != null) speak(spokenInstruction(upcoming, progress.toManeuver, t === thresholds[thresholds.length - 1]));
+      if (t != null) say(spokenInstruction(upcoming, progress.toManeuver, t === thresholds[thresholds.length - 1], speakEnglish()));
     }
 
     if (progress.arrived) {
       set({ progress, phase: 'arrived' });
       storage.remove(StorageKeys.activeJourney);
-      speak(`You have arrived at ${state.target?.name ?? 'your destination'}`);
+      speak('You have arrived at {0}', { 0: state.target?.name ?? txEn('your destination') });
       emit({ type: 'arrived' });
       return;
     }

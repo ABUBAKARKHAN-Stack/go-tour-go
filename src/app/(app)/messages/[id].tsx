@@ -14,6 +14,7 @@ import { otherParticipant, useConversations, useMessages, useSendMessage } from 
 import { displayName } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -42,7 +43,7 @@ export default function ChatScreen() {
     send.mutate(body, {
       onError: (e) => {
         setText(body);
-        Alert.alert('Message not sent', errorMessage(e));
+        Alert.alert(tx('Message not sent'), errorMessage(e));
       },
     });
   };
@@ -54,7 +55,7 @@ export default function ChatScreen() {
         title={displayName(other)}
         right={
           other ? (
-            <Pressable accessibilityLabel="View profile" onPress={() => router.push({ pathname: '/users/[id]', params: { id: other.id } })}>
+            <Pressable accessibilityLabel={tx('View profile')} onPress={() => router.push({ pathname: '/users/[id]', params: { id: other.id } })}>
               <Avatar profile={other} size={40} />
             </Pressable>
           ) : undefined
@@ -62,7 +63,7 @@ export default function ChatScreen() {
       />
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         {messages.isLoading ? (
-          <LoadingState label="Loading messages..." />
+          <LoadingState label={tx('Loading messages...')} />
         ) : messages.isError ? (
           <ErrorState error={messages.error} onRetry={messages.refetch} />
         ) : (
@@ -73,7 +74,7 @@ export default function ChatScreen() {
             contentContainerClassName="gap-2 px-4 py-3"
             ListEmptyComponent={
               <View style={{ transform: [{ scaleY: -1 }] }} className="items-center py-10">
-                <Text className="text-sm text-muted-foreground">No messages yet. Say hello!</Text>
+                <Text className="text-sm text-muted-foreground">{tx('No messages yet. Say hello!')}</Text>
               </View>
             }
             renderItem={({ item }) => {
@@ -83,7 +84,7 @@ export default function ChatScreen() {
                 <View className={`max-w-[80%] rounded-3xl px-4 py-2 ${mine ? 'self-end rounded-br-md bg-primary' : 'self-start rounded-bl-md bg-card'}`}>
                   <Text className={`text-[15px] ${mine ? 'text-primary-foreground' : 'text-foreground'}`}>{item.body}</Text>
                   <Text className={`mt-0.5 text-[10px] ${mine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {pending ? 'Sending...' : formatTime(item.created_at)}
+                    {pending ? tx('Sending...') : formatTime(item.created_at)}
                   </Text>
                 </View>
               );
@@ -94,16 +95,16 @@ export default function ChatScreen() {
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Message"
+            placeholder={tx('Message')}
             placeholderTextColor={`${colors.mutedForeground}99`}
             multiline
             maxLength={2000}
             className="max-h-32 min-h-12 flex-1 rounded-3xl bg-input px-4 py-3 text-base text-foreground"
-            accessibilityLabel="Message"
+            accessibilityLabel={tx('Message')}
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Send"
+            accessibilityLabel={tx('Send')}
             onPress={submit}
             disabled={!text.trim()}
             className={`h-12 w-12 items-center justify-center rounded-full ${text.trim() ? 'bg-accent' : 'bg-muted'}`}

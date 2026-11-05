@@ -76,9 +76,9 @@ class FakeSession:
                 "Q5502700": {
                     "id": "Q5502700",
                     "labels": {"en": {"value": "Frere Hall"}, "ur": {"value": "فریئر ہال"}},
-                    "descriptions": {"en": {"value": "colonial-era building in Karachi, Pakistan"}},
+                    "descriptions": {"en": {"value": "colonial-era building in Karachi, Pakistan"}, "ur": {"value": "کراچی میں نوآبادیاتی دور کی عمارت"}},
                     "claims": {"P18": [{"mainsnak": {"datavalue": {"value": "Frere Hall Karachi.jpg"}}}]},
-                    "sitelinks": {"enwiki": {"title": "Frere Hall"}, "urwiki": {"title": "x"}, "dewiki": {"title": "y"}},
+                    "sitelinks": {"enwiki": {"title": "Frere Hall"}, "urwiki": {"title": "فریئر ہال"}, "dewiki": {"title": "y"}},
                 },
                 "Q999": {"id": "Q999", "missing": ""},
             }})
@@ -94,6 +94,9 @@ class FakeSession:
         if "rest_v1/page/summary/Frere_Hall" in url:
             return FakeResponse({"type": "standard", "extract": "Frere Hall is a building in Karachi. It was built in 1865.",
                                  "content_urls": {"desktop": {"page": "https://en.wikipedia.org/wiki/Frere_Hall"}}})
+        if "ur.wikipedia.org" in url:
+            return FakeResponse({"type": "standard", "extract": "فریئر ہال کراچی کی ایک تاریخی عمارت ہے۔ یہ 1865 میں بنی۔",
+                                 "content_urls": {"desktop": {"page": "https://ur.wikipedia.org/wiki/x"}}})
         if "rest_v1/page/summary/Test_Peak" in url:
             return FakeResponse({"type": "standard", "extract": "Test Peak is a mountain.",
                                  "content_urls": {"desktop": {"page": "https://en.wikipedia.org/wiki/Test_Peak"}}})
@@ -170,6 +173,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(frere["name_ur"], "فریئر ہال")
         self.assertEqual(frere["slug"], "frere-hall-n102")
         self.assertEqual(int(frere["popularity"]), 36)
+        self.assertEqual(frere["short_description_ur"], "کراچی میں نوآبادیاتی دور کی عمارت")
+        self.assertTrue(frere["description_ur"].startswith("فریئر ہال کراچی"))
+        self.assertEqual(landmarks["Test Peak"]["description_ur"], "")
 
         self.assertEqual(landmarks["Test Peak"]["radius_m"], "3000")
         self.assertEqual(landmarks["Test Peak"]["short_description"], "Test Peak is a mountain.")

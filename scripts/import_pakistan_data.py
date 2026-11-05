@@ -368,8 +368,10 @@ def parse_wikidata(entities: dict) -> dict:
             "label_en": e.get("labels", {}).get("en", {}).get("value"),
             "label_ur": e.get("labels", {}).get("ur", {}).get("value"),
             "description": e.get("descriptions", {}).get("en", {}).get("value"),
+            "description_ur": e.get("descriptions", {}).get("ur", {}).get("value"),
             "image": image,
             "enwiki": sitelinks.get("enwiki", {}).get("title"),
+            "urwiki": sitelinks.get("urwiki", {}).get("title"),
             "sitelinks": len(sitelinks),
         }
         out[qid] = info
@@ -435,8 +437,8 @@ def fetch_commons(session, filenames):
     return result
 
 
-def fetch_summary(session, title):
-    data = http_json(session, f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(title.replace(' ', '_'), safe='')}")
+def fetch_summary(session, title, lang="en"):
+    data = http_json(session, f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{quote(title.replace(' ', '_'), safe='')}")
     if not data or data.get("type") == "disambiguation":
         return None
     return {
@@ -486,6 +488,11 @@ def enrich(landmarks, session, workers=6):
     with ThreadPoolExecutor(max_workers=workers) as pool:
         summaries = dict(zip(titles.keys(), pool.map(lambda t: fetch_summary(session, t), titles.values())))
 
+    ur_titles = {lm.osm_id: wd[lm.wikidata]["urwiki"] for lm in landmarks if lm.wikidata in wd and wd[lm.wikidata].get("urwiki")}
+    print(f"Urdu Wikipedia: {len(ur_titles)} summaries", flush=True)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        ur_summaries = dict(zip(ur_titles.keys(), pool.map(lambda t: fetch_summary(session, t, "ur"), ur_titles.values())))
+
     for lm in landmarks:
         info = wd.get(lm.wikidata or "", {})
         summary = summaries.get(lm.osm_id) or {}
@@ -499,6 +506,8 @@ def enrich(landmarks, session, workers=6):
             "wikipedia_url": summary.get("url"),
             "image": image,
             "sitelinks": info.get("sitelinks", 0),
+            "short_ur": info.get("description_ur") or first_sentence((ur_summaries.get(lm.osm_id) or {}).get("extract")),
+            "description_ur": ((ur_summaries.get(lm.osm_id) or {}).get("extract") or "")[:1500] or None,
         }
 
 
@@ -510,7 +519,7 @@ PLACE_COLUMNS = ["id", "name", "name_ur", "kind", "district", "province", "latit
 LANDMARK_COLUMNS = [
     "osm_id", "slug", "name", "name_ur", "category", "city", "region", "latitude", "longitude", "radius_m",
     "short_description", "description", "image_url", "image_credit", "image_license", "image_page_url",
-    "wikidata", "wikipedia_url", "popularity",
+    "wikidata", "wikipedia_url", "popularity", "short_description_ur", "description_ur",
 ]
 
 
@@ -544,6 +553,8 @@ def landmark_rows(landmarks, admin, cities):
             "wikidata": lm.wikidata,
             "wikipedia_url": extra.get("wikipedia_url"),
             "popularity": min(90, 30 + sitelinks * 2) if lm.wikidata else 25,
+            "short_description_ur": (extra.get("short_ur") or "")[:300] or None,
+            "description_ur": extra.get("description_ur"),
         }
 
 

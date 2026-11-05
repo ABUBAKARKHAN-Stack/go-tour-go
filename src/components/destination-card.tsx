@@ -9,6 +9,7 @@ import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 import type { DestinationSummary } from '@/lib/types';
+import { flipX } from '@/lib/i18n';
 
 type Props = {
   destination: DestinationSummary;
@@ -57,7 +58,7 @@ function DestinationCardBase({ destination: d, distance, rating, variant = 'tile
             {rating ? <Rating value={rating} /> : null}
           </View>
         </View>
-        {right ?? <ChevronRight color={colors.faint} size={18} />}
+        {right ?? <ChevronRight color={colors.faint} size={18} style={flipX} />}
       </Pressable>
     );
   }

@@ -3,11 +3,15 @@
  * no API key). Fair-use only: one request per user action, never per GPS fix.
  */
 import type { LatLng } from '@/lib/geo';
+import { tx, txEn } from '@/lib/i18n';
 
 export type TravelMode = 'driving' | 'cycling' | 'walking';
 
 export type RouteStep = {
+  /** In the app language. */
   instruction: string;
+  /** English, for the voice when no voice exists for the app language. */
+  instructionEn: string;
   distance: number; // metres travelled after this manoeuvre
   duration: number; // seconds
   type: string; // OSRM manoeuvre type: depart, turn, roundabout, arrive...
@@ -59,40 +63,53 @@ type OsrmResponse = {
   }[];
 };
 
-function ordinal(n: number) {
-  const suffix = n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th';
-  return `${n}${suffix}`;
-}
+type Translate = (text: string, vars?: Record<string, string | number | null | undefined>) => string;
 
-/** Human instruction for a step, e.g. "Turn right onto Shahrah-e-Faisal". */
-export function describeStep(s: Pick<RouteStep, 'type' | 'modifier' | 'name' | 'exit'>): string {
+const MODIFIERS: Record<string, string> = {
+  left: 'left',
+  right: 'right',
+  'slight left': 'slight left',
+  'slight right': 'slight right',
+  'sharp left': 'sharp left',
+  'sharp right': 'sharp right',
+};
+
+/**
+ * Human instruction for a step, e.g. "Turn right onto Shahrah-e-Faisal".
+ * Whole-sentence templates so other languages can order words naturally.
+ */
+export function describeStep(s: Pick<RouteStep, 'type' | 'modifier' | 'name' | 'exit'>, t: Translate = tx): string {
   const type = s.type ?? '';
-  const mod = s.modifier && s.modifier !== 'straight' ? ` ${s.modifier}` : '';
-  const road = s.name ? ` onto ${s.name}` : '';
+  const road = s.name ?? null;
+  const dir = s.modifier && MODIFIERS[s.modifier] ? t(MODIFIERS[s.modifier]) : null;
+  const pick = (plain: string, onto: string, vars: Record<string, string | number> = {}) =>
+    road ? t(onto, { ...vars, road }) : t(plain, vars);
   switch (type) {
     case 'depart':
-      return `Head out${road}`;
+      return pick('Head out', 'Head out onto {road}');
     case 'arrive':
-      return 'Arrive at your destination';
+      return t('Arrive at your destination');
     case 'turn':
     case 'end of road':
-      if (s.modifier === 'uturn') return `Make a U-turn${road}`;
-      if (s.modifier === 'straight') return `Go straight${road}`;
-      return `Turn${mod}${road}`;
+      if (s.modifier === 'uturn') return pick('Make a U-turn', 'Make a U-turn onto {road}');
+      if (!dir) return pick('Go straight', 'Go straight onto {road}');
+      return pick('Turn {dir}', 'Turn {dir} onto {road}', { dir });
     case 'roundabout':
     case 'rotary':
     case 'roundabout turn':
-      return s.exit ? `At the roundabout, take the ${ordinal(s.exit)} exit${road}` : `Take the roundabout${road}`;
+      return s.exit
+        ? pick('At the roundabout, take exit {exit}', 'At the roundabout, take exit {exit} onto {road}', { exit: s.exit })
+        : pick('Take the roundabout', 'Take the roundabout onto {road}');
     case 'merge':
-      return `Merge${mod}${road}`;
+      return pick('Merge', 'Merge onto {road}');
     case 'on ramp':
-      return `Take the ramp${mod}${road}`;
+      return pick('Take the ramp', 'Take the ramp onto {road}');
     case 'off ramp':
-      return `Take the exit${mod}${road}`;
+      return pick('Take the exit', 'Take the exit onto {road}');
     case 'fork':
-      return `Keep${mod || ' ahead'} at the fork${road}`;
+      return dir ? pick('Keep {dir} at the fork', 'Keep {dir} at the fork onto {road}', { dir }) : pick('Keep ahead at the fork', 'Keep ahead at the fork onto {road}');
     default:
-      return mod ? `Continue${mod}${road}` : `Continue${road}`;
+      return dir ? pick('Continue {dir}', 'Continue {dir} onto {road}', { dir }) : pick('Continue', 'Continue onto {road}');
   }
 }
 
@@ -105,8 +122,8 @@ export function parseOsrmResponse(
   now = Date.now(),
 ): Route {
   if (json.code !== 'Ok' || !json.routes?.length) {
-    if (json.code === 'NoRoute') throw new Error('No road route found to this place.');
-    throw new Error('Unable to calculate route.');
+    if (json.code === 'NoRoute') throw new Error(tx('No road route found to this place.'));
+    throw new Error(tx('Unable to calculate route.'));
   }
   const r = json.routes[0];
   const steps: RouteStep[] = (r.legs ?? [])
@@ -122,6 +139,7 @@ export function parseOsrmResponse(
       return {
         ...step,
         instruction: describeStep(step),
+        instructionEn: describeStep(step, txEn),
         distance: s.distance,
         duration: s.duration ?? 0,
         location: s.maneuver?.location ?? null,
@@ -149,10 +167,10 @@ export async function fetchRoute(mode: TravelMode, from: LatLng, to: Route['to']
     });
   } catch (error) {
     if ((error as Error)?.name === 'AbortError') throw error;
-    throw new Error('Unable to calculate route. Check your internet connection.');
+    throw new Error(tx('Unable to calculate route. Check your internet connection.'));
   }
-  if (res.status === 429) throw new Error('Routing service is busy. Try again shortly.');
-  if (!res.ok) throw new Error('Unable to calculate route.');
+  if (res.status === 429) throw new Error(tx('Routing service is busy. Try again shortly.'));
+  if (!res.ok) throw new Error(tx('Unable to calculate route.'));
   return parseOsrmResponse((await res.json()) as OsrmResponse, mode, from, to);
 }
 

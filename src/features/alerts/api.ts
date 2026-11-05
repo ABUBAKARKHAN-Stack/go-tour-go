@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
 import type { AlertSeverity, RoadAlert } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 const severityRank: Record<AlertSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
@@ -22,13 +23,13 @@ export function useRoadAlerts() {
 }
 
 export const ALERT_LABELS: Record<RoadAlert['alert_type'], string> = {
-  closure: 'Road closure',
-  rain: 'Heavy rain',
-  flood: 'Flooding',
-  fog: 'Fog',
-  smog: 'Smog',
-  snow: 'Snow',
-  landslide: 'Landslide',
-  traffic: 'Traffic',
-  other: 'Travel alert',
+  closure: tx('Road closure'),
+  rain: tx('Heavy rain'),
+  flood: tx('Flooding'),
+  fog: tx('Fog'),
+  smog: tx('Smog'),
+  snow: tx('Snow'),
+  landslide: tx('Landslide'),
+  traffic: tx('Traffic'),
+  other: tx('Travel alert'),
 };

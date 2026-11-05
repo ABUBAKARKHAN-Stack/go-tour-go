@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { useDestinationsByDistance } from '@/features/destinations/api';
 import { useSavedIds, useToggleSaved } from '@/features/saved/api';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export default function SavedScreen() {
   const saved = useSavedIds();
@@ -21,9 +22,9 @@ export default function SavedScreen() {
   }, [saved.data, sorted]);
 
   return (
-    <Screen back title="Saved places" scroll={false}>
+    <Screen back title={tx('Saved places')} scroll={false}>
       {saved.isLoading ? (
-        <LoadingState label="Loading saved places..." />
+        <LoadingState label={tx('Loading saved places...')} />
       ) : saved.isError && !saved.data ? (
         <ErrorState error={saved.error} onRetry={saved.refetch} />
       ) : (
@@ -35,9 +36,9 @@ export default function SavedScreen() {
           ListEmptyComponent={
             <EmptyState
               icon={Bookmark}
-              title="No saved places yet"
-              message="Bookmark destinations to find them quickly, even offline."
-              actionLabel="Explore destinations"
+              title={tx('No saved places yet')}
+              message={tx('Bookmark destinations to find them quickly, even offline.')}
+              actionLabel={tx('Explore destinations')}
               onAction={() => router.push('/search')}
             />
           }
@@ -46,7 +47,7 @@ export default function SavedScreen() {
               destination={item}
               distance={item.distance}
               variant="row"
-              right={<IconButton icon={BookmarkX} label={`Unsave ${item.name}`} onPress={() => toggle.mutate({ destinationId: item.id, save: false })} />}
+              right={<IconButton icon={BookmarkX} label={tx('Unsave {0}', { 0: item.name })} onPress={() => toggle.mutate({ destinationId: item.id, save: false })} />}
             />
           )}
         />

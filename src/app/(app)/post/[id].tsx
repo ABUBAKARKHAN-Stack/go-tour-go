@@ -15,6 +15,7 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,18 +30,18 @@ export default function PostDetail() {
     if (!text.trim()) return;
     actions.addComment.mutate(
       { postId: id, body: text },
-      { onSuccess: () => setText(''), onError: (e) => Alert.alert('Could not comment', errorMessage(e)) },
+      { onSuccess: () => setText(''), onError: (e) => Alert.alert(tx('Could not comment'), errorMessage(e)) },
     );
   };
 
   return (
-    <Screen back title="Post" scroll={false} keyboard>
+    <Screen back title={tx('Post')} scroll={false} keyboard>
       {post.isLoading ? (
         <LoadingState />
       ) : post.isError ? (
         <ErrorState error={post.error} onRetry={post.refetch} />
       ) : !post.data ? (
-        <EmptyState title="Post not found" message="It may have been deleted." />
+        <EmptyState title={tx('Post not found')} message={tx('It may have been deleted.')} />
       ) : (
         <>
           <FlatList
@@ -50,10 +51,10 @@ export default function PostDetail() {
             ListHeaderComponent={
               <View className="gap-3 pb-1">
                 <PostCard post={post.data} userId={userId} detail />
-                <Text className="text-base font-bold text-foreground">Comments</Text>
+                <Text className="text-base font-bold text-foreground">{tx('Comments')}</Text>
               </View>
             }
-            ListEmptyComponent={comments.isLoading ? <LoadingState /> : <Text className="text-sm text-muted-foreground">No comments yet. Start the conversation.</Text>}
+            ListEmptyComponent={comments.isLoading ? <LoadingState /> : <Text className="text-sm text-muted-foreground">{tx('No comments yet. Start the conversation.')}</Text>}
             renderItem={({ item }) => {
               const canDelete = item.author_id === userId || post.data?.author_id === userId;
               return (
@@ -67,7 +68,7 @@ export default function PostDetail() {
                     <Text className="text-sm text-foreground">{item.body}</Text>
                   </View>
                   {canDelete ? (
-                    <Pressable accessibilityLabel="Delete comment" hitSlop={8} onPress={() => actions.deleteComment.mutate({ id: item.id, postId: id })} className="h-8 w-8 items-center justify-center">
+                    <Pressable accessibilityLabel={tx('Delete comment')} hitSlop={8} onPress={() => actions.deleteComment.mutate({ id: item.id, postId: id })} className="h-8 w-8 items-center justify-center">
                       <Trash2 color={colors.mutedForeground} size={14} />
                     </Pressable>
                   ) : null}
@@ -79,7 +80,7 @@ export default function PostDetail() {
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder="Add a comment..."
+              placeholder={tx('Add a comment...')}
               placeholderTextColor={`${colors.mutedForeground}99`}
               multiline
               maxLength={500}
@@ -87,7 +88,7 @@ export default function PostDetail() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Send comment"
+              accessibilityLabel={tx('Send comment')}
               onPress={send}
               disabled={!text.trim() || actions.addComment.isPending}
               className={`h-12 w-12 items-center justify-center rounded-full ${text.trim() ? 'bg-accent' : 'bg-muted'}`}

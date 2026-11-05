@@ -18,12 +18,13 @@ import { isSessionLive, SHARING_DURATIONS, startSharing, stopSharing, useSharing
 import { displayName } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 const EMERGENCY_NUMBERS = [
-  { label: 'Rescue', number: '1122' },
-  { label: 'Police', number: '15' },
-  { label: 'Edhi ambulance', number: '115' },
-  { label: 'Motorway police', number: '130' },
+  { label: tx('Rescue'), number: '1122' },
+  { label: tx('Police'), number: '15' },
+  { label: tx('Edhi ambulance'), number: '115' },
+  { label: tx('Motorway police'), number: '130' },
 ];
 
 type SosState = { message: string; lat: number | null; lng: number | null } | null;
@@ -73,55 +74,53 @@ export default function SafetyScreen() {
       if (location.permission !== 'granted' && !(await requestLocationPermission())) return;
       const fix = await getCurrentFix();
       if (!fix) {
-        Alert.alert('Location unavailable', 'We could not get your location. Try again outdoors.');
+        Alert.alert(tx('Location unavailable'), tx('We could not get your location. Try again outdoors.'));
         return;
       }
       // Ask for "Allow all the time" so sharing continues in the background.
       const bg = await requestBackgroundPermission();
       const { background } = await startSharing(durationMs, fix);
       if (!bg || !background) {
-        Alert.alert('Sharing while the app is open', 'Allow location "all the time" in Settings to keep sharing when GoTourGo is in the background.');
+        Alert.alert(tx('Sharing while the app is open'), tx('Allow location "all the time" in Settings to keep sharing when GoTourGo is in the background.'));
       }
     } catch (e) {
-      Alert.alert('Location sharing', errorMessage(e));
+      Alert.alert(tx('Location sharing'), errorMessage(e));
     } finally {
       setSharingBusy(false);
     }
   };
 
   return (
-    <Screen back title="Safety" subtitle="Travel with peace of mind">
+    <Screen back title={tx('Safety')} subtitle={tx('Travel with peace of mind')}>
       <View className="flex-row gap-2 rounded-2xl border border-warning/40 bg-warning/10 p-3">
         <Info color={colors.warning} size={16} />
         <Text className="flex-1 text-xs text-foreground">
-          SOS is a demonstration feature. It does not contact police or rescue services automatically. In an emergency, call
-          the numbers below directly.
+          {tx('SOS is a demonstration feature. It does not contact police or rescue services automatically. In an emergency, call the numbers below directly.')}
         </Text>
       </View>
 
       <Card className="items-center gap-3">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Hold for SOS"
-          accessibilityHint="Press and hold for one second to send your location to trusted contacts"
+          accessibilityLabel={tx('Hold for SOS')}
+          accessibilityHint={tx('Press and hold for one second to send your location to trusted contacts')}
           onLongPress={triggerSos}
           delayLongPress={1000}
           disabled={triggering}
           className="h-40 w-40 items-center justify-center rounded-full border-8 border-destructive/30 bg-destructive active:scale-95"
         >
           <ShieldAlert color="#fff" size={44} />
-          <Text className="mt-1 text-2xl font-extrabold text-white">SOS</Text>
-          <Text className="text-xs text-white/80">{triggering ? 'Locating...' : 'Hold 1 second'}</Text>
+          <Text className="mt-1 text-2xl font-extrabold text-white">{tx('SOS')}</Text>
+          <Text className="text-xs text-white/80">{triggering ? tx('Locating...') : tx('Hold 1 second')}</Text>
         </Pressable>
         <Text className="text-center text-xs text-muted-foreground">
-          Sends your location to your trusted contacts via WhatsApp, alerts your GoTourGo friends and shares your live location
-          for 1 hour.
+          {tx('Sends your location to your trusted contacts via WhatsApp, alerts your GoTourGo friends and shares your live location for 1 hour.')}
         </Text>
       </Card>
 
       {sos ? (
         <Card className="gap-3 border-destructive/50">
-          <Text className="text-base font-bold text-foreground">Send your SOS</Text>
+          <Text className="text-base font-bold text-foreground">{tx('Send your SOS')}</Text>
           {sos.lat != null ? (
             <Pressable onPress={() => Linking.openURL(mapsLink(sos.lat!, sos.lng!))} className="flex-row items-center gap-1">
               <MapPin color={colors.primary} size={14} />
@@ -130,28 +129,28 @@ export default function SafetyScreen() {
               </Text>
             </Pressable>
           ) : (
-            <Text className="text-xs text-destructive">Location unavailable. Your message says so.</Text>
+            <Text className="text-xs text-destructive">{tx('Location unavailable. Your message says so.')}</Text>
           )}
           {contacts.isLoading ? <LoadingState /> : null}
           {(contacts.data ?? []).map((c) => (
-            <AppButton key={c.id} label={`WhatsApp ${c.name}`} icon={MessageCircle} variant="destructive" onPress={() => openWhatsApp(c.phone, sos.message)} />
+            <AppButton key={c.id} label={tx('WhatsApp {0}', { 0: c.name })} icon={MessageCircle} variant="destructive" onPress={() => openWhatsApp(c.phone, sos.message)} />
           ))}
           {contacts.data?.length === 0 ? (
-            <AppButton label="Add a trusted contact" icon={UserPlus} variant="secondary" onPress={() => router.push('/safety/contacts')} />
+            <AppButton label={tx('Add a trusted contact')} icon={UserPlus} variant="secondary" onPress={() => router.push('/safety/contacts')} />
           ) : null}
-          <AppButton label="Share another way" icon={Share2} variant="outline" onPress={() => Share.share({ message: sos.message })} />
-          <AppButton label="Done" variant="ghost" onPress={() => setSos(null)} />
+          <AppButton label={tx('Share another way')} icon={Share2} variant="outline" onPress={() => Share.share({ message: sos.message })} />
+          <AppButton label={tx('Done')} variant="ghost" onPress={() => setSos(null)} />
         </Card>
       ) : null}
 
       <View className="gap-2">
-        <SectionHeader title="Emergency numbers (Pakistan)" />
+        <SectionHeader title={tx('Emergency numbers (Pakistan)')} />
         <View className="flex-row flex-wrap gap-2">
           {EMERGENCY_NUMBERS.map((n) => (
             <Pressable
               key={n.number}
               accessibilityRole="button"
-              accessibilityLabel={`Call ${n.label} ${n.number}`}
+              accessibilityLabel={tx('Call {0} {1}', { 0: n.label, 1: n.number })}
               onPress={() => Linking.openURL(`tel:${n.number}`)}
               className="min-h-14 w-[48%] flex-row items-center gap-2 rounded-2xl bg-card px-3"
             >
@@ -168,24 +167,20 @@ export default function SafetyScreen() {
       <Card className="gap-3">
         <View className="flex-row items-center gap-2">
           <Radio color={live ? colors.success : colors.accent} size={18} />
-          <Text className="flex-1 text-base font-semibold text-foreground">Live location sharing</Text>
-          {live ? <Text className="text-xs font-bold text-success">ACTIVE</Text> : null}
+          <Text className="flex-1 text-base font-semibold text-foreground">{tx('Live location sharing')}</Text>
+          {live ? <Text className="text-xs font-bold text-success">{tx('ACTIVE')}</Text> : null}
         </View>
         {live ? (
           <>
-            <Text className="text-sm text-muted-foreground">
-              Your accepted friends can see your location{' '}
-              {session.expiresAt ? `until ${new Date(session.expiresAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}` : 'until you stop'}.
-              {session.lastSentAt ? ` Last update ${timeAgo(session.lastSentAt)}.` : ''}
-            </Text>
-            <AppButton label="Stop sharing" icon={Square} variant="destructive" loading={sharingBusy} onPress={() => toggleSharing(null)} />
+            <Text className="text-sm text-muted-foreground">{tx('Your accepted friends can see your location {0}. {1}', { 0: session.expiresAt ? tx('until {0}', { 0: new Date(session.expiresAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) }) : tx('until you stop'), 1: session.lastSentAt ? tx(' Last update {0}.', { 0: timeAgo(session.lastSentAt) }) : '' })}</Text>
+            <AppButton label={tx('Stop sharing')} icon={Square} variant="destructive" loading={sharingBusy} onPress={() => toggleSharing(null)} />
           </>
         ) : (
           <>
-            <Text className="text-sm text-muted-foreground">Only accepted friends can see it. You can stop at any time.</Text>
+            <Text className="text-sm text-muted-foreground">{tx('Only accepted friends can see it. You can stop at any time.')}</Text>
             <View className="gap-2">
               {SHARING_DURATIONS.map((d) => (
-                <AppButton key={d.label} label={`Share for ${d.label.toLowerCase()}`} variant="secondary" size="sm" disabled={sharingBusy} onPress={() => toggleSharing(d.ms)} />
+                <AppButton key={d.label} label={tx('Share for {0}', { 0: d.label.toLowerCase() })} variant="secondary" size="sm" disabled={sharingBusy} onPress={() => toggleSharing(d.ms)} />
               ))}
             </View>
           </>
@@ -194,26 +189,26 @@ export default function SafetyScreen() {
       </Card>
 
       <Card className="gap-3">
-        <SectionHeader title="Friends sharing with you" actionLabel="Map" onAction={() => router.navigate('/explore')} />
+        <SectionHeader title={tx('Friends sharing with you')} actionLabel={tx('Map')} onAction={() => router.navigate('/explore')} />
         {!friends.hasFriends ? (
-          <Text className="text-sm text-muted-foreground">Add friends to see their shared locations.</Text>
+          <Text className="text-sm text-muted-foreground">{tx('Add friends to see their shared locations.')}</Text>
         ) : friends.locations.length === 0 ? (
-          <Text className="text-sm text-muted-foreground">No friends are sharing their location right now.</Text>
+          <Text className="text-sm text-muted-foreground">{tx('No friends are sharing their location right now.')}</Text>
         ) : (
           friends.locations.map((f) => (
             <View key={f.user_id} className="flex-row items-center gap-2">
               <View className={`h-2.5 w-2.5 rounded-full ${f.stale ? 'bg-muted-foreground' : 'bg-success'}`} />
               <Text className="flex-1 text-sm text-foreground">{displayName(f.profile)}</Text>
-              <Text className="text-xs text-muted-foreground">{f.stale ? `stale · ${timeAgo(f.updated_at)}` : timeAgo(f.updated_at)}</Text>
+              <Text className="text-xs text-muted-foreground">{f.stale ? tx('stale · {0}', { 0: timeAgo(f.updated_at) }) : timeAgo(f.updated_at)}</Text>
             </View>
           ))
         )}
       </Card>
 
       <Card className="gap-3">
-        <SectionHeader title="Trusted contacts" actionLabel="Manage" onAction={() => router.push('/safety/contacts')} />
+        <SectionHeader title={tx('Trusted contacts')} actionLabel={tx('Manage')} onAction={() => router.push('/safety/contacts')} />
         {(contacts.data ?? []).length === 0 ? (
-          <Text className="text-sm text-muted-foreground">Add family or friends who should receive your SOS on WhatsApp.</Text>
+          <Text className="text-sm text-muted-foreground">{tx('Add family or friends who should receive your SOS on WhatsApp.')}</Text>
         ) : (
           contacts.data!.map((c) => (
             <View key={c.id} className="flex-row items-center gap-2">

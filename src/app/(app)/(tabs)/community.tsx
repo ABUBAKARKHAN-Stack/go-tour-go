@@ -14,6 +14,7 @@ import { PostCard } from '@/features/community/post-card';
 import { displayName } from '@/features/social/api';
 import { colors } from '@/lib/theme';
 import type { Story } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 export default function CommunityScreen() {
   const { userId } = useAuth();
@@ -31,13 +32,13 @@ export default function CommunityScreen() {
   return (
     <Screen
       inTabs
-      title="Community"
-      subtitle="Travel stories from fellow explorers"
+      title={tx('Community')}
+      subtitle={tx('Travel stories from fellow explorers')}
       scroll={false}
       right={
         <View className="flex-row gap-2">
-          <IconButton icon={Users} label="Friends" onPress={() => router.push('/friends')} />
-          <IconButton icon={MessagesSquare} label="Messages" onPress={() => router.push('/messages')} />
+          <IconButton icon={Users} label={tx('Friends')} onPress={() => router.push('/friends')} />
+          <IconButton icon={MessagesSquare} label={tx('Messages')} onPress={() => router.push('/messages')} />
         </View>
       }
     >
@@ -60,17 +61,17 @@ export default function CommunityScreen() {
         ListHeaderComponent={
           <View className="gap-4">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
-              <Pressable accessibilityRole="button" accessibilityLabel="Add story" onPress={() => router.push('/story/new')} className="w-20 items-center gap-1">
+              <Pressable accessibilityRole="button" accessibilityLabel={tx('Add story')} onPress={() => router.push('/story/new')} className="w-20 items-center gap-1">
                 <View className="h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-accent bg-secondary">
                   <Plus color={colors.primary} size={24} />
                 </View>
-                <Text className="text-xs text-foreground">Your story</Text>
+                <Text className="text-xs text-foreground">{tx('Your story')}</Text>
               </Pressable>
               {storyAuthors.map((s) => (
                 <Pressable
                   key={s.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Story by ${displayName(s.author)}`}
+                  accessibilityLabel={tx('Story by {0}', { 0: displayName(s.author) })}
                   onPress={() => router.push({ pathname: '/story/[id]', params: { id: s.author_id } })}
                   className="w-20 items-center gap-1"
                 >
@@ -78,21 +79,21 @@ export default function CommunityScreen() {
                     <Image source={{ uri: s.image_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} contentFit="cover" />
                   </View>
                   <Text numberOfLines={1} className="w-16 text-center text-xs text-foreground">
-                    {s.author_id === userId ? 'You' : displayName(s.author)}
+                    {s.author_id === userId ? tx('You') : displayName(s.author)}
                   </Text>
                 </Pressable>
               ))}
             </ScrollView>
-            <AppButton label="Share a travel moment" icon={PenSquare} variant="secondary" onPress={() => router.push('/post/new')} />
+            <AppButton label={tx('Share a travel moment')} icon={PenSquare} variant="secondary" onPress={() => router.push('/post/new')} />
           </View>
         }
         ListEmptyComponent={
           feed.isLoading ? (
-            <LoadingState label="Loading posts..." />
+            <LoadingState label={tx('Loading posts...')} />
           ) : feed.isError ? (
             <ErrorState error={feed.error} onRetry={feed.refetch} />
           ) : (
-            <EmptyState icon={PenSquare} title="No posts yet" message="Be the first to share a travel moment." actionLabel="Create post" onAction={() => router.push('/post/new')} />
+            <EmptyState icon={PenSquare} title={tx('No posts yet')} message={tx('Be the first to share a travel moment.')} actionLabel={tx('Create post')} onAction={() => router.push('/post/new')} />
           )
         }
         ListFooterComponent={feed.isFetchingNextPage ? <ActivityIndicator color={colors.primary} /> : undefined}

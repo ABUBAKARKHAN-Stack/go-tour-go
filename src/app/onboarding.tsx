@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/app-button';
 import { ArrivalScene, LandmarkScene, SafetyScene } from '@/components/illustrations';
 import { Text } from '@/components/text';
+import { changeLanguage, language, tx } from '@/lib/i18n';
+import { LOCALES } from '@/lib/preferences';
 import { storage, StorageKeys } from '@/lib/storage';
 
 type Slide = { key: string; overline: string; title: string; body: string; Art: ComponentType<{ size?: number }> };
@@ -12,23 +14,23 @@ type Slide = { key: string; overline: string; title: string; body: string; Art: 
 const SLIDES: Slide[] = [
   {
     key: 'discover',
-    overline: 'Discover',
-    title: 'Stories wait around every corner',
-    body: 'GoTourGo notices the landmarks you pass and tells you why they matter: history, food and local tips, right when you arrive.',
+    overline: tx('Discover'),
+    title: tx('Stories wait around every corner'),
+    body: tx('GoTourGo notices the landmarks you pass and tells you why they matter: history, food and local tips, right when you arrive.'),
     Art: LandmarkScene,
   },
   {
     key: 'journey',
-    overline: 'On the way',
-    title: 'Landmarks speak up as you travel',
-    body: 'Plan a journey anywhere in Pakistan. Famous places and road alerts along your route reach you as you get close, even offline.',
+    overline: tx('On the way'),
+    title: tx('Landmarks speak up as you travel'),
+    body: tx('Plan a journey anywhere in Pakistan. Famous places and road alerts along your route reach you as you get close, even offline.'),
     Art: ArrivalScene,
   },
   {
     key: 'safe',
-    overline: 'Travel safe',
-    title: 'Your people, one tap away',
-    body: 'Share your live location for as long as you choose, and send an SOS with your position to the people you trust.',
+    overline: tx('Travel safe'),
+    title: tx('Your people, one tap away'),
+    body: tx('Share your live location for as long as you choose, and send an SOS with your position to the people you trust.'),
     Art: SafetyScene,
   },
 ];
@@ -48,9 +50,22 @@ export default function Onboarding() {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}>
-      <View className="flex-row items-center justify-end px-5">
+      <View className="flex-row items-center justify-between px-5">
+        <View className="flex-row rounded-full bg-secondary p-1" accessibilityRole="radiogroup" accessibilityLabel="Language / زبان">
+          {LOCALES.map((l) => (
+            <Pressable
+              key={l.value}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: language === l.value }}
+              onPress={() => changeLanguage(l.value)}
+              className={`min-h-9 justify-center rounded-full px-3 ${language === l.value ? 'bg-card' : ''}`}
+            >
+              <Text className={`text-sm ${language === l.value ? 'font-semibold text-foreground' : 'text-faint'}`}>{l.label}</Text>
+            </Pressable>
+          ))}
+        </View>
         <Pressable accessibilityRole="button" onPress={finish} hitSlop={12} className="min-h-11 justify-center px-2">
-          <Text className="text-sm font-semibold text-faint">Skip</Text>
+          <Text className="text-sm font-semibold text-faint">{tx('Skip')}</Text>
         </Pressable>
       </View>
 
@@ -77,13 +92,13 @@ export default function Onboarding() {
       />
 
       <View className="gap-4 px-6">
-        <View className="flex-row gap-1.5" accessibilityLabel={`Page ${index + 1} of ${SLIDES.length}`}>
+        <View className="flex-row gap-1.5" accessibilityLabel={tx('Page {0} of {1}', { 0: index + 1, 1: SLIDES.length })}>
           {SLIDES.map((s, i) => (
             <View key={s.key} className={`h-2 rounded-full ${i === index ? 'w-6 bg-primary' : 'w-2 bg-border-strong'}`} />
           ))}
         </View>
-        <AppButton label={index === SLIDES.length - 1 ? 'Get started' : 'Next'} onPress={next} />
-        <AppButton label="I already have an account" variant="ghost" onPress={finish} />
+        <AppButton label={index === SLIDES.length - 1 ? tx('Get started') : tx('Next')} onPress={next} />
+        <AppButton label={tx('I already have an account')} variant="ghost" onPress={finish} />
       </View>
     </View>
   );

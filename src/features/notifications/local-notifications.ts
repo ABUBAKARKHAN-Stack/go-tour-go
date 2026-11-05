@@ -3,6 +3,7 @@ import { AndroidImportance } from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 /**
  * Local notifications only (no remote push/FCM needed). Channels let users
@@ -51,7 +52,7 @@ async function setup() {
     await Promise.all([
       Notifications.setNotificationChannelAsync(CHANNELS.proximity, {
         name: 'Nearby landmarks',
-        description: 'When you arrive near a landmark or destination',
+        description: tx('When you arrive near a landmark or destination'),
         importance: AndroidImportance.HIGH,
         lightColor: colors.accent,
         vibrationPattern: [0, 200, 120, 200],
@@ -127,7 +128,7 @@ export async function notifyNow(params: {
 export function landmarkNotificationText(name: string, shortDescription: string, distanceText?: string, others = 0) {
   const extra = others > 0 ? ` +${others} more landmark${others > 1 ? 's' : ''} nearby.` : '';
   return {
-    title: `You're near ${name}`,
-    body: `${distanceText ? `${distanceText} away. ` : ''}${shortDescription} Tap to discover its history, culture and tips.${extra}`,
+    title: tx('You\'re near {0}', { 0: name }),
+    body: tx('{0}{1} Tap to discover its history, culture and tips.{2}', { 0: distanceText ? `${distanceText} away. ` : '', 1: shortDescription, 2: extra }),
   };
 }

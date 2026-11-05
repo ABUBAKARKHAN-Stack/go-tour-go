@@ -11,15 +11,16 @@ import { otherParticipant, useConversations } from '@/features/messaging/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export default function ConversationsScreen() {
   const { userId } = useAuth();
   const q = useConversations();
 
   return (
-    <Screen back title="Messages" scroll={false}>
+    <Screen back title={tx('Messages')} scroll={false}>
       {q.isLoading ? (
-        <LoadingState label="Loading conversations..." />
+        <LoadingState label={tx('Loading conversations...')} />
       ) : q.isError && !q.data ? (
         <ErrorState error={q.error} onRetry={q.refetch} />
       ) : (
@@ -31,9 +32,9 @@ export default function ConversationsScreen() {
           ListEmptyComponent={
             <EmptyState
               icon={MessagesSquare}
-              title="No conversations yet"
-              message="You can message accepted friends. Open a friend's profile to start chatting."
-              actionLabel="Find friends"
+              title={tx('No conversations yet')}
+              message={tx('You can message accepted friends. Open a friend\'s profile to start chatting.')}
+              actionLabel={tx('Find friends')}
               onAction={() => router.push('/friends')}
             />
           }
@@ -53,7 +54,7 @@ export default function ConversationsScreen() {
                     {item.last_message_at ? <Text className="text-xs text-muted-foreground">{timeAgo(item.last_message_at)}</Text> : null}
                   </View>
                   <Text numberOfLines={1} className="text-sm text-muted-foreground">
-                    {item.last_message_preview ?? 'Say hello 👋'}
+                    {item.last_message_preview ?? tx('Say hello 👋')}
                   </Text>
                 </View>
               </Pressable>
@@ -63,7 +64,7 @@ export default function ConversationsScreen() {
             q.data?.length ? (
               <Pressable onPress={() => router.push('/friends')} className="min-h-12 flex-row items-center justify-center gap-2">
                 <Users color={colors.primary} size={16} />
-                <Text className="text-sm text-accent">Message another friend</Text>
+                <Text className="text-sm text-accent">{tx('Message another friend')}</Text>
               </Pressable>
             ) : undefined
           }

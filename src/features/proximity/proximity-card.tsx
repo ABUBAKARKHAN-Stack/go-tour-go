@@ -15,6 +15,7 @@ import { navigateTo } from '@/features/routing/navigate';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 import type { DestinationSummary } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 /**
  * Contextual landmark card shown over any screen when the user enters a
@@ -112,10 +113,10 @@ function LandmarkCard({
         <DestinationImage uri={d.image_url} category={d.category} className="h-28 w-28" recyclingKey={d.id} />
         <View className="flex-1 gap-1 p-3">
           <View className="flex-row items-center justify-between gap-2">
-            <Text className="text-xs font-bold uppercase tracking-wider text-accent">You&apos;re near</Text>
+            <Text className="text-xs font-bold uppercase tracking-wider text-accent">{tx('You\'re near')}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Dismiss"
+              accessibilityLabel={tx('Dismiss')}
               hitSlop={12}
               onPress={() => proximityCard.dismiss()}
               className="h-8 w-8 items-center justify-center rounded-full bg-secondary"
@@ -128,9 +129,7 @@ function LandmarkCard({
           </Text>
           <View className="flex-row items-center gap-1">
             <MapPin color={colors.primary} size={12} />
-            <Text className="text-xs text-muted-foreground">
-              {formatDistance(distance)} away · {meta.label} · {d.city}
-            </Text>
+            <Text className="text-xs text-muted-foreground">{tx('{0} away · {1} · {2}', { 0: formatDistance(distance), 1: meta.label, 2: d.city })}</Text>
           </View>
           <Text numberOfLines={2} className="text-xs text-foreground">
             {d.short_description}
@@ -140,22 +139,22 @@ function LandmarkCard({
       <View className="gap-3 px-3 pb-3">
         {significance ? (
           <Text numberOfLines={2} className="text-xs text-muted-foreground">
-            <Text className="font-semibold text-foreground">Why it matters: </Text>
+            <Text className="font-semibold text-foreground">{tx('Why it matters:')}{' '}</Text>
             {significance}
           </Text>
         ) : null}
         {nearbyAttractions.length ? (
           <Text numberOfLines={1} className="text-xs text-muted-foreground">
-            <Text className="font-semibold text-foreground">Nearby: </Text>
+            <Text className="font-semibold text-foreground">{tx('Nearby:')}{' '}</Text>
             {nearbyAttractions.map((n) => `${n.x.name} (${formatDistance(n.dist)})`).join(' · ')}
           </Text>
         ) : null}
         {others.length > 1 ? (
-          <Text className="text-xs text-accent">Swipe for {others.length - 1} more nearby landmark{others.length > 2 ? 's' : ''}</Text>
+          <Text className="text-xs text-accent">{tx('Swipe for {0} more nearby landmark{1}', { 0: others.length - 1, 1: others.length > 2 ? 's' : '' })}</Text>
         ) : null}
         <View className="flex-row gap-2">
-          <AppButton label="Learn more" icon={BookOpen} variant="secondary" onPress={learnMore} className="flex-1" />
-          <AppButton label="Navigate" icon={Navigation} variant="accent" onPress={navigate} className="flex-1" />
+          <AppButton label={tx('Learn more')} icon={BookOpen} variant="secondary" onPress={learnMore} className="flex-1" />
+          <AppButton label={tx('Navigate')} icon={Navigation} variant="accent" onPress={navigate} className="flex-1" />
         </View>
       </View>
     </View>

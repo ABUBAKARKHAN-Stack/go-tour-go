@@ -5,6 +5,7 @@ import { Text } from '@/components/text';
 import { AppButton } from '@/components/app-button';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export function LoadingState({ label = 'Loading...' }: { label?: string }) {
   return (
@@ -56,7 +57,7 @@ export function ErrorState({
       </View>
       <Text className="text-center text-base font-semibold text-foreground">{title}</Text>
       <Text className="text-center text-sm text-muted-foreground">{errorMessage(error)}</Text>
-      {onRetry ? <AppButton label="Try again" onPress={onRetry} variant="secondary" /> : null}
+      {onRetry ? <AppButton label={tx('Try again')} onPress={onRetry} variant="secondary" /> : null}
     </View>
   );
 }

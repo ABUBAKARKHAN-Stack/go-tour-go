@@ -11,6 +11,7 @@ import { useInbox, useMarkAllRead, useUnreadCount } from '@/features/inbox/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { colors } from '@/lib/theme';
 import type { AppNotification } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 const ICONS = { friend_request: UserPlus, friend_accepted: UserPlus, message: MessageCircle, sos: ShieldAlert } as const;
 
@@ -36,7 +37,7 @@ export default function NotificationsScreen() {
   }, [unread > 0]);
 
   return (
-    <Screen back title="Notifications" scroll={false} right={<IconButton icon={CheckCheck} label="Mark all read" onPress={() => markAll.mutate()} />}>
+    <Screen back title={tx('Notifications')} scroll={false} right={<IconButton icon={CheckCheck} label={tx('Mark all read')} onPress={() => markAll.mutate()} />}>
       {inbox.isLoading ? (
         <LoadingState />
       ) : inbox.isError && !inbox.data ? (
@@ -47,7 +48,7 @@ export default function NotificationsScreen() {
           keyExtractor={(n) => n.id}
           contentContainerClassName="gap-2 px-4 pb-8"
           refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => void inbox.refetch()} tintColor={colors.primary} />}
-          ListEmptyComponent={<EmptyState icon={Bell} title="You're all caught up" message="Friend requests, messages and safety alerts appear here." />}
+          ListEmptyComponent={<EmptyState icon={Bell} title={tx('You\'re all caught up')} message={tx('Friend requests, messages and safety alerts appear here.')} />}
           renderItem={({ item }) => {
             const Icon = ICONS[item.type as keyof typeof ICONS] ?? Bell;
             const sos = item.type === 'sos';
@@ -62,7 +63,7 @@ export default function NotificationsScreen() {
                   {sos && item.data?.latitude != null ? (
                     <View className="flex-row items-center gap-1 pt-1">
                       <MapPin color={colors.primary} size={12} />
-                      <Text className="text-xs text-accent">Open their location</Text>
+                      <Text className="text-xs text-accent">{tx('Open their location')}</Text>
                     </View>
                   ) : null}
                   <Text className="pt-1 text-[11px] text-muted-foreground">{timeAgo(item.created_at)}</Text>

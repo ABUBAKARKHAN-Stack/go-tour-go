@@ -1,10 +1,12 @@
 // GoTourGo AI Edge Function (Deno).
 //
-// Keeps the Gemini API key server-side. Two modes:
+// Keeps the Gemini API key server-side. Three modes:
 //   - "chat": travel assistant grounded with the user's location context and,
 //     when given, the selected destination's facts from the database.
 //   - "lens": image analysis (landmark / sign / text) matched against the
 //     seeded landmark list, returned as structured JSON.
+//   - "translate": Urdu translation of a landmark guide, made once and stored
+//     in destination_translations (marked machine_translated) for everyone.
 //
 // Secrets: GEMINI_API_KEY (required), GEMINI_MODEL, AI_DAILY_LIMIT (optional).
 // Deploy:  supabase functions deploy ai
@@ -34,6 +36,12 @@ type LensRequest = {
   mimeType?: string;
   question?: string;
   locale?: string;
+};
+
+type TranslateRequest = {
+  mode: 'translate';
+  destinationId: string;
+  locale: 'ur';
 };
 
 type GeminiPart = { text?: string; inline_data?: { mime_type: string; data: string } };
@@ -107,19 +115,12 @@ export default {
       const userId = ctx.userClaims?.id;
       if (!userId) return json({ error: 'Sign in to use the AI assistant.' }, 401);
 
-      const payload = (await req.json()) as ChatRequest | LensRequest;
+      const payload = (await req.json()) as ChatRequest | LensRequest | TranslateRequest;
 
-      // Per-user daily quota (service role only; clients cannot touch ai_usage).
-      const { data: used, error: quotaError } = await ctx.supabaseAdmin.rpc('increment_ai_usage', {
-        uid: userId,
-      });
-      if (quotaError) {
-        console.error('quota error', quotaError);
-        return json({ error: 'AI service unavailable.' }, 503);
-      }
-      if (typeof used === 'number' && used > DAILY_LIMIT) {
-        return json({ error: `Daily AI limit reached (${DAILY_LIMIT}). Try again tomorrow.` }, 429);
-      }
+      // Translations already stored are free; only a new translation uses quota.
+      if (payload.mode === 'translate') return json(await handleTranslate(payload, ctx.supabaseAdmin, userId));
+
+      await consumeQuota(ctx.supabaseAdmin, userId);
 
       if (payload.mode === 'chat') return json(await handleChat(payload, ctx.supabase));
       if (payload.mode === 'lens') return json(await handleLens(payload, ctx.supabase));
@@ -134,6 +135,108 @@ export default {
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
+
+/** Per-user daily quota (service role only; clients cannot touch ai_usage). */
+async function consumeQuota(admin: Db, userId: string) {
+  const { data: used, error } = await admin.rpc('increment_ai_usage', { uid: userId });
+  if (error) {
+    console.error('quota error', error);
+    throw new HttpError(503, 'AI service unavailable.');
+  }
+  if (typeof used === 'number' && used > DAILY_LIMIT) {
+    throw new HttpError(429, `Daily AI limit reached (${DAILY_LIMIT}). Try again tomorrow.`);
+  }
+}
+
+const GUIDE_FIELDS = [
+  'short_description',
+  'description',
+  'history',
+  'culture',
+  'significance',
+  'local_customs',
+  'food',
+  'shopping',
+  'tips',
+] as const;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Urdu guide for a landmark: returns the stored translation, filling any
+ * missing sections once with Gemini. Human/sourced text is never replaced.
+ */
+async function handleTranslate(payload: TranslateRequest, admin: Db, userId: string) {
+  if (payload.locale !== 'ur' || !UUID.test(payload.destinationId ?? '')) throw new HttpError(400, 'Invalid request.');
+
+  const { data: d, error } = await admin
+    .from('destinations')
+    .select(`id, name, name_ur, ${GUIDE_FIELDS.join(', ')}`)
+    .eq('id', payload.destinationId)
+    .maybeSingle();
+  if (error || !d) throw new HttpError(404, 'Destination not found.');
+
+  const { data: existing } = await admin
+    .from('destination_translations')
+    .select('*')
+    .eq('destination_id', d.id)
+    .eq('locale', 'ur')
+    .maybeSingle();
+
+  const source: Record<string, string> = {};
+  for (const f of GUIDE_FIELDS) {
+    const text = typeof d[f] === 'string' ? d[f].trim() : '';
+    if (text && !existing?.[f]) source[f] = text.slice(0, 2500);
+  }
+  const needName = !existing?.name && !d.name_ur;
+  if (needName) source.name = d.name;
+  if (Object.keys(source).length === 0) return { translation: existing };
+
+  await consumeQuota(admin, userId);
+  const text = await callGemini({
+    system_instruction: {
+      parts: [
+        {
+          text: `Translate the values of this JSON object from English into natural, clear Urdu (اردو) for a travel guide app in Pakistan.
+- Keep the same keys. Return only the JSON object.
+- Use the common Urdu spelling for place and people names; keep numbers and years as digits.
+- Do not add or remove facts.`,
+        },
+      ],
+    },
+    contents: [{ role: 'user', parts: [{ text: JSON.stringify(source) }] }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 4000, responseMimeType: 'application/json' },
+  });
+
+  let out: Record<string, unknown>;
+  try {
+    out = JSON.parse(text);
+  } catch {
+    throw new HttpError(502, 'Translation failed. Try again later.');
+  }
+
+  const row: Record<string, unknown> = {
+    destination_id: d.id,
+    locale: 'ur',
+    name: existing?.name ?? d.name_ur ?? (typeof out.name === 'string' && out.name.trim() ? out.name.trim() : d.name),
+    machine_translated: true,
+    updated_at: new Date().toISOString(),
+  };
+  for (const f of GUIDE_FIELDS) {
+    const machine = typeof out[f] === 'string' && (out[f] as string).trim() ? (out[f] as string).trim() : null;
+    row[f] = existing?.[f] ?? machine;
+  }
+
+  const { data: saved, error: saveError } = await admin
+    .from('destination_translations')
+    .upsert(row, { onConflict: 'destination_id,locale' })
+    .select('*')
+    .single();
+  if (saveError) {
+    console.error('save translation', saveError);
+    return { translation: row };
+  }
+  return { translation: saved };
+}
 
 async function handleChat(payload: ChatRequest, supabase: Db) {
   const turns = (payload.messages ?? [])
