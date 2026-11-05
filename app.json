@@ -3,6 +3,14 @@
     "name": "GoTourGo",
     "slug": "go-tour-go-development",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f6b6835c-9888-4059-9edb-219333d67453",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gotourgodevelopment",

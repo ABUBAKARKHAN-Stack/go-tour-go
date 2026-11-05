@@ -116,6 +116,19 @@ bunx eas-cli build --platform android --profile development
 bunx expo start --dev-client
 ```
 
+### Over-the-air updates (EAS Update)
+
+Builds include `expo-updates`, using the `preview` / `development` / `production` channels from `eas.json`.
+JavaScript-only changes (screens, logic, styles) can be shipped without a rebuild:
+
+```bash
+bunx eas-cli update --channel preview --environment preview --message "Describe the change"
+```
+
+The app downloads the update in the background and applies it on the next launch. `runtimeVersion` uses the
+`fingerprint` policy, so an update is only delivered to builds with matching native code. Changes to native
+packages, permissions or `app.json` plugins still need a new `eas build`.
+
 Quality checks:
 
 ```bash
