@@ -4,7 +4,8 @@
  *
  * Limitations (Android/Expo): requires "Allow all the time" location, a
  * development build or APK (not Expo Go), max 100 regions per app, and stops
- * if the user force-stops the app. Regions are re-registered on app start.
+ * if the user force-stops the app. Regions are re-registered on app start and
+ * whenever the traveller leaves the refresh region (see REFRESH_REGION).
  *
  * IMPORTANT: this module must be imported at the top level of the app
  * (src/app/_layout.tsx) so the task is defined before the OS delivers events.
@@ -14,6 +15,7 @@ import * as TaskManager from 'expo-task-manager';
 
 import type { Landmark } from '@/features/destinations/api';
 import { applyOsTransition, DEFAULT_SETTINGS, nearestLandmarks } from '@/features/proximity/engine';
+import { refreshRadius } from '@/features/proximity/heading';
 import { loadProximityState, saveProximityState } from '@/features/proximity/proximity-store';
 import {
   CHANNELS,
@@ -27,7 +29,14 @@ import { getPreferences } from '@/lib/preferences';
 import { storage, StorageKeys } from '@/lib/storage';
 
 export const GEOFENCE_TASK = 'gotourgo-landmark-geofences';
+/** Android allows 100 geofences per app; keep a margin. */
 const MAX_REGIONS = 90;
+/**
+ * An extra region around where the landmarks were registered. Leaving it
+ * (even with the app closed) re-registers the nearest landmarks around the
+ * new position, so coverage follows the traveller across the country.
+ */
+const REFRESH_REGION = '__refresh__';
 /** Re-register regions after moving this far from the registration anchor. */
 const REANCHOR_METERS = 20_000;
 
@@ -43,6 +52,16 @@ TaskManager.defineTask<GeofenceEvent>(GEOFENCE_TASK, async ({ data, error }) => 
 
   const id = data.region.identifier;
   const kind = data.eventType === Location.GeofencingEventType.Enter ? 'enter' : 'exit';
+
+  if (id === REFRESH_REGION) {
+    if (kind !== 'exit') return;
+    const last = await Location.getLastKnownPositionAsync().catch(() => null);
+    const anchor = last
+      ? { latitude: last.coords.latitude, longitude: last.coords.longitude }
+      : { latitude: data.region.latitude, longitude: data.region.longitude };
+    await registerGeofences(anchor, true).catch(() => undefined);
+    return;
+  }
   const settings = { ...DEFAULT_SETTINGS, cooldownMs: prefs.proximityCooldownHours * 3_600_000 };
 
   // Re-read from SQLite: the foreground engine may have written meanwhile.
@@ -82,7 +101,8 @@ export async function registerGeofences(anchor: { latitude: number; longitude: n
   if (running && !moved && !force) return;
 
   const center = anchor ?? lastAnchor ?? landmarks[0];
-  const regions: Location.LocationRegion[] = nearestLandmarks(center, landmarks, MAX_REGIONS).map((l) => ({
+  const nearest = nearestLandmarks(center, landmarks, MAX_REGIONS - 1);
+  const regions: Location.LocationRegion[] = nearest.map((l) => ({
     identifier: l.id,
     latitude: l.latitude,
     longitude: l.longitude,
@@ -90,6 +110,14 @@ export async function registerGeofences(anchor: { latitude: number; longitude: n
     notifyOnEnter: true,
     notifyOnExit: true,
   }));
+  regions.push({
+    identifier: REFRESH_REGION,
+    latitude: center.latitude,
+    longitude: center.longitude,
+    radius: refreshRadius(center, nearest),
+    notifyOnEnter: false,
+    notifyOnExit: true,
+  });
 
   await Location.startGeofencingAsync(GEOFENCE_TASK, regions);
   if (anchor) storage.set(StorageKeys.geofenceAnchor, anchor);

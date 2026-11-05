@@ -1,7 +1,7 @@
 import type { Landmark } from '@/features/destinations/api';
 import type { RoadAlert } from '@/lib/types';
 
-import { corridor, type RouteIndex } from './route-geometry';
+import { buildRouteIndex, corridor, projectPoint, type RouteIndex } from './route-geometry';
 
 /** A landmark or hazard along a journey, with where it falls on the route. */
 export type JourneyItem = {
@@ -87,4 +87,20 @@ export function hazardsAhead(items: JourneyItem[], along: number, lookahead: num
   return items.filter(
     (i) => i.kind === 'hazard' && !warned.includes(i.id) && i.along - i.radius <= along + lookahead && i.along + i.radius >= along,
   );
+}
+
+/**
+ * From a list of routes (best first), the first that keeps at least
+ * `margin` metres outside the hazard's radius, or null if none does.
+ */
+export function routeAvoiding<R extends { coordinates: [number, number][] }>(
+  routes: R[],
+  hazard: { latitude: number; longitude: number; radius: number },
+  margin = 100,
+): R | null {
+  for (const r of routes) {
+    const index = buildRouteIndex(r.coordinates);
+    if (projectPoint(index, hazard).offRoute > hazard.radius + margin) return r;
+  }
+  return null;
 }

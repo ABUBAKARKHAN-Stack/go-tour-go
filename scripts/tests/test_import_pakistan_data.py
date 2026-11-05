@@ -123,7 +123,9 @@ class ClassificationTests(unittest.TestCase):
     def test_famous_filter(self):
         self.assertTrue(imp.is_famous({"wikidata": "Q1"}, "religious"))
         self.assertFalse(imp.is_famous({"name": "Local Masjid"}, "religious"))
-        self.assertTrue(imp.is_famous({"name": "Sea View"}, "viewpoint"))
+        self.assertFalse(imp.is_famous({"name": "Sea View"}, "viewpoint"))
+        self.assertTrue(imp.is_famous({"name": "Sea View", "wikidata": "Q9"}, "viewpoint"))
+        self.assertTrue(imp.is_famous({"name": "City Museum"}, "museum"))
 
     def test_radius(self):
         self.assertEqual(imp.alert_radius("nature", {"natural": "peak"}, None), 3000)
@@ -159,7 +161,7 @@ class PipelineTests(unittest.TestCase):
         self.assertNotIn("Outside Town", places)
         self.assertNotIn("Private Strip", places)
 
-        self.assertEqual(set(landmarks), {"Frere Hall", "Sea View Point", "Test Peak", "Hill Park"})
+        self.assertEqual(set(landmarks), {"Frere Hall", "Test Peak", "Hill Park"})
         frere = landmarks["Frere Hall"]
         self.assertEqual(frere["category"], "historical")
         self.assertEqual(frere["city"], "Karachi")
@@ -179,11 +181,10 @@ class PipelineTests(unittest.TestCase):
 
         self.assertEqual(landmarks["Test Peak"]["radius_m"], "3000")
         self.assertEqual(landmarks["Test Peak"]["short_description"], "Test Peak is a mountain.")
-        self.assertEqual(landmarks["Sea View Point"]["short_description"], "Viewpoint in Karachi")
         self.assertTrue(landmarks["Hill Park"]["osm_id"].startswith("w"))
         self.assertEqual(landmarks["Hill Park"]["category"], "park")
         self.assertGreaterEqual(n_places, 3)
-        self.assertEqual(n_landmarks, 4)
+        self.assertEqual(n_landmarks, 3)
 
 
 if __name__ == "__main__":

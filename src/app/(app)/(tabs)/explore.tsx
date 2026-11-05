@@ -19,7 +19,9 @@ import { DestinationImage } from '@/components/destination-image';
 import { Chip } from '@/components/form';
 import { OfflineBanner } from '@/components/offline-banner';
 import { ErrorState } from '@/components/states';
-import { ALERT_LABELS, useRoadAlerts } from '@/features/alerts/api';
+import { useRoadAlerts } from '@/features/alerts/api';
+import { hazardCard } from '@/features/alerts/hazard-card-store';
+import { ReportHazardSheet } from '@/features/alerts/report-hazard-sheet';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useDestinations } from '@/features/destinations/api';
@@ -34,8 +36,8 @@ import { useFriendLocations } from '@/features/safety/friend-locations';
 import { useSharingSession, isSessionLive } from '@/features/safety/sharing';
 import { useSimulator } from '@/features/proximity/simulator';
 import { distanceMeters, formatDistance } from '@/lib/geo';
-import { colors, severityColors } from '@/lib/theme';
-import type { DestinationCategory, RoadAlert } from '@/lib/types';
+import { colors } from '@/lib/theme';
+import type { DestinationCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 
 const PAKISTAN_CENTER: [number, number] = [70.5, 30.5];
@@ -59,7 +61,7 @@ export default function ExploreScreen() {
 
   const [category, setCategory] = useState<DestinationCategory | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedAlert, setSelectedAlert] = useState<RoadAlert | null>(null);
+  const [reporting, setReporting] = useState(false);
   const [showRadius, setShowRadius] = useState(true);
   const [showFriends, setShowFriends] = useState(true);
   const [mapError, setMapError] = useState(false);
@@ -129,16 +131,15 @@ export default function ExploreScreen() {
         initialCenter={initial.center}
         initialZoom={initial.zoom}
         onSelectDestination={(id) => {
-          setSelectedAlert(null);
           setSelectedId(id);
         }}
         onSelectAlert={(id) => {
           setSelectedId(null);
-          setSelectedAlert(alerts.data?.find((a) => a.id === id) ?? null);
+          const a = alerts.data?.find((x) => x.id === id);
+          if (a) hazardCard.show(a.id, location ? distanceMeters(location, a) : a.radius_m + 1);
         }}
         onMapPress={() => {
           setSelectedId(null);
-          setSelectedAlert(null);
         }}
         onLoadError={() => setMapError(true)}
       />
@@ -188,6 +189,7 @@ export default function ExploreScreen() {
       {/* Right-side controls */}
       <View className="absolute right-3 gap-2" style={{ top: insets.top + 190 }}>
         <IconButton icon={Crosshair} label={tx('Show my location')} onPress={locateMe} />
+        {userId ? <IconButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => setReporting(true)} /> : null}
         <IconButton icon={CircleDashed} label={tx('Toggle geofence radius')} active={showRadius} onPress={() => setShowRadius((v) => !v)} />
         {userId ? (
           <IconButton icon={Users} label={tx('Toggle friends on map')} active={showFriends} onPress={() => setShowFriends((v) => !v)} />
@@ -227,19 +229,9 @@ export default function ExploreScreen() {
               </View>
             </View>
           </View>
-        ) : selectedAlert ? (
-          <View className="gap-2 rounded-3xl border bg-card p-4" style={{ borderColor: severityColors[selectedAlert.severity] }}>
-            <View className="flex-row items-center gap-2">
-              <TriangleAlert color={severityColors[selectedAlert.severity]} size={18} />
-              <Text className="flex-1 text-base font-bold text-foreground">{selectedAlert.title}</Text>
-            </View>
-            <Text className="text-xs font-semibold uppercase" style={{ color: severityColors[selectedAlert.severity] }}>
-              {selectedAlert.severity} · {ALERT_LABELS[selectedAlert.alert_type]}
-            </Text>
-            <Text className="text-sm text-muted-foreground">{selectedAlert.description}</Text>
-          </View>
         ) : null}
       </View>
+      <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />
     </View>
   );
 }

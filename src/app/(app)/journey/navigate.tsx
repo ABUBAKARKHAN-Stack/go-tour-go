@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
 import { Text } from '@/components/text';
+import { ReportHazardSheet } from '@/features/alerts/report-hazard-sheet';
 import { JourneyMap } from '@/features/journey/journey-map';
 import { journeyStore, routeIndex, speak, useJourney } from '@/features/journey/journey-store';
 import { arrivalClock, formatEta } from '@/features/journey/navigation';
@@ -73,6 +74,7 @@ export default function JourneyNavigate() {
   const proximity = useProximityCard();
   const [overview, setOverview] = useState(false);
   const sim = useSimulator();
+  const [reporting, setReporting] = useState(false);
   const trips = useTrips();
   const tripActions = useTripActions();
   const spokenFor = useRef<string | null>(null);
@@ -229,6 +231,7 @@ export default function JourneyNavigate() {
           onPress={() => journeyStore.setVoice(!journey.voice)}
         />
         <MapButton icon={overview ? LocateFixed : RouteIcon} label={overview ? tx('Follow me') : tx('Show whole route')} onPress={() => setOverview((v) => !v)} />
+        <MapButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => setReporting(true)} />
       </View>
 
       <View
@@ -244,6 +247,7 @@ export default function JourneyNavigate() {
         </View>
         <View style={{ width: 52 }} />
       </View>
+      <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />
     </View>
   );
 }

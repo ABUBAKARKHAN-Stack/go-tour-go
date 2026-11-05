@@ -4,6 +4,7 @@ import { parseOsrmResponse, type Route } from '@/features/routing/osrm';
 import { distanceMeters } from '@/lib/geo';
 
 import { advance, crossedThreshold, formatEta, spokenDistance, spokenInstruction, stepStarts, voiceThresholds, type NavProgress } from './navigation';
+import * as journeyItemsModule from './journey-items';
 import { hazardsAhead, journeyItems } from './journey-items';
 import { buildRouteIndex, corridor, pointAlong, projectPoint, remainingLine } from './route-geometry';
 
@@ -196,5 +197,16 @@ describe('hazards ahead', () => {
     expect(hazardsAhead(items, 1000, 2000, []).map((i) => i.id)).toEqual(['b']);
     expect(hazardsAhead(items, 3200, 2000, ['b']).map((i) => i.id)).toEqual(['a']);
     expect(hazardsAhead(items, 3200, 2000, ['a', 'b'])).toEqual([]);
+  });
+});
+
+describe('route around a hazard', () => {
+  const { routeAvoiding } = journeyItemsModule;
+  test('picks the first route that stays clear', () => {
+    const through = { id: 'through', coordinates: coords };
+    const around = { id: 'around', coordinates: [[67.0, 24.85], [67.0, 24.9], [67.05, 24.9], [67.05, 24.88]] as [number, number][] };
+    const hazard = { latitude: 24.8502, longitude: 67.04, radius: 300 };
+    expect(routeAvoiding([through, around], hazard)?.id).toBe('around');
+    expect(routeAvoiding([through], hazard)).toBeNull();
   });
 });
