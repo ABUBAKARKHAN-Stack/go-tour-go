@@ -58,7 +58,7 @@ bunx supabase link --project-ref <your-project-ref>
 ```
 
 ```bash
-bunx supabase db push --include-seed
+bunx supabase db push --remote --include-seed
 ```
 
 ```bash
@@ -69,7 +69,7 @@ bunx supabase secrets set GEMINI_API_KEY=<your-gemini-key>
 bunx supabase functions deploy ai
 ```
 
-If your CLI version has no `--include-seed`, run `bunx supabase db push`, then paste `supabase/seed.sql` into the Dashboard SQL editor.
+If your CLI version has no `--include-seed`, run `bunx supabase db push --remote`, then paste `supabase/seed.sql` into the Dashboard SQL editor.
 
 Option B, from the dashboard: run each file in `supabase/migrations/` in order in the SQL editor, then `supabase/seed.sql`.
 Set the `GEMINI_API_KEY` secret under *Edge Functions → Secrets* and deploy the `ai` function with the CLI.
@@ -83,6 +83,8 @@ The migrations were validated on PostgreSQL 16 with stubbed Supabase schemas, pl
 (cross-user access, friendship gating, expiry, storage folders, realtime topics).
 
 ## 3. Run and build
+
+`app.json` uses `web.output: "single"`: the app has no server routes, and `"server"` makes native builds also export a web server bundle, which fails with Uniwind.
 
 Expo Go is **not** supported: MapLibre, background geofencing and the location foreground service need a development build or an APK.
 
