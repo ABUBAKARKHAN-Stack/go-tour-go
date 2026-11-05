@@ -42,6 +42,9 @@ function handleResponse(response: Notifications.NotificationResponse) {
     case 'sharing':
       router.push('/safety');
       return;
+    case 'offline-maps':
+      router.push('/offline-maps');
+      return;
     default:
       return;
   }

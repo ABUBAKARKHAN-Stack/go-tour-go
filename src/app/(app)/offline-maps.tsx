@@ -1,124 +1,126 @@
-import { OfflineManager, type OfflinePack } from '@maplibre/maplibre-react-native';
-import { CheckCircle2, Download, Trash2 } from 'lucide-react-native';
+import { OfflineManager } from '@maplibre/maplibre-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
-import { Text } from '@/components/text';
+import { Paths } from 'expo-file-system';
+import { HardDrive, Trash2, WifiOff } from 'lucide-react-native';
+import { useEffect } from 'react';
+import { View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
-import { Card } from '@/components/form';
+import { Card, SectionHeader, ToggleRow } from '@/components/form';
+import { useIsOnline } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
-import { errorMessage } from '@/lib/errors';
-import { env } from '@/lib/env';
-import { colors } from '@/lib/theme';
+import { Text } from '@/components/text';
+import { OFFLINE_MAPS } from '@/features/offline/catalog';
+import { formatBytes, refreshManifest, useOfflineDownloads } from '@/features/offline/downloads';
+import { MapPackCard, SavedRouteRow } from '@/features/offline/offline-cards';
+import { useSavedRoutes } from '@/features/offline/saved-routes';
+import { usePreferDownloadedMap } from '@/features/offline/use-map-style';
 import { tx } from '@/lib/i18n';
+import { colors } from '@/lib/theme';
 
-/** Preset city regions [west, south, east, north] kept small for the demo. */
-const REGIONS = [
-  { key: 'lahore', name: 'Lahore (Walled City & centre)', bounds: [74.28, 31.5, 74.4, 31.63] as [number, number, number, number] },
-  { key: 'islamabad', name: 'Islamabad & Rawalpindi', bounds: [72.98, 33.58, 73.15, 33.76] as [number, number, number, number] },
-  { key: 'karachi', name: 'Karachi (Saddar & Clifton)', bounds: [66.97, 24.78, 67.08, 24.89] as [number, number, number, number] },
-  { key: 'hunza', name: 'Hunza (Karimabad - Attabad)', bounds: [74.6, 36.28, 74.92, 36.38] as [number, number, number, number] },
-];
-
-const MIN_ZOOM = 10;
-const MAX_ZOOM = 15;
-
-type PackInfo = { pack: OfflinePack; percentage: number; state: string };
+function freeSpace() {
+  try {
+    return Paths.availableDiskSpace;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * Offline map regions with MapLibre's OfflineManager. Downloaded tiles are
- * shown automatically when there is no internet. Offline routing is not
- * supported (the last calculated route is cached instead).
+ * Offline Pakistan: download all of Pakistan at street level, a light
+ * overview, or city and region packs, and keep routes for the road. Maps
+ * download in the background with pause and resume.
  */
 export default function OfflineMapsScreen() {
+  const downloads = useOfflineDownloads();
+  const [savedRoutes] = useSavedRoutes();
+  const [prefer, setPrefer] = usePreferDownloadedMap();
+  const online = useIsOnline();
   const qc = useQueryClient();
-  const [busy, setBusy] = useState<string | null>(null);
-  const packsQuery = useQuery({
-    queryKey: ['offline-packs'],
-    queryFn: async () => {
-      const list = await OfflineManager.getPacks();
-      const next: Record<string, PackInfo> = {};
-      for (const p of list) {
-        const key = String(p.metadata?.region ?? '');
-        if (!key) continue;
-        const status = await p.status().catch(() => null);
-        next[key] = { pack: p, percentage: status?.percentage ?? 0, state: status?.state ?? 'inactive' };
-      }
-      return next;
-    },
+
+  useEffect(() => {
+    void refreshManifest();
+  }, []);
+
+  // City packs from the earlier version of this screen (MapLibre tile packs).
+  const legacy = useQuery({
+    queryKey: ['offline-legacy-packs'],
+    queryFn: async () => (await OfflineManager.getPacks()).filter((p) => Boolean(p.metadata?.region)),
   });
-  const packs = packsQuery.data ?? {};
-  const loading = packsQuery.isLoading;
-  const setPacks = (fn: (prev: Record<string, PackInfo>) => Record<string, PackInfo>) =>
-    qc.setQueryData<Record<string, PackInfo>>(['offline-packs'], (prev) => fn(prev ?? {}));
 
-  const download = async (region: (typeof REGIONS)[number]) => {
-    setBusy(region.key);
-    try {
-      await OfflineManager.createPack(
-        { mapStyle: env.mapStyleUrl, bounds: region.bounds, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, metadata: { region: region.key, name: region.name } },
-        (pack, status) => {
-          setPacks((prev) => ({ ...prev, [region.key]: { pack, percentage: status.percentage, state: status.state } }));
-        },
-        (_pack, error) => {
-          Alert.alert(tx('Download failed'), error.message);
-        },
-      );
-    } catch (e) {
-      Alert.alert(tx('Download failed'), errorMessage(e));
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const remove = async (key: string) => {
-    const info = packs[key];
-    if (!info) return;
-    await OfflineManager.deletePack(info.pack.id).catch(() => undefined);
-    setPacks((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  };
+  const items = downloads.items;
+  const installed = OFFLINE_MAPS.filter((m) => items[m.id].installed);
+  const used = installed.reduce((sum, m) => sum + items[m.id].bytes, 0);
+  const free = freeSpace();
+  const hasCountry = items.pakistan.installed;
 
   return (
-    <Screen back title={tx('Offline maps')} subtitle={tx('Use the map without internet')}>
-      <Text className="text-sm text-muted-foreground">
-        {tx('Download a city before you travel. GPS, saved places, your trip and the last calculated route also work offline. Turn-by-turn offline navigation is not included.')}
+    <Screen back title={tx('Offline Pakistan')} subtitle={tx('Maps that work without signal')}>
+      {!online ? (
+        <View className="flex-row items-center gap-2 rounded-2xl bg-muted px-3 py-2.5">
+          <WifiOff color={colors.primary} size={16} />
+          <Text className="flex-1 text-xs text-muted-foreground">{tx('You are offline. Downloaded maps and saved routes still work.')}</Text>
+        </View>
+      ) : null}
+
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-3">
+          <HardDrive color={colors.primary} size={18} />
+          <Text className="flex-1 text-sm text-foreground">
+            {installed.length
+              ? tx('{0} map{1} on this phone · {2}', { 0: installed.length, 1: installed.length === 1 ? '' : 's', 2: formatBytes(used) })
+              : tx('No maps downloaded yet')}
+          </Text>
+          {free != null ? <Text className="text-xs text-faint">{tx('{0} free', { 0: formatBytes(free) })}</Text> : null}
+        </View>
+        <ToggleRow
+          title={tx('Use downloaded maps with internet too')}
+          description={tx('Saves mobile data. Places outside your downloads use the online map.')}
+          value={prefer}
+          onChange={setPrefer}
+        />
+      </Card>
+
+      <MapPackCard id="pakistan" item={items.pakistan} featured />
+      <Text className="-mt-2 px-1 text-xs leading-5 text-faint">
+        {tx('Best on Wi-Fi. Downloads continue in the background, and pick up where they stopped if the app is closed.')}
       </Text>
-      {loading ? <ActivityIndicator color={colors.primary} /> : null}
-      {REGIONS.map((r) => {
-        const info = packs[r.key];
-        const complete = info?.state === 'complete' || (info?.percentage ?? 0) >= 100;
-        const active = info && !complete;
-        return (
-          <Card key={r.key} className="gap-3">
-            <View className="flex-row items-center gap-2">
-              {complete ? <CheckCircle2 color={colors.success} size={18} /> : <Download color={colors.primary} size={18} />}
-              <Text className="flex-1 text-base font-semibold text-foreground">{r.name}</Text>
-            </View>
-            {active ? (
-              <View className="gap-1">
-                <View className="h-2 overflow-hidden rounded-full bg-muted">
-                  <View className="h-2 rounded-full bg-accent" style={{ width: `${Math.min(100, info.percentage)}%` }} />
-                </View>
-                <Text className="text-xs text-muted-foreground">{tx('Downloading... {0}%', { 0: Math.round(info.percentage) })}</Text>
-              </View>
-            ) : null}
-            {complete ? <Text className="text-xs text-success">{tx('Available offline')}</Text> : null}
-            <View className="flex-row gap-2">
-              {info ? (
-                <AppButton label={tx('Delete')} icon={Trash2} variant="outline" size="sm" onPress={() => remove(r.key)} className="flex-1" />
-              ) : (
-                <AppButton label={tx('Download')} icon={Download} variant="secondary" size="sm" loading={busy === r.key} onPress={() => download(r)} className="flex-1" />
-              )}
-            </View>
-          </Card>
-        );
-      })}
-      <Text className="text-xs text-muted-foreground">{tx('Map data © OpenStreetMap contributors, tiles by OpenFreeMap. Keep downloads small and personal.')}</Text>
+
+      <SectionHeader title={tx('Cities and regions')} />
+      <MapPackCard id="overview" item={items.overview} includedInCountry={hasCountry} />
+      {(['karachi', 'lahore', 'islamabad', 'northern'] as const).map((id) => (
+        <MapPackCard key={id} id={id} item={items[id]} includedInCountry={hasCountry} />
+      ))}
+
+      <SectionHeader title={tx('Saved routes')} />
+      {savedRoutes.length ? (
+        savedRoutes.map((r) => <SavedRouteRow key={r.id} saved={r} />)
+      ) : (
+        <Text className="text-sm text-muted-foreground">
+          {tx('Plan a journey and tap "Save offline" to keep the route, its turn-by-turn directions and the map along it on your phone.')}
+        </Text>
+      )}
+
+      {legacy.data?.length ? (
+        <Card className="gap-3">
+          <Text className="text-base font-semibold text-foreground">{tx('Older city downloads')}</Text>
+          <Text className="text-xs text-muted-foreground">{tx('Small city maps from an earlier version of GoTourGo. The packs above replace them.')}</Text>
+          <AppButton
+            label={tx('Remove older downloads')}
+            icon={Trash2}
+            size="sm"
+            variant="outline"
+            onPress={async () => {
+              for (const p of legacy.data ?? []) await OfflineManager.deletePack(p.id).catch(() => undefined);
+              await qc.invalidateQueries({ queryKey: ['offline-legacy-packs'] });
+            }}
+          />
+        </Card>
+      ) : null}
+
+      <Text className="text-xs leading-5 text-faint">
+        {tx('Map data © OpenStreetMap contributors (ODbL), built with Planetiler. Routes are calculated online; saved routes work offline.')}
+      </Text>
     </Screen>
   );
 }

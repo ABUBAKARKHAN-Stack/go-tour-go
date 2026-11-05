@@ -5,7 +5,7 @@ import { View } from 'react-native';
 
 import type { Fix } from '@/features/location/location-store';
 import type { Route } from '@/features/routing/osrm';
-import { env } from '@/lib/env';
+import { useMapStyle } from '@/features/offline/use-map-style';
 import { boundsOf } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 
@@ -32,6 +32,7 @@ type Props = {
  * the destination and the traveller.
  */
 function JourneyMapBase({ route, index, items, progress, fix, follow, padding, onLoadError }: Props) {
+  const mapStyle = useMapStyle();
   const remaining = useMemo<GeoJSON.Feature | null>(() => {
     if (!route) return null;
     const coordinates = index && progress ? remainingLine(index, progress.along) : route.coordinates;
@@ -57,7 +58,7 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
   return (
     <Map
       style={{ flex: 1 }}
-      mapStyle={env.mapStyleUrl}
+      mapStyle={mapStyle as never}
       logo={false}
       compass={!follow}
       compassPosition={{ top: padding.top + 8, right: 12 }}

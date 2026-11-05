@@ -9,6 +9,8 @@ import { useJourneyEffects } from '@/features/journey/use-journey-effects';
 import { LocationProvider } from '@/features/location/location-provider';
 import { locationStore } from '@/features/location/location-store';
 import { useNotificationRouting } from '@/features/notifications/use-notification-routing';
+import { offlineDownloads } from '@/features/offline/downloads';
+import { resumeSavedRouteDownloads } from '@/features/offline/saved-routes';
 import { ProximityCardOverlay } from '@/features/proximity/proximity-card';
 import { ProximityProvider } from '@/features/proximity/proximity-provider';
 import { pushSharedLocation, reconcileSharing } from '@/features/safety/sharing';
@@ -22,6 +24,12 @@ function AppEffects() {
   // Keep the offline copy of places and landmarks current: on start, then when
   // the app returns to the foreground at most every 6 hours (a version check
   // is one small request; data downloads only when the server's version moved).
+  useEffect(() => {
+    // Offline maps: continue downloads that were interrupted when the app closed.
+    offlineDownloads.restore();
+    resumeSavedRouteDownloads().catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     syncLocalData().catch(() => undefined);
     const sub = AppState.addEventListener('change', (next) => {

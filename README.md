@@ -249,6 +249,21 @@ turn-by-turn with voice, landmark alerts and "hazard ahead" warnings → automat
   run while the app is open. The active journey survives an app restart.
 - **Demo:** Settings → Demo tools → **Drive the active journey** drives the planned route at 50 km/h.
 
+### Offline Pakistan (offline maps)
+
+Profile → Settings → Offline maps (or the Offline shortcut on Home):
+
+| Download | Size | What |
+|---|---|---|
+| All of Pakistan | ~267 MB | Street level everywhere; replaces every pack below |
+| Pakistan overview | ~3 MB | Cities, motorways and main roads, whole country |
+| Karachi / Lahore / Islamabad & Rawalpindi / Northern Areas | 8–45 MB | Street-level city and region packs |
+
+- Files come from the `pakistan-map` release (built by the map workflow) and are drawn by MapLibre from local PMTiles files, with place names from ~1 MB of downloaded Noto Sans glyphs (English or Urdu names).
+- Downloads run one at a time with **pause / resume**, a silent progress notification, and wait for **Wi-Fi** above 30 MB unless the traveller chooses mobile data. If Android stops the app, the next launch resumes from the bytes already on disk (HTTP Range).
+- Maps switch to the downloaded files automatically when the phone is offline and they cover where the traveller is; "Use downloaded maps with internet too" saves data.
+- **Save route offline** (journey preview): keeps the route and its turn-by-turn steps, plus the map along it (MapLibre tile packs about 1 km either side) unless a downloaded map already covers it. Saved routes start from Offline maps with no signal.
+
 ### Exploring without a journey, and hazard reports
 
 - **Background alerts follow you:** besides the nearest landmarks, a "refresh" geofence is registered around where they

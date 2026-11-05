@@ -15,6 +15,7 @@ export const CHANNELS = {
   social: 'social',
   safety: 'safety',
   sharing: 'sharing',
+  downloads: 'downloads',
 } as const;
 
 export const PROXIMITY_CATEGORY = 'landmark';
@@ -73,6 +74,10 @@ async function setup() {
       }),
       Notifications.setNotificationChannelAsync(CHANNELS.sharing, {
         name: 'Location sharing status',
+        importance: AndroidImportance.LOW,
+      }),
+      Notifications.setNotificationChannelAsync(CHANNELS.downloads, {
+        name: 'Offline map downloads',
         importance: AndroidImportance.LOW,
       }),
     ]).catch((e) => console.warn('channel setup failed', e));

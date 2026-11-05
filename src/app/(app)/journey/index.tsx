@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Bike, Car, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, Bike, Car, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
+import { useIsOnline } from '@/components/offline-banner';
 import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
 import { isOnRoute, type JourneyItem } from '@/features/journey/journey-items';
@@ -15,6 +16,7 @@ import { arrivalClock, formatEta } from '@/features/journey/navigation';
 import { getCurrentFix, requestBackgroundPermission, requestLocationPermission } from '@/features/location/location-provider';
 import { useLastLocation, useLocationState } from '@/features/location/location-store';
 import { requestNotificationPermission } from '@/features/notifications/local-notifications';
+import { saveRouteOffline, useSavedRoutes } from '@/features/offline/saved-routes';
 import type { TravelMode } from '@/features/routing/osrm';
 import { formatDistance } from '@/lib/geo';
 import { usePreferences } from '@/lib/preferences';
@@ -55,6 +57,8 @@ export default function JourneyPreview() {
   const location = useLastLocation();
   const locationState = useLocationState();
   const [starting, setStarting] = useState(false);
+  const online = useIsOnline();
+  const [savedRoutes] = useSavedRoutes();
 
   const target = useMemo(
     () => ({
@@ -95,6 +99,33 @@ export default function JourneyPreview() {
   const landmarks = journey.items.filter((i) => i.kind === 'landmark');
   const hazards = journey.items.filter((i) => i.kind === 'hazard');
   const via = route ? mainRoad(route.steps) : null;
+
+  const savedEntry =
+    route && journey.target
+      ? savedRoutes.find(
+          (r) =>
+            r.route.mode === route.mode &&
+            Math.abs(r.target.latitude - journey.target!.latitude) < 1e-5 &&
+            Math.abs(r.target.longitude - journey.target!.longitude) < 1e-5,
+        )
+      : undefined;
+
+  const saveOffline = async () => {
+    if (!route || !journey.target) return;
+    if (savedEntry) {
+      router.push('/offline-maps');
+      return;
+    }
+    const saved = await saveRouteOffline(journey.target, route, { online });
+    Alert.alert(
+      tx('Route saved offline'),
+      saved.map === 'covered'
+        ? tx('Your downloaded map covers this route, so the journey and map work without internet.')
+        : saved.map === 'packs'
+          ? tx('The map along the route is downloading now. You can follow it in Offline maps.')
+          : tx('The route is saved. Download a map for this area in Offline maps so the map shows too.'),
+    );
+  };
 
   const start = async () => {
     if (!route) return;
@@ -259,7 +290,16 @@ export default function JourneyPreview() {
           )}
         </ScrollView>
         <View className="border-t border-border px-6 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
-          <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} />
+          <View className="flex-row gap-2">
+            <AppButton
+              label={savedEntry ? tx('Saved') : tx('Save offline')}
+              icon={savedEntry ? CheckCircle2 : CloudDownload}
+              variant="secondary"
+              onPress={saveOffline}
+              disabled={!route || journey.phase !== 'preview'}
+            />
+            <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
+          </View>
         </View>
       </View>
     </View>
