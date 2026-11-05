@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { Check, Search, UserPlus, Users, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
+import { Text, TextInput } from '@/components/text';
 
 import { AppButton, IconButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
@@ -107,7 +108,7 @@ export default function FriendsScreen() {
         </View>
       ) : (
         <View className="gap-3">
-          <View className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border/40 bg-input px-4">
+          <View className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border bg-input px-4">
             <Search color={colors.mutedForeground} size={18} />
             <TextInput
               autoFocus

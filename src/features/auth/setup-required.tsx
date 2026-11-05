@@ -1,5 +1,6 @@
 import { Settings } from 'lucide-react-native';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { missingEnv } from '@/lib/env';
@@ -11,7 +12,7 @@ export function SetupRequired() {
   return (
     <View className="flex-1 items-center justify-center gap-4 bg-background px-6" style={{ paddingTop: insets.top }}>
       <View className="h-16 w-16 items-center justify-center rounded-full bg-secondary">
-        <Settings color={colors.accent} size={30} />
+        <Settings color={colors.primary} size={30} />
       </View>
       <Text className="text-center text-xl font-bold text-foreground">Backend not configured</Text>
       <Text className="text-center text-sm text-muted-foreground">

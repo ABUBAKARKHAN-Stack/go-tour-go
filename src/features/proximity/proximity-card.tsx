@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { BookOpen, MapPin, Navigation, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -124,7 +125,7 @@ function LandmarkCard({
             {d.name}
           </Text>
           <View className="flex-row items-center gap-1">
-            <MapPin color={colors.accent} size={12} />
+            <MapPin color={colors.primary} size={12} />
             <Text className="text-xs text-muted-foreground">
               {formatDistance(distance)} away · {meta.label} · {d.city}
             </Text>

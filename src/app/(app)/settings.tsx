@@ -1,6 +1,8 @@
+import { router } from 'expo-router';
 import { Bell, FlaskConical, Play, RotateCcw, Square, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, FlatList, Linking, Modal, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Linking, Modal, Pressable, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
@@ -125,7 +127,7 @@ export default function SettingsScreen() {
 
       <Card className="gap-3">
         <View className="flex-row items-center gap-2">
-          <FlaskConical color={colors.accent} size={18} />
+          <FlaskConical color={colors.primary} size={18} />
           <Text className="flex-1 text-base font-semibold text-foreground">Demo tools</Text>
         </View>
         <Text className="text-xs text-muted-foreground">
@@ -152,6 +154,7 @@ export default function SettingsScreen() {
             Alert.alert('Cooldowns reset', 'Landmarks can notify you again.');
           }}
         />
+        <AppButton label="Offline map engine test" variant="ghost" size="sm" onPress={() => router.push('/map-engine-test')} />
       </Card>
 
       <Text className="text-center text-xs text-muted-foreground">GoTourGo FYP MVP · Map data © OpenStreetMap contributors</Text>
@@ -182,7 +185,7 @@ export default function SettingsScreen() {
                     {item.city} · radius {formatDistance(item.radius_m)}
                   </Text>
                 </View>
-                <Play color={colors.accent} size={18} />
+                <Play color={colors.primary} size={18} />
               </Pressable>
             )}
           />

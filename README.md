@@ -10,7 +10,11 @@ Learn more / Navigate → route drawn from your location → continue exploring
 
 Stack: Expo SDK 58 · Expo Router · TypeScript · Supabase (Auth, Postgres + RLS, Realtime Broadcast, Storage, Edge Functions) ·
 MapLibre React Native v11 · expo-location + expo-task-manager (geofencing) · expo-notifications · Gemini (server-side) ·
-gluestack-ui v5 + Uniwind · TanStack Query (offline cache).
+Uniwind (Tailwind v4 design tokens) · TanStack Query (offline cache).
+
+Design: light, warm editorial theme (Fraunces + Plus Jakarta Sans, teal and terracotta on warm cream). Source of truth is the
+Figma file `bO6d8RIpnNL3awG2lQQMA8`; tokens live in `global.css` with hex mirrors in `src/lib/theme.ts`. Fonts load at runtime
+(`src/lib/fonts.ts`), so design changes ship as over-the-air updates.
 
 > Gamification, achievements, badges, leaderboards, VR/AR and music are developed separately and are intentionally not part of this codebase.
 
@@ -143,6 +147,27 @@ bunx expo lint
 bun test
 ```
 
+### Offline map of Pakistan (map file)
+
+The street-level offline map is one PMTiles file built from OpenStreetMap with Planetiler
+(`scripts/build-pakistan-map.sh`) and published on this repository's **`pakistan-map`** GitHub Release, which the app
+downloads from. Building it needs internet access to Geofabrik, so it runs in GitHub Actions:
+
+1. On GitHub, open the repository's **Actions** tab.
+2. Choose **Build offline map of Pakistan** in the left list.
+3. Click **Run workflow**, keep the `main` branch and the default zoom (14), then **Run workflow** again.
+4. Wait for the green tick (roughly 20 to 60 minutes). The run summary shows the file sizes.
+5. Check **Releases → Offline map of Pakistan**: it lists `pakistan.pmtiles`, `karachi-test.pmtiles` and `manifest.json`.
+
+Re-run the workflow whenever you want fresher map data; the files on the release are replaced.
+
+To build on your own computer instead (Java 21+, about 12 GB free disk): run `bash scripts/build-pakistan-map.sh`, then on
+GitHub open **Releases → Draft a new release**, set the tag to `pakistan-map`, title it "Offline map of Pakistan", attach the
+three files from `map-build/out/` and publish. Keep the tag name exactly `pakistan-map`; the app looks for it.
+
+**Settings → Demo tools → Offline map engine test** checks on a phone that the map engine draws the file, both streamed and
+downloaded.
+
 ## 4. Architecture
 
 ```
@@ -150,13 +175,12 @@ src/app/                 Expo Router routes only
   _layout.tsx            providers, splash/hydration gate, Stack.Protected guards
   onboarding.tsx, (auth)/, reset-password.tsx
   (app)/_layout.tsx      location + proximity providers, realtime inbox, notification routing, proximity card
-  (app)/(tabs)/          Home · Explore (map) · Trips · Community · Profile (native Material 3 tabs)
+  (app)/(tabs)/          Home · Explore (map) · Trips · Community · Profile (custom floating tab bar)
   (app)/…                destination/[id], search, nearby, alerts, offline-maps, assistant, lens, scan,
                          friends, users/[id], messages, notifications, safety, post, story, review, settings
 src/features/<area>/     data access + hooks + feature components (proximity, location, map, routing, …)
-src/components/          shared UI (screen scaffold, buttons, forms, states, cards)
-src/lib/                 supabase client, storage, query client, geo maths, theme, types
-components/ui/           gluestack-ui v5 kit (vendored)
+src/components/          shared UI (screen scaffold, text with fonts, buttons, forms, states, cards, tab bar, illustrations)
+src/lib/                 supabase client, storage, query client, geo maths, theme, fonts, types
 ```
 
 ### Proximity system (core feature)

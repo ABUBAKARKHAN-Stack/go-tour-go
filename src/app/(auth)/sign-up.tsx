@@ -1,13 +1,15 @@
 import { router } from 'expo-router';
-import { MailCheck, UserPlus } from 'lucide-react-native';
+import { AtSign, Lock, Mail, MailCheck, UserRound } from 'lucide-react-native';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { TextField } from '@/components/form';
 import { Screen } from '@/components/screen';
 import { EmptyState, InlineError } from '@/components/states';
 import { signUp, validateEmail, validatePassword, validateUsername } from '@/features/auth/api';
+import { AuthShell } from '@/features/auth/auth-shell';
+import { colors } from '@/lib/theme';
 import { errorMessage } from '@/lib/errors';
 
 export default function SignUp() {
@@ -59,10 +61,9 @@ export default function SignUp() {
   }
 
   return (
-    <Screen keyboard back title="Create account" contentClassName="px-6 gap-4">
-      <Text className="text-base text-muted-foreground">Join GoTourGo to save places, plan trips and travel with friends.</Text>
+    <AuthShell back compact title="Create your account" subtitle="Save places, plan journeys and travel with friends.">
       {error ? <InlineError message={error} /> : null}
-      <TextField label="Full name" value={fullName} onChangeText={setFullName} autoComplete="name" placeholder="Ayesha Khan" error={errors.fullName} />
+      <TextField label="Full name" value={fullName} onChangeText={setFullName} autoComplete="name" placeholder="Ayesha Khan" error={errors.fullName} left={<UserRound color={colors.faint} size={20} />} />
       <TextField
         label="Username"
         value={username}
@@ -72,6 +73,7 @@ export default function SignUp() {
         placeholder="ayesha_travels"
         error={errors.username}
         hint="Friends find you by this name."
+        left={<AtSign color={colors.faint} size={20} />}
       />
       <TextField
         label="Email"
@@ -82,6 +84,7 @@ export default function SignUp() {
         keyboardType="email-address"
         placeholder="you@example.com"
         error={errors.email}
+        left={<Mail color={colors.faint} size={20} />}
       />
       <TextField
         label="Password"
@@ -91,10 +94,11 @@ export default function SignUp() {
         autoComplete="new-password"
         placeholder="At least 8 characters"
         error={errors.password}
+        left={<Lock color={colors.faint} size={20} />}
       />
       <View className="pt-2">
-        <AppButton label="Create account" icon={UserPlus} onPress={submit} loading={loading} variant="accent" />
+        <AppButton label="Create account" onPress={submit} loading={loading} />
       </View>
-    </Screen>
+    </AuthShell>
   );
 }

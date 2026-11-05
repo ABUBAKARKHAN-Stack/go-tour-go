@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyRound } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { TextField } from '@/components/form';

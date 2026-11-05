@@ -14,7 +14,8 @@ import {
   X,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
@@ -23,6 +24,7 @@ import { Chip } from '@/components/form';
 import { OfflineBanner } from '@/components/offline-banner';
 import { ErrorState } from '@/components/states';
 import { ALERT_LABELS, useRoadAlerts } from '@/features/alerts/api';
+import { useTabBarSpace } from '@/components/tab-bar';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useDestinations } from '@/features/destinations/api';
 import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/categories';
@@ -47,6 +49,7 @@ const OFF_ROUTE_METERS = 150;
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
+  const tabSpace = useTabBarSpace();
   const params = useLocalSearchParams<{ focus?: string }>();
   const map = useRef<TravelMapHandle>(null);
   const { userId } = useAuth();
@@ -212,7 +215,7 @@ export default function ExploreScreen() {
           <Pressable
             accessibilityRole="search"
             onPress={() => router.push('/search')}
-            className="min-h-12 flex-1 flex-row items-center gap-2 rounded-2xl border border-border/30 bg-card px-4"
+            className="min-h-12 flex-1 flex-row items-center gap-2 rounded-2xl border border-border bg-card px-4"
           >
             <Search color={colors.mutedForeground} size={18} />
             <Text className="text-base text-muted-foreground">Search destinations</Text>
@@ -260,9 +263,9 @@ export default function ExploreScreen() {
       </View>
 
       {/* Bottom panel: route > selection > alert */}
-      <View className="absolute bottom-3 left-3 right-3 gap-2">
+      <View className="absolute left-3 right-3 gap-2" style={{ bottom: tabSpace - 12 }}>
         {routeState.route || routeState.loading ? (
-          <View className="gap-3 rounded-3xl border border-accent/30 bg-card p-4">
+          <View className="gap-3 rounded-3xl border border-border bg-card p-4">
             {routeState.loading ? (
               <Text className="text-sm text-muted-foreground">Calculating route to {routeState.target?.name ?? 'destination'}...</Text>
             ) : routeState.route ? (
@@ -316,7 +319,7 @@ export default function ExploreScreen() {
             ) : null}
           </View>
         ) : selected ? (
-          <View className="flex-row gap-3 rounded-3xl border border-border/30 bg-card p-3">
+          <View className="flex-row gap-3 rounded-3xl border border-border bg-card p-3">
             <DestinationImage uri={selected.image_url} category={selected.category} className="h-24 w-24 rounded-2xl" recyclingKey={selected.id} />
             <View className="flex-1 gap-1">
               <Text numberOfLines={1} className="text-base font-bold text-foreground">

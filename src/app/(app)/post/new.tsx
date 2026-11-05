@@ -2,7 +2,8 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { ImagePlus, MapPin, Send, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Chip, TextField } from '@/components/form';
@@ -57,7 +58,7 @@ export default function NewPostScreen() {
       )}
       <View className="gap-2">
         <View className="flex-row items-center gap-1">
-          <MapPin color={colors.accent} size={14} />
+          <MapPin color={colors.primary} size={14} />
           <Text className="text-sm font-medium text-foreground">Tag a place {location ? '(nearest first)' : ''}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">

@@ -2,7 +2,8 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'ex
 import { router, useFocusEffect } from 'expo-router';
 import { ArrowLeft, ExternalLink, MapPin, QrCode, RotateCcw, ScanEye } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
-import { Linking, Text, View } from 'react-native';
+import { Linking, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';

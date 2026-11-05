@@ -2,7 +2,8 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { MessagesSquare, PenSquare, Plus, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton, IconButton } from '@/components/app-button';
 import { Screen } from '@/components/screen';
@@ -53,7 +54,7 @@ export default function CommunityScreen() {
               feed.refetch();
               stories.refetch();
             }}
-            tintColor={colors.accent}
+            tintColor={colors.primary}
           />
         }
         ListHeaderComponent={
@@ -61,7 +62,7 @@ export default function CommunityScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
               <Pressable accessibilityRole="button" accessibilityLabel="Add story" onPress={() => router.push('/story/new')} className="w-20 items-center gap-1">
                 <View className="h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-accent bg-secondary">
-                  <Plus color={colors.accent} size={24} />
+                  <Plus color={colors.primary} size={24} />
                 </View>
                 <Text className="text-xs text-foreground">Your story</Text>
               </Pressable>
@@ -94,7 +95,7 @@ export default function CommunityScreen() {
             <EmptyState icon={PenSquare} title="No posts yet" message="Be the first to share a travel moment." actionLabel="Create post" onAction={() => router.push('/post/new')} />
           )
         }
-        ListFooterComponent={feed.isFetchingNextPage ? <ActivityIndicator color={colors.accent} /> : undefined}
+        ListFooterComponent={feed.isFetchingNextPage ? <ActivityIndicator color={colors.primary} /> : undefined}
         renderItem={({ item }) => <PostCard post={item} userId={userId} />}
       />
     </Screen>

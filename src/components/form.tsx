@@ -1,29 +1,32 @@
 import { useState, type ReactNode } from 'react';
-import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Pressable, View, type TextInputProps } from 'react-native';
+import { Text, TextInput } from '@/components/text';
 
 import { colors } from '@/lib/theme';
 
 type FieldProps = TextInputProps & {
   label: string;
+  left?: ReactNode;
   error?: string | null;
   hint?: string;
   right?: ReactNode;
 };
 
 /** Labelled text input with error/hint text, sized for touch. */
-export function TextField({ label, error, hint, right, multiline, ...props }: FieldProps) {
+export function TextField({ label, error, hint, left, right, multiline, ...props }: FieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className="gap-1.5">
-      <Text className="text-sm font-medium text-foreground">{label}</Text>
+      <Text className="text-sm font-medium text-muted-foreground">{label}</Text>
       <View
-        className={`flex-row items-center rounded-2xl border bg-input px-4 ${multiline ? 'min-h-28 py-3' : 'min-h-12'} ${
-          error ? 'border-destructive' : focused ? 'border-accent' : 'border-border/50'
+        className={`flex-row items-center gap-3 rounded-2xl bg-card px-4 ${multiline ? 'min-h-28 py-3' : 'min-h-14'} ${
+          error ? 'border-[1.5px] border-destructive' : focused ? 'border-[1.5px] border-primary' : 'border border-border'
         }`}
       >
+        {left}
         <TextInput
           accessibilityLabel={label}
-          placeholderTextColor={`${colors.mutedForeground}99`}
+          placeholderTextColor={colors.faint}
           className="flex-1 text-base text-foreground"
           style={multiline ? { textAlignVertical: 'top', minHeight: 88 } : undefined}
           multiline={multiline}
@@ -67,11 +70,11 @@ export function Chip({
       accessibilityState={{ selected }}
       onPress={onPress}
       className={`min-h-10 flex-row items-center gap-1.5 rounded-full border px-4 ${
-        selected ? 'border-accent bg-accent' : 'border-border/40 bg-secondary'
+        selected ? 'border-inverse bg-inverse' : 'border-border bg-card'
       }`}
     >
       {icon}
-      <Text className={`text-sm font-medium ${selected ? 'text-accent-foreground' : 'text-foreground'}`}>{label}</Text>
+      <Text className={`text-sm font-medium ${selected ? 'text-white' : 'text-foreground'}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -87,7 +90,7 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <View className="flex-row rounded-2xl bg-secondary p-1" accessibilityRole="tablist">
+    <View className="flex-row rounded-full bg-secondary p-1" accessibilityRole="tablist">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -96,9 +99,9 @@ export function Segmented<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.value)}
-            className={`min-h-10 flex-1 items-center justify-center rounded-xl px-2 ${active ? 'bg-primary' : ''}`}
+            className={`min-h-10 flex-1 items-center justify-center rounded-full px-2 ${active ? 'bg-card shadow-sm' : ''}`}
           >
-            <Text numberOfLines={1} className={`text-sm font-semibold ${active ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
+            <Text numberOfLines={1} className={`text-sm font-semibold ${active ? 'text-foreground' : 'text-faint'}`}>
               {o.label}
             </Text>
           </Pressable>
@@ -109,16 +112,16 @@ export function Segmented<T extends string>({
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <View className={`rounded-3xl border border-border/25 bg-card p-4 ${className ?? ''}`}>{children}</View>;
+  return <View className={`rounded-3xl border border-border bg-card p-4 ${className ?? ''}`}>{children}</View>;
 }
 
 export function SectionHeader({ title, actionLabel, onAction }: { title: string; actionLabel?: string; onAction?: () => void }) {
   return (
     <View className="flex-row items-center justify-between">
-      <Text className="text-lg font-bold text-foreground">{title}</Text>
+      <Text className="font-display text-[22px] leading-7 text-foreground">{title}</Text>
       {actionLabel && onAction ? (
         <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10} className="min-h-10 justify-center">
-          <Text className="text-sm font-semibold text-accent">{actionLabel}</Text>
+          <Text className="text-sm font-semibold text-primary">{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -147,8 +150,8 @@ export function ToggleRow({
         <Text className="text-base text-foreground">{title}</Text>
         {description ? <Text className="text-xs text-muted-foreground">{description}</Text> : null}
       </View>
-      <View className={`h-7 w-12 justify-center rounded-full px-0.5 ${value ? 'bg-accent' : 'bg-muted'}`}>
-        <View className={`h-6 w-6 rounded-full ${value ? 'self-end bg-accent-foreground' : 'self-start bg-muted-foreground'}`} />
+      <View className={`h-7 w-12 justify-center rounded-full px-0.5 ${value ? 'bg-primary' : 'bg-border-strong'}`}>
+        <View className={`h-6 w-6 rounded-full bg-white ${value ? 'self-end' : 'self-start'}`} />
       </View>
     </Pressable>
   );

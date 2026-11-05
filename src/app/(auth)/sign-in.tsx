@@ -1,13 +1,14 @@
-import { Link } from 'expo-router';
-import { Eye, EyeOff, LogIn } from 'lucide-react-native';
+import { Link, router } from 'expo-router';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { TextField } from '@/components/form';
-import { Screen } from '@/components/screen';
 import { InlineError } from '@/components/states';
 import { signIn, validateEmail } from '@/features/auth/api';
+import { AuthShell, OrDivider } from '@/features/auth/auth-shell';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 
@@ -38,13 +39,11 @@ export default function SignIn() {
   };
 
   return (
-    <Screen keyboard headerless contentClassName="flex-grow justify-center px-6 gap-5">
-      <View className="gap-2 pt-10">
-        <Text className="text-sm font-bold uppercase tracking-widest text-accent">GoTourGo</Text>
-        <Text className="text-3xl font-extrabold text-foreground">Welcome back</Text>
-        <Text className="text-base text-muted-foreground">Sign in to continue your journey.</Text>
-      </View>
-
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to pick up where your journey left off."
+      footer={<Text className="text-center text-xs text-faint">By continuing you agree to our Terms and Privacy Policy.</Text>}
+    >
       {error ? <InlineError message={error} /> : null}
 
       <TextField
@@ -58,6 +57,7 @@ export default function SignIn() {
         placeholder="you@example.com"
         error={emailError}
         returnKeyType="next"
+        left={<Mail color={colors.faint} size={20} />}
       />
       <TextField
         label="Password"
@@ -70,29 +70,23 @@ export default function SignIn() {
         error={passwordError}
         returnKeyType="go"
         onSubmitEditing={submit}
+        left={<Lock color={colors.faint} size={20} />}
         right={
           <Pressable accessibilityRole="button" accessibilityLabel={show ? 'Hide password' : 'Show password'} onPress={() => setShow((s) => !s)} hitSlop={10}>
-            {show ? <EyeOff color={colors.mutedForeground} size={20} /> : <Eye color={colors.mutedForeground} size={20} />}
+            {show ? <EyeOff color={colors.faint} size={20} /> : <Eye color={colors.faint} size={20} />}
           </Pressable>
         }
       />
 
       <Link href="/forgot-password" asChild>
-        <Pressable accessibilityRole="link" className="min-h-10 justify-center self-end">
-          <Text className="text-sm font-semibold text-accent">Forgot password?</Text>
+        <Pressable accessibilityRole="link" className="-mt-1 min-h-10 justify-center self-end">
+          <Text className="text-sm font-semibold text-primary">Forgot password?</Text>
         </Pressable>
       </Link>
 
-      <AppButton label="Sign in" icon={LogIn} onPress={submit} loading={loading} variant="accent" />
-
-      <View className="flex-row items-center justify-center gap-1 pb-6">
-        <Text className="text-sm text-muted-foreground">New to GoTourGo?</Text>
-        <Link href="/sign-up" asChild>
-          <Pressable accessibilityRole="link" className="min-h-10 justify-center">
-            <Text className="text-sm font-semibold text-accent">Create an account</Text>
-          </Pressable>
-        </Link>
-      </View>
-    </Screen>
+      <AppButton label="Sign in" onPress={submit} loading={loading} />
+      <OrDivider />
+      <AppButton label="Create an account" variant="secondary" onPress={() => router.push('/sign-up')} />
+    </AuthShell>
   );
 }

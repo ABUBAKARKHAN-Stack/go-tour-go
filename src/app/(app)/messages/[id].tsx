@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Send } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Pressable, View } from 'react-native';
+import { Text, TextInput } from '@/components/text';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -89,7 +90,7 @@ export default function ChatScreen() {
             }}
           />
         )}
-        <View className="flex-row items-end gap-2 border-t border-border/20 px-3 pt-2" style={{ paddingBottom: insets.bottom + 8 }}>
+        <View className="flex-row items-end gap-2 border-t border-border px-3 pt-2" style={{ paddingBottom: insets.bottom + 8 }}>
           <TextInput
             value={text}
             onChangeText={setText}

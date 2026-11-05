@@ -2,7 +2,8 @@ import { OfflineManager, type OfflinePack } from '@maplibre/maplibre-react-nativ
 import { CheckCircle2, Download, Trash2 } from 'lucide-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Card } from '@/components/form';
@@ -87,7 +88,7 @@ export default function OfflineMapsScreen() {
         Download a city before you travel. GPS, saved places, your trip and the last calculated route also work offline.
         Turn-by-turn offline navigation is not included.
       </Text>
-      {loading ? <ActivityIndicator color={colors.accent} /> : null}
+      {loading ? <ActivityIndicator color={colors.primary} /> : null}
       {REGIONS.map((r) => {
         const info = packs[r.key];
         const complete = info?.state === 'complete' || (info?.percentage ?? 0) >= 100;
@@ -95,7 +96,7 @@ export default function OfflineMapsScreen() {
         return (
           <Card key={r.key} className="gap-3">
             <View className="flex-row items-center gap-2">
-              {complete ? <CheckCircle2 color={colors.success} size={18} /> : <Download color={colors.accent} size={18} />}
+              {complete ? <CheckCircle2 color={colors.success} size={18} /> : <Download color={colors.primary} size={18} />}
               <Text className="flex-1 text-base font-semibold text-foreground">{r.name}</Text>
             </View>
             {active ? (

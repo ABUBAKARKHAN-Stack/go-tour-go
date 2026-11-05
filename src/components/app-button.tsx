@@ -1,15 +1,16 @@
 import type { LucideIcon } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { colors } from '@/lib/theme';
 
 type Variant = 'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'destructive';
 
 const containerClass: Record<Variant, string> = {
-  primary: 'bg-primary',
+  primary: 'bg-primary active:bg-primary-pressed',
   accent: 'bg-accent',
-  secondary: 'bg-secondary',
-  outline: 'border border-border bg-transparent',
+  secondary: 'border border-border-strong bg-card',
+  outline: 'border border-border-strong bg-transparent',
   ghost: 'bg-transparent',
   destructive: 'bg-destructive',
 };
@@ -17,18 +18,18 @@ const containerClass: Record<Variant, string> = {
 const textClass: Record<Variant, string> = {
   primary: 'text-primary-foreground',
   accent: 'text-accent-foreground',
-  secondary: 'text-secondary-foreground',
+  secondary: 'text-foreground',
   outline: 'text-foreground',
-  ghost: 'text-accent',
+  ghost: 'text-primary',
   destructive: 'text-white',
 };
 
 const iconColor: Record<Variant, string> = {
   primary: colors.primaryForeground,
   accent: colors.accentForeground,
-  secondary: colors.accent,
+  secondary: colors.foreground,
   outline: colors.foreground,
-  ghost: colors.accent,
+  ghost: colors.primary,
   destructive: '#FFFFFF',
 };
 
@@ -48,7 +49,7 @@ type Props = {
 
 /**
  * App button with a 48dp minimum touch target, loading and disabled states.
- * Uses the same semantic tokens as the gluestack kit.
+ * Pill shaped, matching the Button component in the Figma design.
  */
 export function AppButton({
   label,
@@ -74,7 +75,7 @@ export function AppButton({
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={delayLongPress}
-      className={`${size === 'md' ? 'min-h-12 px-5' : 'min-h-10 px-4'} flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80 ${containerClass[variant]} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`}
+      className={`${size === 'md' ? 'min-h-14 px-6' : 'min-h-11 px-4'} flex-row items-center justify-center gap-2 rounded-full active:opacity-85 ${containerClass[variant]} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`}
     >
       {loading ? (
         <ActivityIndicator color={iconColor[variant]} size="small" />
@@ -106,11 +107,11 @@ export function IconButton({
       accessibilityLabel={label}
       hitSlop={6}
       onPress={onPress}
-      className={`h-11 w-11 items-center justify-center rounded-full active:opacity-80 ${active ? 'bg-accent' : 'bg-secondary'}`}
+      className={`h-11 w-11 items-center justify-center rounded-full active:opacity-80 ${active ? 'bg-primary' : 'border border-border bg-card'}`}
     >
-      <Icon color={active ? colors.accentForeground : colors.foreground} size={20} />
+      <Icon color={active ? colors.primaryForeground : colors.foreground} size={20} />
       {badge ? (
-        <View className="absolute -right-0.5 -top-0.5 min-w-5 items-center rounded-full bg-destructive px-1">
+        <View className="absolute -right-0.5 -top-0.5 min-w-5 items-center rounded-full border-2 border-card bg-accent px-1">
           <Text className="text-[10px] font-bold text-white">{badge > 9 ? '9+' : badge}</Text>
         </View>
       ) : null}

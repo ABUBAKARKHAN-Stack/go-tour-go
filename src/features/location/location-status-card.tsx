@@ -1,5 +1,6 @@
 import { LocateFixed, MapPinOff, Settings } from 'lucide-react-native';
-import { Linking, Text, View } from 'react-native';
+import { Linking, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import {
@@ -55,9 +56,9 @@ export function LocationStatusCard({ compact }: { compact?: boolean }) {
   }
 
   return (
-    <View className="gap-2 rounded-3xl border border-border/30 bg-card p-4" accessibilityRole="alert">
+    <View className="gap-2 rounded-3xl border border-border bg-card p-4" accessibilityRole="alert">
       <View className="flex-row items-center gap-2">
-        <MapPinOff color={colors.accent} size={18} />
+        <MapPinOff color={colors.primary} size={18} />
         <Text className="flex-1 text-base font-semibold text-foreground">{title}</Text>
       </View>
       <Text className="text-sm text-muted-foreground">{message}</Text>

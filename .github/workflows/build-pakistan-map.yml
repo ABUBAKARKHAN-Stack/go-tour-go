@@ -1,0 +1,63 @@
+name: Build offline map of Pakistan
+
+# Run from the Actions tab ("Run workflow"). Builds pakistan.pmtiles from
+# OpenStreetMap and publishes it on the "pakistan-map" GitHub Release, where the
+# app downloads it. Re-run any time to refresh the map; files are replaced.
+on:
+  workflow_dispatch:
+    inputs:
+      maxzoom:
+        description: 'Most detailed zoom level (14 = street level)'
+        required: false
+        default: '14'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-pakistan-map
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      RELEASE_TAG: pakistan-map
+      MAXZOOM: ${{ inputs.maxzoom }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h .
+
+      - name: Build map files
+        run: bash scripts/build-pakistan-map.sh
+
+      - name: Publish to the pakistan-map release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OUT_DIR=map-build/out
+          ls -lh "$OUT_DIR"
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --title "Offline map of Pakistan" \
+              --notes "Offline map files for GoTourGo. Map data (c) OpenStreetMap contributors, ODbL. Built with Planetiler." \
+              --latest=false
+          fi
+          gh release upload "$RELEASE_TAG" \
+            "$OUT_DIR/pakistan.pmtiles" "$OUT_DIR/karachi-test.pmtiles" "$OUT_DIR/manifest.json" --clobber
+
+      - name: Summary
+        run: |
+          echo "### Offline map published" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat map-build/out/manifest.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

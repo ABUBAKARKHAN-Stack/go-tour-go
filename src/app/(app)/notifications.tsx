@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { Bell, CheckCheck, MapPin, MessageCircle, ShieldAlert, UserPlus } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { FlatList, Linking, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Linking, Pressable, RefreshControl, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { IconButton } from '@/components/app-button';
 import { Screen } from '@/components/screen';
@@ -45,7 +46,7 @@ export default function NotificationsScreen() {
           data={inbox.data ?? []}
           keyExtractor={(n) => n.id}
           contentContainerClassName="gap-2 px-4 pb-8"
-          refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => void inbox.refetch()} tintColor={colors.accent} />}
+          refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => void inbox.refetch()} tintColor={colors.primary} />}
           ListEmptyComponent={<EmptyState icon={Bell} title="You're all caught up" message="Friend requests, messages and safety alerts appear here." />}
           renderItem={({ item }) => {
             const Icon = ICONS[item.type as keyof typeof ICONS] ?? Bell;
@@ -60,7 +61,7 @@ export default function NotificationsScreen() {
                   <Text className="text-sm text-muted-foreground">{item.body}</Text>
                   {sos && item.data?.latitude != null ? (
                     <View className="flex-row items-center gap-1 pt-1">
-                      <MapPin color={colors.accent} size={12} />
+                      <MapPin color={colors.primary} size={12} />
                       <Text className="text-xs text-accent">Open their location</Text>
                     </View>
                   ) : null}

@@ -31,7 +31,7 @@ export default function SavedScreen() {
           data={places}
           keyExtractor={(d) => d.id}
           contentContainerClassName="gap-3 px-4 pb-8"
-          refreshControl={<RefreshControl refreshing={saved.isRefetching} onRefresh={() => void saved.refetch()} tintColor={colors.accent} />}
+          refreshControl={<RefreshControl refreshing={saved.isRefetching} onRefresh={() => void saved.refetch()} tintColor={colors.primary} />}
           ListEmptyComponent={
             <EmptyState
               icon={Bookmark}

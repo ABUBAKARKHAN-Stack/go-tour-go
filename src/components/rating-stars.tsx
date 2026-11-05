@@ -8,7 +8,7 @@ export function RatingStars({ value, size = 14, onChange }: { value: number; siz
     <View className="flex-row items-center gap-1" accessibilityLabel={`${value} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((i) => {
         const filled = i <= Math.round(value);
-        const star = <Star size={size} color={colors.accent} fill={filled ? colors.accent : 'transparent'} />;
+        const star = <Star size={size} color={colors.primary} fill={filled ? colors.accent : 'transparent'} />;
         return onChange ? (
           <Pressable
             key={i}

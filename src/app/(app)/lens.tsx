@@ -3,7 +3,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { Camera, ImagePlus, Languages, MapPin, ScanEye, Sparkles } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Card, TextField } from '@/components/form';
@@ -69,7 +70,7 @@ export default function LensScreen() {
           <Image source={{ uri }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" />
         ) : (
           <View className="w-full items-center justify-center gap-2 rounded-2xl bg-secondary py-12">
-            <ScanEye color={colors.accent} size={42} strokeWidth={1.5} />
+            <ScanEye color={colors.primary} size={42} strokeWidth={1.5} />
             <Text className="text-center text-sm text-muted-foreground">Take or choose a photo of a landmark, sign or menu.</Text>
           </View>
         )}
@@ -102,7 +103,7 @@ export default function LensScreen() {
               <Text className="text-sm text-foreground">{result.detected_text}</Text>
               {result.translated_text ? (
                 <View className="flex-row gap-2 pt-1">
-                  <Languages color={colors.accent} size={14} />
+                  <Languages color={colors.primary} size={14} />
                   <Text className="flex-1 text-sm text-accent">{result.translated_text}</Text>
                 </View>
               ) : null}

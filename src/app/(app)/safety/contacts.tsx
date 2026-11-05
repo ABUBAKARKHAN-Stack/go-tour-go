@@ -1,6 +1,7 @@
 import { Pencil, Trash2, UserPlus, Users } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AppButton, IconButton } from '@/components/app-button';
 import { Card, TextField } from '@/components/form';

@@ -2,27 +2,30 @@ import { router } from 'expo-router';
 import {
   Bell,
   Bookmark,
-  Compass,
   Download,
-  MapPin,
   MapPinned,
+  Navigation,
   ScanEye,
   ScanLine,
   Search,
   ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
   TriangleAlert,
   Users,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
+import { Avatar } from '@/components/avatar';
 import { IconButton } from '@/components/app-button';
 import { DestinationCard } from '@/components/destination-card';
-import { Card, SectionHeader } from '@/components/form';
+import { DestinationImage } from '@/components/destination-image';
+import { Card, Chip, SectionHeader } from '@/components/form';
 import { Screen } from '@/components/screen';
 import { ErrorState, LoadingState } from '@/components/states';
+import { Text } from '@/components/text';
 import { WeatherCard } from '@/components/weather-card';
 import { ALERT_LABELS, useRoadAlerts } from '@/features/alerts/api';
 import { useAuth } from '@/features/auth/auth-provider';
@@ -31,21 +34,29 @@ import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/
 import { useUnreadCount } from '@/features/inbox/api';
 import { LocationStatusCard } from '@/features/location/location-status-card';
 import { useProximityCard } from '@/features/proximity/proximity-store';
+import { navigateTo } from '@/features/routing/navigate';
 import { useSavedIds } from '@/features/saved/api';
 import { TRIP_STATUSES, useTrips } from '@/features/trips/api';
+import { useWeather } from '@/features/weather/api';
 import { formatDistance } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
 
 const SHORTCUTS: { label: string; icon: LucideIcon; href: string }[] = [
-  { label: 'Map', icon: Compass, href: '/explore' },
   { label: 'Nearby', icon: MapPinned, href: '/nearby' },
-  { label: 'AI Guide', icon: Sparkles, href: '/assistant' },
+  { label: 'AI guide', icon: Sparkles, href: '/assistant' },
   { label: 'Lens', icon: ScanEye, href: '/lens' },
   { label: 'Scan', icon: ScanLine, href: '/scan' },
   { label: 'Safety', icon: ShieldAlert, href: '/safety' },
   { label: 'Friends', icon: Users, href: '/friends' },
   { label: 'Offline', icon: Download, href: '/offline-maps' },
+  { label: 'Saved', icon: Bookmark, href: '/saved' },
 ];
+
+const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+/** Within this distance the nearest landmark's city names "where you are". */
+const CITY_RADIUS_M = 40_000;
+/** The highlighted card shows the closest landmark within this distance. */
+const SPOTLIGHT_RADIUS_M = 5_000;
 
 function greeting() {
   const h = new Date().getHours();
@@ -61,6 +72,7 @@ export default function Home() {
   const saved = useSavedIds();
   const unread = useUnreadCount();
   const proximity = useProximityCard();
+  const weather = useWeather(location);
 
   const near = location ? sorted.slice(0, 8) : [];
   const popular = useMemo(() => [...sorted].sort((a, b) => b.popularity - a.popularity).slice(0, 8), [sorted]);
@@ -68,18 +80,27 @@ export default function Home() {
   const current = (trips.data ?? []).filter((t) => t.status === 'in_progress');
   const upcoming = (trips.data ?? []).filter((t) => t.status === 'todo');
   const byId = useMemo(() => new Map(sorted.map((d) => [d.id, d])), [sorted]);
-  const insideNames = proximity.inside.map((h) => byId.get(h.id)?.name).filter(Boolean);
   const urgent = (alerts.data ?? []).filter((a) => a.severity === 'critical' || a.severity === 'high').slice(0, 2);
+
+  const insideId = proximity.inside[0]?.id;
+  const spotlight =
+    (insideId ? sorted.find((d) => d.id === insideId) : undefined) ??
+    (near[0]?.distance != null && near[0].distance <= SPOTLIGHT_RADIUS_M ? near[0] : undefined);
+  const city = near[0]?.distance != null && near[0].distance <= CITY_RADIUS_M ? near[0].city : null;
+  const context = [WEEKDAYS[new Date().getDay()], weather.data ? `${Math.round(weather.data.temperature)}°` : null, city?.toUpperCase()]
+    .filter(Boolean)
+    .join(' · ');
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'traveller';
 
   return (
     <Screen
       inTabs
       headerless
-      contentClassName="px-4 gap-5 pt-2"
+      contentClassName="px-5 gap-6 pt-3"
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
-          tintColor={colors.accent}
+          tintColor={colors.primary}
           onRefresh={() => {
             refetch();
             alerts.refetch();
@@ -88,67 +109,85 @@ export default function Home() {
         />
       }
     >
-      <View className="flex-row items-center gap-3 pt-2">
-        <View className="flex-1">
-          <Text className="text-sm text-muted-foreground">{greeting()},</Text>
-          <Text numberOfLines={1} className="text-2xl font-extrabold text-foreground">
-            {profile?.full_name?.split(' ')[0] ?? 'Traveler'}
+      <View className="flex-row items-start gap-3">
+        <View className="flex-1 gap-1">
+          <Text className="text-[11px] font-bold tracking-[1.6px] text-faint">{context}</Text>
+          <Text className="font-display text-[32px] leading-[38px] text-foreground">
+            {greeting()},{'\n'}
+            {firstName}
           </Text>
         </View>
-        <IconButton icon={Bell} label="Notifications" badge={unread} onPress={() => router.push('/notifications')} />
+        <View className="flex-row items-center gap-2 pt-1">
+          <IconButton icon={Bell} label="Notifications" badge={unread} onPress={() => router.push('/notifications')} />
+          <Pressable accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => router.navigate('/profile')}>
+            <Avatar profile={profile} size={44} />
+          </Pressable>
+        </View>
       </View>
 
       <Pressable
         accessibilityRole="search"
+        accessibilityLabel="Search places and plan a journey"
         onPress={() => router.push('/search')}
-        className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border/30 bg-card px-4"
+        className="min-h-14 flex-row items-center gap-3 rounded-full border border-border bg-card pl-5 pr-2"
+        style={{ boxShadow: '0 2px 8px rgba(28, 26, 23, 0.05)' }}
       >
-        <Search color={colors.mutedForeground} size={18} />
-        <Text className="text-base text-muted-foreground">Where to next?</Text>
+        <Search color={colors.faint} size={20} />
+        <Text className="flex-1 text-base text-faint">Where to next?</Text>
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
+          <SlidersHorizontal color={colors.primary} size={18} />
+        </View>
       </Pressable>
 
-      {insideNames.length ? (
+      {spotlight ? (
         <Pressable
-          onPress={() => router.push({ pathname: '/destination/[id]', params: { id: proximity.inside[0].id } })}
-          className="flex-row items-center gap-3 rounded-3xl border border-accent/50 bg-accent/15 p-4"
+          accessibilityRole="button"
+          accessibilityLabel={`${insideId ? "You're near" : 'Closest landmark'}: ${spotlight.name}`}
+          onPress={() => router.push({ pathname: '/destination/[id]', params: { id: spotlight.id } })}
+          className="flex-row items-center gap-3 rounded-3xl bg-accent-soft p-3"
         >
-          <MapPin color={colors.accent} size={20} />
-          <View className="flex-1">
-            <Text className="text-xs font-bold uppercase text-accent">You&apos;re near</Text>
+          <DestinationImage uri={spotlight.image_url} category={spotlight.category} className="h-16 w-16 rounded-2xl" iconSize={24} recyclingKey={spotlight.id} />
+          <View className="flex-1 gap-0.5">
+            <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-accent">
+              {insideId ? "You're near" : 'Closest landmark'}
+              {spotlight.distance != null ? ` · ${formatDistance(spotlight.distance)}` : ''}
+            </Text>
             <Text numberOfLines={1} className="text-base font-semibold text-foreground">
-              {insideNames.join(' · ')}
+              {spotlight.name}
+            </Text>
+            <Text numberOfLines={1} className="text-xs text-muted-foreground">
+              {spotlight.short_description}
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Navigate to ${spotlight.name}`}
+            hitSlop={6}
+            onPress={() => navigateTo(spotlight)}
+            className="h-11 w-11 items-center justify-center rounded-full bg-primary"
+          >
+            <Navigation color={colors.primaryForeground} size={18} />
+          </Pressable>
         </Pressable>
       ) : null}
 
       <LocationStatusCard />
 
-      <View className="flex-row flex-wrap justify-between gap-y-3">
-        {SHORTCUTS.map((s) => (
-          <Pressable
-            key={s.label}
-            accessibilityRole="button"
-            accessibilityLabel={s.label}
-            onPress={() => router.push(s.href as never)}
-            className="w-[23%] items-center gap-1.5 active:opacity-70"
-          >
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
-              <s.icon color={colors.accent} size={22} />
-            </View>
-            <Text numberOfLines={1} className="text-xs text-foreground">
-              {s.label}
-            </Text>
-          </Pressable>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-2 px-5">
+        <Chip label="All" selected onPress={() => router.push('/search')} />
+        {CATEGORY_ORDER.map((c) => (
+          <Chip key={c} label={DESTINATION_CATEGORIES[c].label} onPress={() => router.push({ pathname: '/search', params: { category: c } })} />
         ))}
-      </View>
+      </ScrollView>
 
       {urgent.length ? (
         <View className="gap-2">
           <SectionHeader title="Travel alerts" actionLabel="See all" onAction={() => router.push('/alerts')} />
           {urgent.map((a) => (
-            <Pressable key={a.id} onPress={() => router.push('/alerts')} className="flex-row items-center gap-3 rounded-2xl bg-card p-3" style={{ borderLeftWidth: 4, borderLeftColor: severityColors[a.severity] }}>
-              <TriangleAlert color={severityColors[a.severity]} size={18} />
+            <Pressable key={a.id} onPress={() => router.push('/alerts')} className="flex-row items-center gap-3 rounded-2xl bg-destructive-soft p-3">
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-card">
+                <TriangleAlert color={severityColors[a.severity]} size={18} />
+              </View>
               <View className="flex-1">
                 <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
                   {a.title}
@@ -162,46 +201,6 @@ export default function Home() {
         </View>
       ) : null}
 
-      <WeatherCard point={location} title="Weather where you are" />
-
-      {current.length || upcoming.length ? (
-        <Card className="gap-2">
-          <SectionHeader title="Your trip" actionLabel="Open" onAction={() => router.navigate('/trips')} />
-          {[...current, ...upcoming].slice(0, 3).map((t) => {
-            const d = byId.get(t.destination_id);
-            if (!d) return null;
-            return (
-              <Pressable key={t.id} onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })} className="min-h-11 flex-row items-center gap-2">
-                <View className={`h-2.5 w-2.5 rounded-full ${t.status === 'in_progress' ? 'bg-accent' : 'bg-muted-foreground'}`} />
-                <Text numberOfLines={1} className="flex-1 text-sm text-foreground">
-                  {d.name}
-                </Text>
-                <Text className="text-xs text-muted-foreground">{TRIP_STATUSES.find((s) => s.value === t.status)?.label}</Text>
-              </Pressable>
-            );
-          })}
-        </Card>
-      ) : null}
-
-      <View className="gap-3">
-        <SectionHeader title="Categories" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
-          {CATEGORY_ORDER.map((c) => {
-            const meta = DESTINATION_CATEGORIES[c];
-            return (
-              <Pressable
-                key={c}
-                onPress={() => router.push({ pathname: '/search', params: { category: c } })}
-                className="w-24 items-center gap-2 rounded-2xl bg-card py-3"
-              >
-                <meta.icon color={meta.color} size={22} />
-                <Text className="text-xs text-foreground">{meta.label}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
-
       {isLoading && sorted.length === 0 ? (
         <LoadingState label="Loading destinations..." />
       ) : isError && sorted.length === 0 ? (
@@ -210,44 +209,84 @@ export default function Home() {
         <>
           {near.length ? (
             <View className="gap-3">
-              <SectionHeader title="Near you" actionLabel="Map" onAction={() => router.navigate('/explore')} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
+              <SectionHeader title="Near you" actionLabel="See map" onAction={() => router.navigate('/explore')} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
                 {near.map((d) => (
-                  <DestinationCard key={d.id} destination={d} distance={d.distance} />
+                  <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.get(d.id)?.average_rating} />
                 ))}
               </ScrollView>
               {near[0]?.distance != null && near[0].distance > 50_000 ? (
-                <Text className="text-xs text-muted-foreground">
-                  The closest GoTourGo destination is {formatDistance(near[0].distance)} away.
-                </Text>
+                <Text className="text-xs text-muted-foreground">The closest GoTourGo destination is {formatDistance(near[0].distance)} away.</Text>
               ) : null}
             </View>
           ) : null}
 
+          {current.length || upcoming.length ? (
+            <Card className="gap-2">
+              <SectionHeader title="Your trip" actionLabel="Open" onAction={() => router.navigate('/trips')} />
+              {[...current, ...upcoming].slice(0, 3).map((t) => {
+                const d = byId.get(t.destination_id);
+                if (!d) return null;
+                return (
+                  <Pressable
+                    key={t.id}
+                    onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })}
+                    className="min-h-11 flex-row items-center gap-3"
+                  >
+                    <View className={`h-2.5 w-2.5 rounded-full ${t.status === 'in_progress' ? 'bg-accent' : 'bg-border-strong'}`} />
+                    <Text numberOfLines={1} className="flex-1 text-sm font-medium text-foreground">
+                      {d.name}
+                    </Text>
+                    <Text className="text-xs text-faint">{TRIP_STATUSES.find((s) => s.value === t.status)?.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </Card>
+          ) : null}
+
           <View className="gap-3">
-            <SectionHeader title="Popular destinations" actionLabel="See all" onAction={() => router.push('/search')} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
+            <SectionHeader title="Explore more" />
+            <View className="flex-row flex-wrap justify-between gap-y-3">
+              {SHORTCUTS.map((s) => (
+                <Pressable
+                  key={s.label}
+                  accessibilityRole="button"
+                  accessibilityLabel={s.label}
+                  onPress={() => router.push(s.href as never)}
+                  className="w-[23%] items-center gap-2 rounded-2xl border border-border bg-card py-3 active:opacity-70"
+                >
+                  <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
+                    <s.icon color={colors.primary} size={19} />
+                  </View>
+                  <Text numberOfLines={1} className="text-xs font-medium text-foreground">
+                    {s.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <WeatherCard point={location} title="Weather where you are" />
+
+          <View className="gap-3">
+            <SectionHeader title="Popular in Pakistan" actionLabel="See all" onAction={() => router.push('/search')} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
               {popular.map((d) => (
                 <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.get(d.id)?.average_rating} />
               ))}
             </ScrollView>
           </View>
 
-          <View className="gap-3">
-            <SectionHeader title="Saved places" actionLabel={savedPlaces.length ? 'See all' : undefined} onAction={() => router.push('/saved')} />
-            {savedPlaces.length ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
-                {savedPlaces.map((d) => (
-                  <DestinationCard key={d.id} destination={d} distance={d.distance} />
+          {savedPlaces.length ? (
+            <View className="gap-3">
+              <SectionHeader title="Saved places" actionLabel="See all" onAction={() => router.push('/saved')} />
+              <View className="gap-2.5">
+                {savedPlaces.slice(0, 3).map((d) => (
+                  <DestinationCard key={d.id} variant="row" destination={d} distance={d.distance} />
                 ))}
-              </ScrollView>
-            ) : (
-              <Card className="flex-row items-center gap-3">
-                <Bookmark color={colors.accent} size={18} />
-                <Text className="flex-1 text-sm text-muted-foreground">No saved places yet. Tap the bookmark on any destination.</Text>
-              </Card>
-            )}
-          </View>
+              </View>
+            </View>
+          ) : null}
         </>
       )}
     </Screen>
