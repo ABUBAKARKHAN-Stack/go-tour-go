@@ -36,13 +36,17 @@ export const queryPersister = createSyncStoragePersister({
   throttleTime: 2000,
 });
 
-/** Only these query roots are persisted (no messages/feeds/realtime data). */
+/**
+ * Only these query roots are persisted (no messages/feeds/realtime data).
+ * Persisted data must survive JSON: plain objects and arrays only, no Map/Set.
+ */
 const PERSISTED_ROOTS = new Set(['destinations', 'trips', 'saved', 'alerts', 'profile', 'weather', 'ratings']);
 
 export const persistOptions = {
   persister: queryPersister,
   maxAge: 1000 * 60 * 60 * 24 * 7,
-  buster: 'v1',
+  // Bump to drop caches saved in an older shape (v2: ratings and translations were Maps).
+  buster: 'v2',
   dehydrateOptions: {
     shouldDehydrateQuery: (query: { queryKey: readonly unknown[]; state: { status: string } }) =>
       query.state.status === 'success' && PERSISTED_ROOTS.has(String(query.queryKey[0])),

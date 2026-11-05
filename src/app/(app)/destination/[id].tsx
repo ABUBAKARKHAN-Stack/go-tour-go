@@ -99,7 +99,7 @@ export default function DestinationDetails() {
   }
 
   const meta = DESTINATION_CATEGORIES[d.category];
-  const rating = ratings.data?.get(d.id);
+  const rating = ratings.data?.[d.id];
   const isSaved = saved.data?.includes(d.id) ?? false;
   const tripItem = trips.data?.find((t) => t.destination_id === d.id);
   const distance = location ? distanceMeters(location, d) : null;
