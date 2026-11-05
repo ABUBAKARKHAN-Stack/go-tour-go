@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { Mail, MailCheck } from 'lucide-react-native';
 import { useState } from 'react';
+import { View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
-import { Screen } from '@/components/screen';
-import { EmptyState, InlineError } from '@/components/states';
+import { InlineError } from '@/components/states';
+import { Text } from '@/components/text';
 import { sendPasswordReset } from '@/features/auth/api';
 import { AuthShell } from '@/features/auth/auth-shell';
 import { forgotPasswordSchema } from '@/features/auth/schemas';
@@ -28,15 +29,13 @@ export default function ForgotPassword() {
 
   if (sent) {
     return (
-      <Screen back title={tx('Reset password')}>
-        <EmptyState
-          icon={MailCheck}
-          title={tx('Check your inbox')}
-          message={tx('If an account exists for this email, you will receive a reset link. Open it on this phone to choose a new password.')}
-          actionLabel={tx('Back to sign in')}
-          onAction={() => router.replace('/sign-in')}
-        />
-      </Screen>
+      <AuthShell back compact title={tx('Check your inbox')} subtitle={tx('If an account exists for this email, you will receive a reset link. Open it on this phone to choose a new password.')}>
+        <View className="flex-row items-center gap-3 rounded-2xl bg-primary-soft p-4">
+          <MailCheck color={colors.primary} size={22} />
+          <Text className="flex-1 text-sm text-foreground">{tx('Did not get it? Check your spam folder, or try again in a few minutes.')}</Text>
+        </View>
+        <AppButton label={tx('Back to sign in')} onPress={() => router.replace('/sign-in')} />
+      </AuthShell>
     );
   }
 
