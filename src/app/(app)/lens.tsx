@@ -15,6 +15,7 @@ import { useDestinations } from '@/features/destinations/api';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
 import { compressImage } from '@/lib/upload';
+import { tx } from '@/lib/i18n';
 
 /**
  * Visual Lens (FYP demo): photograph a landmark, sign or menu and get travel
@@ -34,7 +35,7 @@ export default function LensScreen() {
     if (source === 'camera') {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Camera permission needed', 'Allow camera access to take a photo for Visual Lens.');
+        Alert.alert(tx('Camera permission needed'), tx('Allow camera access to take a photo for Visual Lens.'));
         return;
       }
     }
@@ -52,8 +53,8 @@ export default function LensScreen() {
     setResult(null);
     try {
       const small = await compressImage(uri, 1024, true);
-      if (!small.base64) throw new Error('Could not read the image.');
-      setResult(await analyzeImage(small.base64, { question: question.trim() || undefined, locale: prefs.locale }));
+      if (!small.base64) throw new Error(tx('Could not read the image.'));
+      setResult(await analyzeImage(small.base64, { question: question.trim() || undefined, locale: prefs.aiLanguage }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'AI service unavailable.');
     } finally {
@@ -64,42 +65,42 @@ export default function LensScreen() {
   const matched = result?.matched_slug ? destinations.data?.find((d) => d.slug === result.matched_slug) : undefined;
 
   return (
-    <Screen back title="Visual Lens" subtitle="Identify landmarks, signs and text" keyboard>
+    <Screen back title={tx('Visual Lens')} subtitle={tx('Identify landmarks, signs and text')} keyboard>
       <Card className="items-center gap-3">
         {uri ? (
           <Image source={{ uri }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" />
         ) : (
           <View className="w-full items-center justify-center gap-2 rounded-2xl bg-secondary py-12">
             <ScanEye color={colors.primary} size={42} strokeWidth={1.5} />
-            <Text className="text-center text-sm text-muted-foreground">Take or choose a photo of a landmark, sign or menu.</Text>
+            <Text className="text-center text-sm text-muted-foreground">{tx('Take or choose a photo of a landmark, sign or menu.')}</Text>
           </View>
         )}
         <View className="w-full flex-row gap-2">
-          <AppButton label="Camera" icon={Camera} variant="secondary" onPress={() => pick('camera')} className="flex-1" />
-          <AppButton label="Gallery" icon={ImagePlus} variant="secondary" onPress={() => pick('library')} className="flex-1" />
+          <AppButton label={tx('Camera')} icon={Camera} variant="secondary" onPress={() => pick('camera')} className="flex-1" />
+          <AppButton label={tx('Gallery')} icon={ImagePlus} variant="secondary" onPress={() => pick('library')} className="flex-1" />
         </View>
       </Card>
 
       {uri ? (
         <>
-          <TextField label="Question (optional)" value={question} onChangeText={setQuestion} placeholder="e.g. What does this sign say?" maxLength={300} />
-          <AppButton label="Analyze photo" icon={Sparkles} variant="accent" onPress={analyze} loading={loading} />
+          <TextField label={tx('Question (optional)')} value={question} onChangeText={setQuestion} placeholder={tx('e.g. What does this sign say?')} maxLength={300} />
+          <AppButton label={tx('Analyze photo')} icon={Sparkles} variant="accent" onPress={analyze} loading={loading} />
         </>
       ) : null}
 
-      {loading ? <LoadingState label="Looking closely..." /> : null}
+      {loading ? <LoadingState label={tx('Looking closely...')} /> : null}
       {error ? <InlineError message={error} /> : null}
 
       {result ? (
         <Card className="gap-3">
           <View className="flex-row items-center justify-between gap-2">
             <Text className="flex-1 text-lg font-bold text-foreground">{result.title}</Text>
-            <Text className="text-xs uppercase text-muted-foreground">{result.confidence} confidence</Text>
+            <Text className="text-xs uppercase text-muted-foreground">{tx('{0} confidence', { 0: result.confidence })}</Text>
           </View>
           <Text className="text-sm leading-5 text-foreground">{result.summary}</Text>
           {result.detected_text ? (
             <View className="gap-1 rounded-2xl bg-secondary p-3">
-              <Text className="text-xs font-semibold uppercase text-muted-foreground">Detected text</Text>
+              <Text className="text-xs font-semibold uppercase text-muted-foreground">{tx('Detected text')}</Text>
               <Text className="text-sm text-foreground">{result.detected_text}</Text>
               {result.translated_text ? (
                 <View className="flex-row gap-2 pt-1">
@@ -120,13 +121,13 @@ export default function LensScreen() {
           ) : null}
           {matched ? (
             <AppButton
-              label={`Open ${matched.name}`}
+              label={tx('Open {0}', { 0: matched.name })}
               icon={MapPin}
               variant="accent"
               onPress={() => router.push({ pathname: '/destination/[id]', params: { id: matched.id } })}
             />
           ) : null}
-          <Text className="text-[11px] text-muted-foreground">AI results can be wrong. This is a demonstration feature.</Text>
+          <Text className="text-[11px] text-muted-foreground">{tx('AI results can be wrong. This is a demonstration feature.')}</Text>
         </Card>
       ) : null}
     </Screen>

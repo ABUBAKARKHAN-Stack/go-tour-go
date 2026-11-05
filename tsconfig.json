@@ -24,6 +24,7 @@
     "node_modules",
     "examples",
     "supabase/functions",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "test"
   ]
 }

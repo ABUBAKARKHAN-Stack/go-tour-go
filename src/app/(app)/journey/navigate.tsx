@@ -35,6 +35,7 @@ import { simulator, useSimulator } from '@/features/proximity/simulator';
 import type { RouteStep } from '@/features/routing/osrm';
 import { formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 function ManeuverIcon({ step }: { step: RouteStep | undefined }) {
   const props = { color: '#FFFFFF', size: 40, strokeWidth: 2.4 };
@@ -82,15 +83,15 @@ export default function JourneyNavigate() {
     if (!nearId || spokenFor.current === nearId) return;
     spokenFor.current = nearId;
     const item = journeyStore.get().items.find((i) => i.id === nearId);
-    if (item) speak(`You're near ${item.name}`);
+    if (item) speak("You're near {0}", { 0: item.name });
   }, [nearId]);
 
   const { route, progress, phase } = journey;
   if (phase === 'idle' || !route) {
     return (
       <View className="flex-1 items-center justify-center gap-4 bg-background px-8">
-        <Text className="text-center font-display text-2xl text-foreground">No journey in progress</Text>
-        <AppButton label="Plan a journey" onPress={() => router.replace('/search')} />
+        <Text className="text-center font-display text-2xl text-foreground">{tx('No journey in progress')}</Text>
+        <AppButton label={tx('Plan a journey')} onPress={() => router.replace('/search')} />
       </View>
     );
   }
@@ -104,10 +105,10 @@ export default function JourneyNavigate() {
   const eta = progress?.etaSeconds ?? route.duration;
 
   const end = () =>
-    Alert.alert('End journey?', `Stop navigating to ${journey.target?.name ?? 'your destination'}?`, [
-      { text: 'Keep going', style: 'cancel' },
+    Alert.alert(tx('End journey?'), tx('Stop navigating to {0}?', { 0: journey.target?.name ?? 'your destination' }), [
+      { text: tx('Keep going'), style: 'cancel' },
       {
-        text: 'End',
+        text: tx('End'),
         style: 'destructive',
         onPress: () => {
           simulator.stop();
@@ -127,15 +128,13 @@ export default function JourneyNavigate() {
             <Flag color={colors.success} size={22} />
           </View>
           <View className="gap-1">
-            <Text className="text-[11px] font-bold uppercase tracking-[1.6px] text-success">You have arrived</Text>
+            <Text className="text-[11px] font-bold uppercase tracking-[1.6px] text-success">{tx('You have arrived')}</Text>
             <Text className="font-display text-[30px] leading-9 text-foreground">{journey.target?.name}</Text>
-            <Text className="text-sm text-muted-foreground">
-              {journey.items.filter((i) => i.kind === 'landmark').length} landmarks were on your way. Explore what is around you now.
-            </Text>
+            <Text className="text-sm text-muted-foreground">{tx('{0} landmarks were on your way. Explore what is around you now.', { 0: journey.items.filter((i) => i.kind === 'landmark').length })}</Text>
           </View>
           {tripItem && tripItem.status !== 'visited' ? (
             <AppButton
-              label="Mark as visited in my trip"
+              label={tx('Mark as visited in my trip')}
               variant="outline"
               loading={tripActions.setStatusForDestination.isPending}
               onPress={() => tripActions.setStatusForDestination.mutate({ destinationId: tripItem.destination_id, status: 'visited' })}
@@ -143,7 +142,7 @@ export default function JourneyNavigate() {
           ) : null}
           <View className="flex-row gap-2">
             <AppButton
-              label="Explore nearby"
+              label={tx('Explore nearby')}
               variant="secondary"
               className="flex-1"
               onPress={() => {
@@ -152,7 +151,7 @@ export default function JourneyNavigate() {
               }}
             />
             <AppButton
-              label="Done"
+              label={tx('Done')}
               className="flex-1"
               onPress={() => {
                 journeyStore.stop();
@@ -183,20 +182,18 @@ export default function JourneyNavigate() {
           <View className="flex-1">
             <Text className="font-display text-[30px] leading-9 text-white">{formatDistance(progress?.toManeuver ?? route.steps[0]?.distance ?? 0)}</Text>
             <Text numberOfLines={2} className="text-base text-white">
-              {next?.instruction ?? 'Follow the route'}
+              {next?.instruction ?? tx('Follow the route')}
             </Text>
           </View>
         </View>
         {journey.rerouting || progress?.offRoute ? (
           <View className="flex-row items-center gap-2 bg-accent px-4 py-2">
             <RefreshCw color="#FFFFFF" size={14} />
-            <Text className="text-xs font-semibold text-white">{journey.rerouting ? 'Off route · finding a new route…' : 'Off route · will recalculate when online'}</Text>
+            <Text className="text-xs font-semibold text-white">{journey.rerouting ? tx('Off route · finding a new route…') : tx('Off route · will recalculate when online')}</Text>
           </View>
         ) : then ? (
           <View className="bg-primary-pressed px-4 py-2">
-            <Text numberOfLines={1} className="text-xs font-semibold text-white">
-              Then {then.instruction.charAt(0).toLowerCase() + then.instruction.slice(1)}
-            </Text>
+            <Text numberOfLines={1} className="text-xs font-semibold text-white">{tx('Then {0}', { 0: then.instruction.charAt(0).toLowerCase() + then.instruction.slice(1) })}</Text>
           </View>
         ) : null}
       </View>
@@ -209,18 +206,18 @@ export default function JourneyNavigate() {
           >
             {upcoming.kind === 'hazard' ? <TriangleAlert color={colors.destructive} size={15} /> : <Landmark color={colors.accent} size={15} />}
             <Text className="text-xs font-semibold text-foreground">
-              {upcoming.name} {upcoming.along > along ? `ahead · ${formatDistance(upcoming.along - along)}` : 'nearby'}
+              {upcoming.name} {upcoming.along > along ? tx('ahead · {0}', { 0: formatDistance(upcoming.along - along) }) : 'nearby'}
             </Text>
           </View>
         ) : null}
         {sim.running ? (
           <Pressable onPress={() => simulator.stop()} className="self-start rounded-full bg-info px-3 py-1.5">
-            <Text className="text-[11px] font-semibold text-white">Simulated drive · tap to stop</Text>
+            <Text className="text-[11px] font-semibold text-white">{tx('Simulated drive · tap to stop')}</Text>
           </Pressable>
         ) : null}
         {params.background === '0' ? (
           <View className="self-start rounded-full bg-card px-3 py-1.5">
-            <Text className="text-[11px] text-muted-foreground">Alerts only while GoTourGo is open</Text>
+            <Text className="text-[11px] text-muted-foreground">{tx('Alerts only while GoTourGo is open')}</Text>
           </View>
         ) : null}
       </View>
@@ -228,24 +225,22 @@ export default function JourneyNavigate() {
       <View className="absolute right-4 gap-2" style={{ bottom: insets.bottom + 140 }}>
         <MapButton
           icon={journey.voice ? Volume2 : VolumeX}
-          label={journey.voice ? 'Mute voice' : 'Turn voice on'}
+          label={journey.voice ? tx('Mute voice') : tx('Turn voice on')}
           onPress={() => journeyStore.setVoice(!journey.voice)}
         />
-        <MapButton icon={overview ? LocateFixed : RouteIcon} label={overview ? 'Follow me' : 'Show whole route'} onPress={() => setOverview((v) => !v)} />
+        <MapButton icon={overview ? LocateFixed : RouteIcon} label={overview ? tx('Follow me') : tx('Show whole route')} onPress={() => setOverview((v) => !v)} />
       </View>
 
       <View
         className="absolute bottom-0 left-0 right-0 flex-row items-center gap-4 rounded-t-[28px] bg-card px-6 pt-5"
         style={{ paddingBottom: insets.bottom + 18, boxShadow: '0 -8px 24px rgba(28,26,23,0.10)' }}
       >
-        <Pressable accessibilityRole="button" accessibilityLabel="End journey" onPress={end} className="h-13 w-13 items-center justify-center rounded-full bg-destructive-soft" style={{ height: 52, width: 52 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={tx('End journey')} onPress={end} className="h-13 w-13 items-center justify-center rounded-full bg-destructive-soft" style={{ height: 52, width: 52 }}>
           <X color={colors.destructive} size={22} />
         </Pressable>
         <View className="flex-1 items-center">
           <Text className="font-display text-[26px] text-success">{formatEta(eta)}</Text>
-          <Text className="text-xs text-faint">
-            {formatDistance(remaining)} · {arrivalClock(eta)} arrival
-          </Text>
+          <Text className="text-xs text-faint">{tx('{0} · {1} arrival', { 0: formatDistance(remaining), 1: arrivalClock(eta) })}</Text>
         </View>
         <View style={{ width: 52 }} />
       </View>

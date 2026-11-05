@@ -8,6 +8,7 @@ import type { Route, RouteStep, TravelMode } from '@/features/routing/osrm';
 import { distanceMeters } from '@/lib/geo';
 
 import { projectPoint, type RouteIndex } from './route-geometry';
+import { tx, txEn } from '@/lib/i18n';
 
 export type NavFix = { latitude: number; longitude: number; accuracy: number | null; timestamp: number };
 
@@ -120,28 +121,38 @@ export function crossedThreshold(prevTo: number | null, nowTo: number, threshold
   return null;
 }
 
-export function spokenDistance(m: number): string {
+type Translate = (text: string, vars?: Record<string, string | number | null | undefined>) => string;
+
+export function spokenDistance(m: number, t: Translate = txEn): string {
   if (m >= 1000) {
     const km = Math.round(m / 100) / 10;
-    return `${km} kilometre${km === 1 ? '' : 's'}`;
+    return km === 1 ? t('1 kilometre') : t('{0} kilometres', { 0: km });
   }
   const rounded = m >= 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10);
-  return `${rounded} metres`;
+  return t('{0} metres', { 0: rounded });
 }
 
-/** What the voice says for the upcoming step at a given distance. */
-export function spokenInstruction(step: RouteStep, distance: number, lastThreshold: boolean): string {
-  if (step.type === 'arrive') return lastThreshold ? 'You have arrived at your destination' : `In ${spokenDistance(distance)}, you will arrive`;
-  const text = step.instruction.charAt(0).toLowerCase() + step.instruction.slice(1);
-  return lastThreshold ? step.instruction : `In ${spokenDistance(distance)}, ${text}`;
+/**
+ * What the voice says for the upcoming step. `english` picks the English
+ * wording (used when the phone has no voice for the app language).
+ */
+export function spokenInstruction(step: RouteStep, distance: number, lastThreshold: boolean, english = true): string {
+  const t: Translate = english ? txEn : tx;
+  const instruction = english ? step.instructionEn : step.instruction;
+  if (step.type === 'arrive') {
+    return lastThreshold ? t('You have arrived at your destination') : t('In {0}, you will arrive', { 0: spokenDistance(distance, t) });
+  }
+  if (lastThreshold) return instruction;
+  const lowered = english ? instruction.charAt(0).toLowerCase() + instruction.slice(1) : instruction;
+  return t('In {0}, {1}', { 0: spokenDistance(distance, t), 1: lowered });
 }
 
 export function formatEta(seconds: number): string {
   const mins = Math.max(1, Math.round(seconds / 60));
-  if (mins < 60) return `${mins} min`;
+  if (mins < 60) return tx('{0} min', { 0: mins });
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return m ? `${h} h ${m} min` : `${h} h`;
+  return m ? tx('{0} h {1} min', { 0: h, 1: m }) : tx('{0} h', { 0: h });
 }
 
 export function arrivalClock(seconds: number, now = Date.now()): string {

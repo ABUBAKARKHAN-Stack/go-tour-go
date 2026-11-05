@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/states';
 import { useDestinations } from '@/features/destinations/api';
 import { parseDestinationQr } from '@/features/destinations/qr';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 /**
  * Smart Scan: QR codes for GoTourGo destinations (shown on each destination
@@ -53,12 +54,12 @@ export default function ScanScreen() {
       <View className="flex-1 justify-center bg-background px-4" style={{ paddingTop: insets.top }}>
         <EmptyState
           icon={QrCode}
-          title="Camera access needed"
-          message="Smart Scan uses the camera to read QR codes on signs, tickets and GoTourGo destination cards."
-          actionLabel={permission.canAskAgain ? 'Allow camera' : 'Open settings'}
+          title={tx('Camera access needed')}
+          message={tx('Smart Scan uses the camera to read QR codes on signs, tickets and GoTourGo destination cards.')}
+          actionLabel={permission.canAskAgain ? tx('Allow camera') : tx('Open settings')}
           onAction={() => (permission.canAskAgain ? requestPermission() : Linking.openSettings())}
         />
-        <AppButton label="Back" variant="ghost" onPress={() => router.back()} />
+        <AppButton label={tx('Back')} variant="ghost" onPress={() => router.back()} />
       </View>
     );
   }
@@ -74,24 +75,24 @@ export default function ScanScreen() {
         />
       ) : null}
       <View className="absolute left-0 right-0 top-0 flex-row items-center gap-3 px-4" style={{ paddingTop: insets.top + 8 }}>
-        <IconButton icon={ArrowLeft} label="Go back" onPress={() => router.back()} />
-        <Text className="flex-1 text-lg font-bold text-white">Smart Scan</Text>
-        <IconButton icon={ScanEye} label="Use Visual Lens" onPress={() => router.replace('/lens')} />
+        <IconButton icon={ArrowLeft} flip label={tx('Go back')} onPress={() => router.back()} />
+        <Text className="flex-1 text-lg font-bold text-white">{tx('Smart Scan')}</Text>
+        <IconButton icon={ScanEye} label={tx('Use Visual Lens')} onPress={() => router.replace('/lens')} />
       </View>
       {!scanned ? (
         <View className="pointer-events-none absolute inset-0 items-center justify-center">
           <View className="h-64 w-64 rounded-3xl border-4 border-accent" />
-          <Text className="mt-4 text-sm text-white">Point at a QR code</Text>
+          <Text className="mt-4 text-sm text-white">{tx('Point at a QR code')}</Text>
         </View>
       ) : (
         <View className="absolute bottom-0 left-0 right-0 gap-3 rounded-t-3xl bg-card p-5" style={{ paddingBottom: insets.bottom + 16 }}>
           {destination ? (
             <>
-              <Text className="text-xs font-bold uppercase text-accent">GoTourGo destination</Text>
+              <Text className="text-xs font-bold uppercase text-accent">{tx('GoTourGo destination')}</Text>
               <Text className="text-xl font-bold text-foreground">{destination.name}</Text>
               <Text className="text-sm text-muted-foreground">{destination.short_description}</Text>
               <AppButton
-                label="Open destination"
+                label={tx('Open destination')}
                 icon={MapPin}
                 variant="accent"
                 onPress={() => router.replace({ pathname: '/destination/[id]', params: { id: destination.id } })}
@@ -99,25 +100,25 @@ export default function ScanScreen() {
             </>
           ) : isUrl ? (
             <>
-              <Text className="text-xs font-bold uppercase text-accent">Link</Text>
+              <Text className="text-xs font-bold uppercase text-accent">{tx('Link')}</Text>
               <Text numberOfLines={3} className="text-sm text-foreground">
                 {scanned}
               </Text>
-              <Text className="text-xs text-muted-foreground">Only open links you trust.</Text>
-              <AppButton label="Open link" icon={ExternalLink} variant="accent" onPress={() => Linking.openURL(scanned)} />
+              <Text className="text-xs text-muted-foreground">{tx('Only open links you trust.')}</Text>
+              <AppButton label={tx('Open link')} icon={ExternalLink} variant="accent" onPress={() => Linking.openURL(scanned)} />
             </>
           ) : (
             <>
-              <Text className="text-xs font-bold uppercase text-accent">Scanned text</Text>
+              <Text className="text-xs font-bold uppercase text-accent">{tx('Scanned text')}</Text>
               <Text selectable className="text-sm text-foreground">
                 {scanned}
               </Text>
             </>
           )}
-          <AppButton label="Scan again" icon={RotateCcw} variant="secondary" onPress={reset} />
+          <AppButton label={tx('Scan again')} icon={RotateCcw} variant="secondary" onPress={reset} />
           {!destination ? (
             <Text className="text-center text-xs text-muted-foreground" style={{ color: colors.mutedForeground }}>
-              Not a GoTourGo code? Try Visual Lens to recognise landmarks and signs.
+              {tx('Not a GoTourGo code? Try Visual Lens to recognise landmarks and signs.')}
             </Text>
           ) : null}
         </View>

@@ -11,6 +11,7 @@ import { useContactActions, useTrustedContacts } from '@/features/safety/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 import type { TrustedContact } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 export default function TrustedContactsScreen() {
   const contacts = useTrustedContacts();
@@ -28,28 +29,28 @@ export default function TrustedContactsScreen() {
   };
 
   return (
-    <Screen back title="Trusted contacts" subtitle="They receive your SOS via WhatsApp" keyboard>
+    <Screen back title={tx('Trusted contacts')} subtitle={tx('They receive your SOS via WhatsApp')} keyboard>
       {editing ? (
         <Card className="gap-3">
-          <Text className="text-base font-semibold text-foreground">{editing.id ? 'Edit contact' : 'New contact'}</Text>
+          <Text className="text-base font-semibold text-foreground">{editing.id ? tx('Edit contact') : tx('New contact')}</Text>
           {error ? <InlineError message={error} /> : null}
-          <TextField label="Name" value={editing.name ?? ''} onChangeText={(name) => setEditing({ ...editing, name })} placeholder="Ammi" />
+          <TextField label={tx('Name')} value={editing.name ?? ''} onChangeText={(name) => setEditing({ ...editing, name })} placeholder={tx('Ammi')} />
           <TextField
-            label="WhatsApp number"
+            label={tx('WhatsApp number')}
             value={editing.phone ?? ''}
             onChangeText={(phone) => setEditing({ ...editing, phone })}
             keyboardType="phone-pad"
             placeholder="+92 300 1234567"
-            hint="Include the country code. Local 03xx numbers are converted to +92."
+            hint={tx('Include the country code. Local 03xx numbers are converted to +92.')}
           />
-          <TextField label="Relationship (optional)" value={editing.relationship ?? ''} onChangeText={(relationship) => setEditing({ ...editing, relationship })} placeholder="Mother, friend..." />
+          <TextField label={tx('Relationship (optional)')} value={editing.relationship ?? ''} onChangeText={(relationship) => setEditing({ ...editing, relationship })} placeholder={tx('Mother, friend...')} />
           <View className="flex-row gap-2">
-            <AppButton label="Cancel" variant="outline" onPress={() => setEditing(null)} className="flex-1" />
-            <AppButton label="Save" variant="accent" loading={actions.save.isPending} onPress={save} className="flex-1" />
+            <AppButton label={tx('Cancel')} variant="outline" onPress={() => setEditing(null)} className="flex-1" />
+            <AppButton label={tx('Save')} variant="accent" loading={actions.save.isPending} onPress={save} className="flex-1" />
           </View>
         </Card>
       ) : (
-        <AppButton label="Add trusted contact" icon={UserPlus} variant="accent" onPress={() => setEditing({})} />
+        <AppButton label={tx('Add trusted contact')} icon={UserPlus} variant="accent" onPress={() => setEditing({})} />
       )}
 
       {contacts.isLoading ? (
@@ -57,7 +58,7 @@ export default function TrustedContactsScreen() {
       ) : contacts.isError ? (
         <ErrorState error={contacts.error} onRetry={contacts.refetch} />
       ) : (contacts.data ?? []).length === 0 ? (
-        <EmptyState icon={Users} title="No trusted contacts" message="Add at least one person who should hear from you in an emergency." />
+        <EmptyState icon={Users} title={tx('No trusted contacts')} message={tx('Add at least one person who should hear from you in an emergency.')} />
       ) : (
         contacts.data!.map((c) => (
           <Card key={c.id} className="flex-row items-center gap-3">
@@ -68,14 +69,14 @@ export default function TrustedContactsScreen() {
                 {c.relationship ? ` · ${c.relationship}` : ''}
               </Text>
             </View>
-            <IconButton icon={Pencil} label={`Edit ${c.name}`} onPress={() => setEditing(c)} />
+            <IconButton icon={Pencil} label={tx('Edit {0}', { 0: c.name })} onPress={() => setEditing(c)} />
             <IconButton
               icon={Trash2}
-              label={`Delete ${c.name}`}
+              label={tx('Delete {0}', { 0: c.name })}
               onPress={() =>
-                Alert.alert(`Remove ${c.name}?`, undefined, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: () => actions.remove.mutate(c.id) },
+                Alert.alert(tx('Remove {0}?', { 0: c.name }), undefined, [
+                  { text: tx('Cancel'), style: 'cancel' },
+                  { text: tx('Remove'), style: 'destructive', onPress: () => actions.remove.mutate(c.id) },
                 ])
               }
             />
@@ -83,7 +84,7 @@ export default function TrustedContactsScreen() {
         ))
       )}
       <Text className="text-xs" style={{ color: colors.mutedForeground }}>
-        Contacts are private to your account and never shown to other users.
+        {tx('Contacts are private to your account and never shown to other users.')}
       </Text>
     </Screen>
   );

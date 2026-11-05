@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n';
 /**
  * Online fallback for streets and addresses that are not in the local place
  * list, using Photon (photon.komoot.io, OpenStreetMap data, free and keyless).
@@ -71,6 +72,6 @@ export async function searchPhoton(
     params.set('lon', near.longitude.toFixed(4));
   }
   const res = await fetch(`${PHOTON_URL}?${params.toString()}`, { signal, headers: { Accept: 'application/json' } });
-  if (!res.ok) throw new Error(`Address search unavailable (${res.status}).`);
+  if (!res.ok) throw new Error(tx('Address search unavailable ({0}).', { 0: res.status }));
   return parsePhoton(await res.json());
 }

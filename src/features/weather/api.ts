@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { tx } from '@/lib/i18n';
 
 /**
  * Current weather from Open-Meteo (free, no API key). Cached 30 minutes per
@@ -15,27 +16,27 @@ export type Weather = {
 };
 
 const DESCRIPTIONS: Record<number, string> = {
-  0: 'Clear sky',
-  1: 'Mainly clear',
-  2: 'Partly cloudy',
-  3: 'Overcast',
-  45: 'Fog',
-  48: 'Freezing fog',
-  51: 'Light drizzle',
-  53: 'Drizzle',
-  55: 'Heavy drizzle',
-  61: 'Light rain',
-  63: 'Rain',
-  65: 'Heavy rain',
-  71: 'Light snow',
-  73: 'Snow',
-  75: 'Heavy snow',
-  80: 'Rain showers',
-  81: 'Rain showers',
-  82: 'Violent showers',
-  95: 'Thunderstorm',
-  96: 'Thunderstorm with hail',
-  99: 'Thunderstorm with hail',
+  0: tx('Clear sky'),
+  1: tx('Mainly clear'),
+  2: tx('Partly cloudy'),
+  3: tx('Overcast'),
+  45: tx('Fog'),
+  48: tx('Freezing fog'),
+  51: tx('Light drizzle'),
+  53: tx('Drizzle'),
+  55: tx('Heavy drizzle'),
+  61: tx('Light rain'),
+  63: tx('Rain'),
+  65: tx('Heavy rain'),
+  71: tx('Light snow'),
+  73: tx('Snow'),
+  75: tx('Heavy snow'),
+  80: tx('Rain showers'),
+  81: tx('Rain showers'),
+  82: tx('Violent showers'),
+  95: tx('Thunderstorm'),
+  96: tx('Thunderstorm with hail'),
+  99: tx('Thunderstorm with hail'),
 };
 
 export function describeWeather(code: number) {

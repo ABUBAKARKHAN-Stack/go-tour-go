@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export function useIsOnline() {
   const state = useNetworkState();
@@ -18,7 +19,7 @@ export function OfflineBanner() {
     <View className="mx-4 mb-2 flex-row items-center gap-2 rounded-xl bg-muted px-3 py-2" accessibilityRole="alert">
       <WifiOff color={colors.primary} size={16} />
       <Text className="flex-1 text-xs text-muted-foreground">
-        No internet connection. Showing saved data; some actions need a connection.
+        {tx('No internet connection. Showing saved data; some actions need a connection.')}
       </Text>
     </View>
   );

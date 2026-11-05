@@ -11,6 +11,7 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { colors } from '@/lib/theme';
 import type { CommunityPost } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: string | null; detail?: boolean }) {
   const actions = useCommunityActions();
@@ -21,10 +22,10 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
   const place = post.destination?.name ?? post.place_name;
 
   const remove = () =>
-    Alert.alert('Delete post?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tx('Delete post?'), tx('This cannot be undone.'), [
+      { text: tx('Cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: tx('Delete'),
         style: 'destructive',
         onPress: () => actions.deletePost.mutate(post.id, { onSuccess: () => detail && router.back() }),
       },
@@ -41,7 +42,7 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
           <Text className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</Text>
         </View>
         {mine ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Delete post" onPress={remove} hitSlop={10} className="h-10 w-10 items-center justify-center">
+          <Pressable accessibilityRole="button" accessibilityLabel={tx('Delete post')} onPress={remove} hitSlop={10} className="h-10 w-10 items-center justify-center">
             <Trash2 color={colors.mutedForeground} size={18} />
           </Pressable>
         ) : null}
@@ -73,7 +74,7 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
       <View className="flex-row items-center gap-6">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={liked ? 'Unlike' : 'Like'}
+          accessibilityLabel={liked ? tx('Unlike') : tx('Like')}
           accessibilityState={{ selected: liked }}
           onPress={() => actions.toggleLike.mutate({ postId: post.id, like: !liked })}
           className="min-h-10 flex-row items-center gap-1.5"
@@ -83,7 +84,7 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Comments"
+          accessibilityLabel={tx('Comments')}
           onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
           className="min-h-10 flex-row items-center gap-1.5"
         >

@@ -44,8 +44,9 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { useTripActions, useTrips } from '@/features/trips/api';
 import { errorMessage } from '@/lib/errors';
 import { distanceMeters, formatDistance } from '@/lib/geo';
-import { LOCALES, usePreferences } from '@/lib/preferences';
+import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 const SPEECH_LANG: Record<string, string> = { en: 'en-US', ur: 'ur-PK', ar: 'ar-SA', zh: 'zh-CN' };
 
@@ -53,7 +54,7 @@ export default function DestinationDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { userId } = useAuth();
-  const [prefs, setPrefs] = usePreferences();
+  const [prefs] = usePreferences();
   const { destination: d, isLoading, isError, error, refetch, isFallback } = useDestinationDetail(id);
   const all = useDestinations();
   const ratings = useRatings();
@@ -81,7 +82,7 @@ export default function DestinationDetails() {
   if (isLoading && !d) {
     return (
       <View className="flex-1 justify-center bg-background">
-        <LoadingState label="Loading destination..." />
+        <LoadingState label={tx('Loading destination...')} />
       </View>
     );
   }
@@ -91,7 +92,7 @@ export default function DestinationDetails() {
         {isError ? (
           <ErrorState error={error} onRetry={refetch} />
         ) : (
-          <EmptyState title="Destination not found" actionLabel="Go back" onAction={() => router.back()} />
+          <EmptyState title={tx('Destination not found')} actionLabel={tx('Go back')} onAction={() => router.back()} />
         )}
       </View>
     );
@@ -119,7 +120,7 @@ export default function DestinationDetails() {
       onStopped: () => setSpeaking(false),
       onError: () => {
         setSpeaking(false);
-        Alert.alert('Audio guide unavailable', 'Your device does not have a voice for this language. Try English.');
+        Alert.alert(tx('Audio guide unavailable'), tx('Your device does not have a voice for this language. Try English.'));
       },
     });
   };
@@ -132,21 +133,21 @@ export default function DestinationDetails() {
     tripActions.add.mutate(
       { destinationId: d.id },
       {
-        onSuccess: () => Alert.alert('Added to your trip', `${d.name} is on your checklist.`),
-        onError: (e) => Alert.alert('Could not add', errorMessage(e)),
+        onSuccess: () => Alert.alert(tx('Added to your trip'), tx('{0} is on your checklist.', { 0: d.name })),
+        onError: (e) => Alert.alert(tx('Could not add'), errorMessage(e)),
       },
     );
   };
 
   const sections: { title: string; body: string | null }[] = [
-    { title: 'About', body: d.description },
-    { title: 'History', body: d.history },
-    { title: 'Culture', body: d.culture },
-    { title: 'Why it matters', body: d.significance },
-    { title: 'Local customs', body: d.local_customs },
-    { title: 'Food & cuisine', body: d.food },
-    { title: 'Shopping & souvenirs', body: d.shopping },
-    { title: 'Travel tips', body: d.tips },
+    { title: tx('About'), body: d.description },
+    { title: tx('History'), body: d.history },
+    { title: tx('Culture'), body: d.culture },
+    { title: tx('Why it matters'), body: d.significance },
+    { title: tx('Local customs'), body: d.local_customs },
+    { title: tx('Food & cuisine'), body: d.food },
+    { title: tx('Shopping & souvenirs'), body: d.shopping },
+    { title: tx('Travel tips'), body: d.tips },
   ];
 
   return (
@@ -155,10 +156,10 @@ export default function DestinationDetails() {
         <View>
           <DestinationImage uri={d.image_url} category={d.category} className="h-72 w-full" iconSize={72} recyclingKey={d.id} />
           <View className="absolute left-0 right-0 flex-row justify-between px-4" style={{ top: insets.top + 8 }}>
-            <IconButton icon={ArrowLeft} label="Go back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+            <IconButton icon={ArrowLeft} flip label={tx('Go back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
             <IconButton
               icon={isSaved ? BookmarkCheck : Bookmark}
-              label={isSaved ? 'Remove from saved' : 'Save place'}
+              label={isSaved ? tx('Remove from saved') : tx('Save place')}
               active={isSaved}
               onPress={() => toggleSaved.mutate({ destinationId: d.id, save: !isSaved })}
             />
@@ -178,7 +179,7 @@ export default function DestinationDetails() {
                   {d.city}, {d.region}
                 </Text>
               </View>
-              {distance != null ? <Text className="text-sm font-semibold text-primary">{formatDistance(distance)} away</Text> : null}
+              {distance != null ? <Text className="text-sm font-semibold text-primary">{tx('{0} away', { 0: formatDistance(distance) })}</Text> : null}
               {rating ? (
                 <View className="flex-row items-center gap-1">
                   <RatingStars value={rating.average_rating} size={12} />
@@ -192,9 +193,9 @@ export default function DestinationDetails() {
           </View>
 
           <View className="flex-row gap-2">
-            <AppButton label="Navigate" icon={Navigation} variant="accent" onPress={() => navigateTo(d)} className="flex-1" />
+            <AppButton label={tx('Navigate')} icon={Navigation} variant="accent" onPress={() => navigateTo(d)} className="flex-1" />
             <AppButton
-              label={tripItem ? 'In your trip' : 'Add to trip'}
+              label={tripItem ? tx('In your trip') : tx('Add to trip')}
               icon={tripItem ? Check : CalendarPlus}
               variant="secondary"
               loading={tripActions.add.isPending}
@@ -203,24 +204,15 @@ export default function DestinationDetails() {
             />
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
-            <Chip label={speaking ? 'Stop audio' : 'Audio guide'} icon={speaking ? <Square size={14} color={colors.accentForeground} /> : <Volume2 size={14} color={colors.foreground} />} selected={speaking} onPress={toggleSpeech} />
+            <Chip label={speaking ? tx('Stop audio') : tx('Audio guide')} icon={speaking ? <Square size={14} color={colors.accentForeground} /> : <Volume2 size={14} color={colors.foreground} />} selected={speaking} onPress={toggleSpeech} />
             <Chip
-              label="Ask AI"
+              label={tx('Ask AI')}
               icon={<Sparkles size={14} color={colors.foreground} />}
               onPress={() => router.push({ pathname: '/assistant', params: { destination: d.slug, q: `What should I know before visiting ${d.name}?` } })}
             />
-            <Chip label="View on map" icon={<MapPin size={14} color={colors.foreground} />} onPress={() => router.navigate({ pathname: '/explore', params: { focus: d.id } })} />
-            <Chip label="QR code" icon={<QrCode size={14} color={colors.foreground} />} onPress={() => setQrOpen(true)} />
+            <Chip label={tx('View on map')} icon={<MapPin size={14} color={colors.foreground} />} onPress={() => router.navigate({ pathname: '/explore', params: { focus: d.id } })} />
+            <Chip label={tx('QR code')} icon={<QrCode size={14} color={colors.foreground} />} onPress={() => setQrOpen(true)} />
           </ScrollView>
-
-          <View className="gap-2">
-            <Text className="text-xs text-muted-foreground">Guide language</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
-              {LOCALES.map((l) => (
-                <Chip key={l.value} label={l.label} selected={prefs.locale === l.value} onPress={() => setPrefs({ locale: l.value })} />
-              ))}
-            </ScrollView>
-          </View>
 
           {(d.opening_hours || d.entry_fee || d.best_time) && (
             <Card className="gap-2">
@@ -236,8 +228,8 @@ export default function DestinationDetails() {
                   <Text className="flex-1 text-sm text-foreground">{d.entry_fee}</Text>
                 </View>
               ) : null}
-              {d.best_time ? <Text className="text-sm text-muted-foreground">Best time to visit: {d.best_time}</Text> : null}
-              <Text className="text-xs text-muted-foreground">Hours and fees can change; check locally before visiting.</Text>
+              {d.best_time ? <Text className="text-sm text-muted-foreground">{tx('Best time to visit: {0}', { 0: d.best_time })}</Text> : null}
+              <Text className="text-xs text-muted-foreground">{tx('Hours and fees can change; check locally before visiting.')}</Text>
             </Card>
           )}
 
@@ -250,8 +242,12 @@ export default function DestinationDetails() {
               </View>
             ))}
 
+          {d.machine_translated ? (
+            <Text className="text-xs text-faint">{tx('Parts of this guide were translated into Urdu by AI and may contain mistakes.')}</Text>
+          ) : null}
+
           {isFallback ? (
-            <Text className="text-xs text-faint">Showing the offline summary. The full guide loads when you are connected.</Text>
+            <Text className="text-xs text-faint">{tx('Showing the offline summary. The full guide loads when you are connected.')}</Text>
           ) : null}
 
           {d.wikipedia_url || d.image_credit ? (
@@ -259,7 +255,7 @@ export default function DestinationDetails() {
               {d.wikipedia_url ? (
                 <Pressable accessibilityRole="link" onPress={() => Linking.openURL(d.wikipedia_url!)} hitSlop={6}>
                   <Text className="text-xs text-faint">
-                    Text from <Text className="text-xs font-semibold text-primary">Wikipedia</Text> (CC BY-SA 4.0)
+                    {tx('Text from')}{' '}<Text className="text-xs font-semibold text-primary">{tx('Wikipedia')}</Text>{' '}{tx('(CC BY-SA 4.0)')}
                   </Text>
                 </Pressable>
               ) : null}
@@ -270,24 +266,19 @@ export default function DestinationDetails() {
                   onPress={() => d.image_page_url && Linking.openURL(d.image_page_url)}
                   hitSlop={6}
                 >
-                  <Text className="text-xs text-faint">
-                    Photo: {d.image_credit}
-                    {d.image_license ? ` (${d.image_license})` : ''}, Wikimedia Commons
-                  </Text>
+                  <Text className="text-xs text-faint">{tx('Photo: {0} {1}, Wikimedia Commons', { 0: d.image_credit, 1: d.image_license ? ` (${d.image_license})` : '' })}</Text>
                 </Pressable>
               ) : null}
             </View>
           ) : null}
 
-          <WeatherCard point={d} title={`Weather at ${d.name}`} />
+          <WeatherCard point={d} title={tx('Weather at {0}', { 0: d.name })} />
 
           <Card className="gap-2">
-            <Text className="text-base font-semibold text-foreground">Location</Text>
-            <Text className="text-sm text-muted-foreground">
-              {d.latitude.toFixed(4)}, {d.longitude.toFixed(4)} · Alert radius {formatDistance(d.radius_m)}
-            </Text>
+            <Text className="text-base font-semibold text-foreground">{tx('Location')}</Text>
+            <Text className="text-sm text-muted-foreground">{tx('{0}, {1} · Alert radius {2}', { 0: d.latitude.toFixed(4), 1: d.longitude.toFixed(4), 2: formatDistance(d.radius_m) })}</Text>
             <AppButton
-              label="Nearby services"
+              label={tx('Nearby services')}
               variant="outline"
               size="sm"
               onPress={() => router.push({ pathname: '/nearby', params: { lat: String(d.latitude), lng: String(d.longitude), name: d.name } })}
@@ -296,7 +287,7 @@ export default function DestinationDetails() {
 
           {nearby.length ? (
             <View className="gap-3">
-              <SectionHeader title="Nearby attractions" />
+              <SectionHeader title={tx('Nearby attractions')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
                 {nearby.map((n) => (
                   <DestinationCard key={n.x.id} destination={n.x} distance={n.dist} />
@@ -307,20 +298,20 @@ export default function DestinationDetails() {
 
           <View className="gap-3">
             <SectionHeader
-              title="Reviews"
-              actionLabel={myReview ? 'Edit your review' : 'Write a review'}
+              title={tx('Reviews')}
+              actionLabel={myReview ? tx('Edit your review') : tx('Write a review')}
               onAction={() => router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
             />
             {reviews.isLoading ? (
-              <LoadingState label="Loading reviews..." />
+              <LoadingState label={tx('Loading reviews...')} />
             ) : reviews.isError ? (
               <ErrorState error={reviews.error} onRetry={reviews.refetch} />
             ) : (reviews.data ?? []).length === 0 ? (
               <EmptyState
                 icon={MessageSquarePlus}
-                title="No reviews yet"
-                message="Be the first to share your experience."
-                actionLabel="Write a review"
+                title={tx('No reviews yet')}
+                message={tx('Be the first to share your experience.')}
+                actionLabel={tx('Write a review')}
                 onAction={() => router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
               />
             ) : (
@@ -350,12 +341,12 @@ export default function DestinationDetails() {
           <View className="items-center gap-4 rounded-3xl bg-card p-6">
             <View className="w-full flex-row items-center justify-between">
               <Text className="text-lg font-bold text-foreground">{d.name}</Text>
-              <IconButton icon={X} label="Close" onPress={() => setQrOpen(false)} />
+              <IconButton icon={X} label={tx('Close')} onPress={() => setQrOpen(false)} />
             </View>
             <View className="rounded-2xl bg-white p-4">
               <QRCode value={destinationQrValue(d.slug)} size={200} />
             </View>
-            <Text className="text-center text-xs text-muted-foreground">Scan with GoTourGo Smart Scan to open this place.</Text>
+            <Text className="text-center text-xs text-muted-foreground">{tx('Scan with GoTourGo Smart Scan to open this place.')}</Text>
           </View>
         </Pressable>
       </Modal>

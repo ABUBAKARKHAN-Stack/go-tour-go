@@ -19,11 +19,12 @@ import type { TravelMode } from '@/features/routing/osrm';
 import { formatDistance } from '@/lib/geo';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
+import { flipX, tx } from '@/lib/i18n';
 
 const MODES: { mode: TravelMode; label: string; icon: LucideIcon }[] = [
-  { mode: 'driving', label: 'Drive', icon: Car },
-  { mode: 'cycling', label: 'Bike', icon: Bike },
-  { mode: 'walking', label: 'Walk', icon: Footprints },
+  { mode: 'driving', label: tx('Drive'), icon: Car },
+  { mode: 'cycling', label: tx('Bike'), icon: Bike },
+  { mode: 'walking', label: tx('Walk'), icon: Footprints },
 ];
 
 /** The road the route spends longest on, for "via …". */
@@ -104,11 +105,11 @@ export default function JourneyPreview() {
       if (!backgroundAllowed) {
         const allow = await new Promise<boolean>((resolve) =>
           Alert.alert(
-            'Alerts with the screen off',
-            'To announce landmarks and hazards while your phone is locked or GoTourGo is in the background, Android needs location access "All the time". Location is only used while a journey or alerts are on.',
+            tx('Alerts with the screen off'),
+            tx('To announce landmarks and hazards while your phone is locked or GoTourGo is in the background, Android needs location access "All the time". Location is only used while a journey or alerts are on.'),
             [
-              { text: 'Only while open', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Allow', onPress: () => resolve(true) },
+              { text: tx('Only while open'), style: 'cancel', onPress: () => resolve(false) },
+              { text: tx('Allow'), onPress: () => resolve(true) },
             ],
           ),
         );
@@ -132,7 +133,7 @@ export default function JourneyPreview() {
   if (!validTarget) {
     return (
       <View className="flex-1 justify-center bg-background" style={{ paddingTop: insets.top }}>
-        <EmptyState title="Destination missing" message="Choose a place to plan a journey." actionLabel="Search places" onAction={() => router.replace('/search')} />
+        <EmptyState title={tx('Destination missing')} message={tx('Choose a place to plan a journey.')} actionLabel={tx('Search places')} onAction={() => router.replace('/search')} />
       </View>
     );
   }
@@ -152,15 +153,13 @@ export default function JourneyPreview() {
       />
 
       <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-3xl bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(28,26,23,0.10)' }}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
-          <ArrowLeft color={colors.foreground} size={20} />
+        <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
+          <ArrowLeft color={colors.foreground} size={20} style={flipX} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-base font-semibold text-foreground">
-            Your location → {target.name}
-          </Text>
+          <Text numberOfLines={1} className="text-base font-semibold text-foreground">{tx('Your location → {0}', { 0: target.name })}</Text>
           <Text numberOfLines={1} className="text-xs text-faint">
-            {via ? `Fastest route · via ${via}` : target.subtitle ?? 'Planning your route'}
+            {via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}
           </Text>
         </View>
       </View>
@@ -177,9 +176,9 @@ export default function JourneyPreview() {
             <View className="gap-3">
               <View className="flex-row items-center gap-3">
                 <MapPinOff color={colors.accent} size={22} />
-                <Text className="flex-1 text-base text-foreground">Turn on location to plan a route from where you are.</Text>
+                <Text className="flex-1 text-base text-foreground">{tx('Turn on location to plan a route from where you are.')}</Text>
               </View>
-              <AppButton label="Enable location" onPress={() => requestLocationPermission()} />
+              <AppButton label={tx('Enable location')} onPress={() => requestLocationPermission()} />
             </View>
           ) : (
             <>
@@ -212,15 +211,15 @@ export default function JourneyPreview() {
 
               {journey.phase === 'planning' ? (
                 <View className="gap-2 py-2">
-                  <Text className="font-display text-[28px] text-foreground">Finding the best route…</Text>
-                  <Text className="text-sm text-muted-foreground">Looking for landmarks and road alerts on the way.</Text>
+                  <Text className="font-display text-[28px] text-foreground">{tx('Finding the best route…')}</Text>
+                  <Text className="text-sm text-muted-foreground">{tx('Looking for landmarks and road alerts on the way.')}</Text>
                 </View>
               ) : !route ? (
                 <View className="gap-3 py-2">
-                  <Text className="font-display text-2xl text-foreground">No route found</Text>
-                  <Text className="text-sm text-muted-foreground">{journey.error ?? 'Check your internet connection and try again.'}</Text>
+                  <Text className="font-display text-2xl text-foreground">{tx('No route found')}</Text>
+                  <Text className="text-sm text-muted-foreground">{journey.error ?? tx('Check your internet connection and try again.')}</Text>
                   <AppButton
-                    label="Try again"
+                    label={tx('Try again')}
                     variant="secondary"
                     onPress={async () => {
                       const fix = await getCurrentFix();
@@ -234,27 +233,24 @@ export default function JourneyPreview() {
                     <Text className="font-display text-[30px] leading-9 text-foreground">
                       {formatEta(route.duration)} · {formatDistance(route.distance)}
                     </Text>
-                    <Text className="text-sm text-muted-foreground">
-                      Arrive {arrivalClock(route.duration)}
-                      {landmarks.length || hazards.length
-                        ? ` · ${landmarks.length} landmark${landmarks.length === 1 ? '' : 's'}${hazards.length ? ` and ${hazards.length} alert${hazards.length === 1 ? '' : 's'}` : ''} on your way`
-                        : ''}
-                    </Text>
+                    <Text className="text-sm text-muted-foreground">{tx('Arrive {0} {1}', { 0: arrivalClock(route.duration), 1: landmarks.length || hazards.length
+                        ? tx(' · {0} landmark{1}{2} on your way', { 0: landmarks.length, 1: landmarks.length === 1 ? '' : 's', 2: hazards.length ? ` and ${hazards.length} alert${hazards.length === 1 ? '' : 's'}` : '' })
+                        : '' })}</Text>
                   </View>
 
                   {journey.items.length ? (
                     <View>
-                      <Text className="pb-1 text-[11px] font-bold tracking-[1.6px] text-faint">ON YOUR WAY</Text>
+                      <Text className="pb-1 text-[11px] font-bold tracking-[1.6px] text-faint">{tx('ON YOUR WAY')}</Text>
                       {journey.items.slice(0, 12).map((item) => (
                         <ItemRow key={item.id} item={item} />
                       ))}
                       {journey.items.length > 12 ? (
-                        <Text className="pt-1 text-xs text-faint">+{journey.items.length - 12} more along the route</Text>
+                        <Text className="pt-1 text-xs text-faint">{tx('+{0} more along the route', { 0: journey.items.length - 12 })}</Text>
                       ) : null}
                     </View>
                   ) : (
                     <Text className="text-sm text-muted-foreground">
-                      No famous landmarks or road alerts on this route. Landmarks near you will still be announced as you travel.
+                      {tx('No famous landmarks or road alerts on this route. Landmarks near you will still be announced as you travel.')}
                     </Text>
                   )}
                 </>
@@ -263,7 +259,7 @@ export default function JourneyPreview() {
           )}
         </ScrollView>
         <View className="border-t border-border px-6 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
-          <AppButton label="Start journey" onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} />
+          <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} />
         </View>
       </View>
     </View>
@@ -293,7 +289,7 @@ function ItemRow({ item }: { item: JourneyItem }) {
         </Text>
       </View>
       <Text className={`text-xs font-semibold ${hazard ? 'text-destructive' : 'text-primary'}`}>
-        {hazard ? (item.severity === 'critical' ? 'Critical' : item.severity === 'high' ? 'High' : 'Caution') : 'Alert on'}
+        {hazard ? (item.severity === 'critical' ? tx('Critical') : item.severity === 'high' ? tx('High') : tx('Caution')) : tx('Alert on')}
       </Text>
     </Pressable>
   );

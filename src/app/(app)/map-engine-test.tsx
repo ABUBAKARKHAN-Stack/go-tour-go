@@ -19,6 +19,7 @@ import {
   pmtilesUrl,
   TEST_FILE,
 } from '@/features/offline/pakistan-map';
+import { tx } from '@/lib/i18n';
 
 type Mode = 'remote' | 'local';
 type Verdict = { mode: Mode; ok: boolean; features: number } | null;
@@ -88,10 +89,9 @@ export default function MapEngineTest() {
   };
 
   return (
-    <Screen back title="Offline map engine test" subtitle="Developer check for the Pakistan map file">
+    <Screen back title={tx('Offline map engine test')} subtitle={tx('Developer check for the Pakistan map file')}>
       <Text className="text-sm text-muted-foreground">
-        Draws central Karachi from the test map file built by the &quot;Build offline map of Pakistan&quot; workflow. If streets and water
-        appear and the check passes, the full offline map will work on this phone.
+        {tx('Draws central Karachi from the test map file built by the "Build offline map of Pakistan" workflow. If streets and water appear and the check passes, the full offline map will work on this phone.')}
       </Text>
 
       <View className="h-72 overflow-hidden rounded-3xl border border-border bg-muted">
@@ -110,7 +110,7 @@ export default function MapEngineTest() {
           </Map>
         ) : (
           <View className="flex-1 items-center justify-center px-6">
-            <Text className="text-center text-sm text-faint">Choose a test below.</Text>
+            <Text className="text-center text-sm text-faint">{tx('Choose a test below.')}</Text>
           </View>
         )}
       </View>
@@ -123,22 +123,22 @@ export default function MapEngineTest() {
           {verdict.ok ? <CircleCheck color={colors.success} size={24} /> : <CircleX color={colors.destructive} size={24} />}
           <View className="flex-1">
             <Text className="text-base font-semibold text-foreground">
-              {verdict.ok ? 'Passed' : 'Nothing drawn'} · {verdict.mode === 'local' ? 'downloaded file' : 'streamed file'}
+              {verdict.ok ? tx('Passed') : tx('Nothing drawn')} · {verdict.mode === 'local' ? tx('downloaded file') : tx('streamed file')}
             </Text>
             <Text className="text-xs text-muted-foreground">
               {verdict.ok
-                ? `The map engine drew ${verdict.features} features from the PMTiles file.`
-                : 'The engine loaded the style but drew no features. Tap Check again after the map settles, then report the result.'}
+                ? tx('The map engine drew {0} features from the PMTiles file.', { 0: verdict.features })
+                : tx('The engine loaded the style but drew no features. Tap Check again after the map settles, then report the result.')}
             </Text>
           </View>
         </Card>
       ) : null}
 
       <View className="gap-3">
-        <AppButton label="Test streamed file (needs internet)" icon={Cloud} variant="secondary" onPress={runRemote} />
-        <AppButton label="Test downloaded file (works offline)" icon={HardDrive} onPress={runLocal} loading={busy != null} />
-        {mode ? <AppButton label="Check again" variant="ghost" onPress={check} /> : null}
-        <AppButton label="Delete test file" variant="ghost" size="sm" onPress={deleteLocal} />
+        <AppButton label={tx('Test streamed file (needs internet)')} icon={Cloud} variant="secondary" onPress={runRemote} />
+        <AppButton label={tx('Test downloaded file (works offline)')} icon={HardDrive} onPress={runLocal} loading={busy != null} />
+        {mode ? <AppButton label={tx('Check again')} variant="ghost" onPress={check} /> : null}
+        <AppButton label={tx('Delete test file')} variant="ghost" size="sm" onPress={deleteLocal} />
       </View>
     </Screen>
   );

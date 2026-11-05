@@ -16,6 +16,7 @@ import { startConversation } from '@/features/messaging/api';
 import { displayName, useFollowCounts, useFriendships, useProfile, useSocialActions } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,7 +33,7 @@ export default function UserProfileScreen() {
 
   const status = friendships.statusWith(id);
   const friendship = friendships.friendshipWith(id);
-  const onError = (e: unknown) => Alert.alert('Something went wrong', errorMessage(e));
+  const onError = (e: unknown) => Alert.alert(tx('Something went wrong'), errorMessage(e));
 
   const message = async () => {
     setOpening(true);
@@ -47,13 +48,13 @@ export default function UserProfileScreen() {
   };
 
   return (
-    <Screen back title="Traveler">
+    <Screen back title={tx('Traveler')}>
       {profile.isLoading ? (
         <LoadingState />
       ) : profile.isError ? (
         <ErrorState error={profile.error} onRetry={profile.refetch} />
       ) : !profile.data ? (
-        <EmptyState icon={Lock} title="Profile is private" message="This traveler only shares their profile with friends." />
+        <EmptyState icon={Lock} title={tx('Profile is private')} message={tx('This traveler only shares their profile with friends.')} />
       ) : (
         <>
           <View className="items-center gap-2">
@@ -69,24 +70,24 @@ export default function UserProfileScreen() {
             {profile.data.bio ? <Text className="text-center text-sm text-foreground">{profile.data.bio}</Text> : null}
             <View className="flex-row gap-6 pt-2">
               <Text className="text-sm text-muted-foreground">
-                <Text className="font-bold text-foreground">{follows.data?.followers ?? 0}</Text> followers
+                <Text className="font-bold text-foreground">{follows.data?.followers ?? 0}</Text>{' '}{tx('followers')}
               </Text>
               <Text className="text-sm text-muted-foreground">
-                <Text className="font-bold text-foreground">{follows.data?.following ?? 0}</Text> following
+                <Text className="font-bold text-foreground">{follows.data?.following ?? 0}</Text>{' '}{tx('following')}
               </Text>
             </View>
           </View>
 
           <View className="flex-row gap-2">
             {status === 'friends' ? (
-              <AppButton label="Message" icon={MessageCircle} variant="accent" loading={opening} onPress={message} className="flex-1" />
+              <AppButton label={tx('Message')} icon={MessageCircle} variant="accent" loading={opening} onPress={message} className="flex-1" />
             ) : status === 'incoming' && friendship ? (
-              <AppButton label="Accept request" icon={Check} variant="accent" onPress={() => actions.respond.mutate({ id: friendship.id, accept: true }, { onError })} className="flex-1" />
+              <AppButton label={tx('Accept request')} icon={Check} variant="accent" onPress={() => actions.respond.mutate({ id: friendship.id, accept: true }, { onError })} className="flex-1" />
             ) : status === 'outgoing' ? (
-              <AppButton label="Request sent" variant="secondary" disabled className="flex-1" />
+              <AppButton label={tx('Request sent')} variant="secondary" disabled className="flex-1" />
             ) : (
               <AppButton
-                label="Add friend"
+                label={tx('Add friend')}
                 icon={UserPlus}
                 variant="accent"
                 disabled={!profile.data.allow_friend_requests}
@@ -96,7 +97,7 @@ export default function UserProfileScreen() {
               />
             )}
             <AppButton
-              label={follows.data?.isFollowing ? 'Following' : 'Follow'}
+              label={follows.data?.isFollowing ? tx('Following') : tx('Follow')}
               variant={follows.data?.isFollowing ? 'secondary' : 'outline'}
               onPress={() => actions.toggleFollow.mutate({ target: id, follow: !follows.data?.isFollowing }, { onError })}
               className="flex-1"
@@ -104,29 +105,29 @@ export default function UserProfileScreen() {
           </View>
           {status === 'friends' && friendship ? (
             <AppButton
-              label="Remove friend"
+              label={tx('Remove friend')}
               icon={UserMinus}
               variant="ghost"
               size="sm"
               onPress={() =>
-                Alert.alert('Remove friend?', 'They will no longer see your shared location or message you.', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: () => actions.remove.mutate(friendship.id, { onError }) },
+                Alert.alert(tx('Remove friend?'), tx('They will no longer see your shared location or message you.'), [
+                  { text: tx('Cancel'), style: 'cancel' },
+                  { text: tx('Remove'), style: 'destructive', onPress: () => actions.remove.mutate(friendship.id, { onError }) },
                 ])
               }
             />
           ) : null}
           {!profile.data.allow_friend_requests && status === 'none' ? (
             <Card>
-              <Text className="text-sm text-muted-foreground">This traveler is not accepting friend requests.</Text>
+              <Text className="text-sm text-muted-foreground">{tx('This traveler is not accepting friend requests.')}</Text>
             </Card>
           ) : null}
 
-          <Text className="text-lg font-bold text-foreground">Posts</Text>
+          <Text className="text-lg font-bold text-foreground">{tx('Posts')}</Text>
           {feed.isLoading ? (
             <LoadingState />
           ) : posts.length === 0 ? (
-            <Text className="text-sm text-muted-foreground">No posts yet.</Text>
+            <Text className="text-sm text-muted-foreground">{tx('No posts yet.')}</Text>
           ) : (
             posts.map((p) => <PostCard key={p.id} post={p} userId={userId} />)
           )}

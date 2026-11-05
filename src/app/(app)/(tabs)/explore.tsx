@@ -36,6 +36,7 @@ import { useSimulator } from '@/features/proximity/simulator';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
 import type { DestinationCategory, RoadAlert } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 const PAKISTAN_CENTER: [number, number] = [70.5, 30.5];
 
@@ -104,7 +105,7 @@ export default function ExploreScreen() {
   if (mapError) {
     return (
       <View className="flex-1 justify-center bg-background" style={{ paddingTop: insets.top }}>
-        <ErrorState title="Unable to load map data" error="Check your connection, or download an offline map region first." onRetry={() => setMapError(false)} />
+        <ErrorState title={tx('Unable to load map data')} error="Check your connection, or download an offline map region first." onRetry={() => setMapError(false)} />
       </View>
     );
   }
@@ -151,12 +152,12 @@ export default function ExploreScreen() {
             className="min-h-12 flex-1 flex-row items-center gap-2 rounded-2xl border border-border bg-card px-4"
           >
             <Search color={colors.mutedForeground} size={18} />
-            <Text className="text-base text-muted-foreground">Where to?</Text>
+            <Text className="text-base text-muted-foreground">{tx('Where to?')}</Text>
           </Pressable>
-          <IconButton icon={Download} label="Offline maps" onPress={() => router.push('/offline-maps')} />
+          <IconButton icon={Download} label={tx('Offline maps')} onPress={() => router.push('/offline-maps')} />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-3">
-          <Chip label="All" selected={!category} onPress={() => setCategory(null)} />
+          <Chip label={tx('All')} selected={!category} onPress={() => setCategory(null)} />
           {CATEGORY_ORDER.map((c) => (
             <Chip key={c} label={DESTINATION_CATEGORIES[c].label} selected={category === c} onPress={() => setCategory(category === c ? null : c)} />
           ))}
@@ -166,20 +167,18 @@ export default function ExploreScreen() {
           {sim.running ? (
             <View className="flex-row items-center gap-2 rounded-2xl bg-info/20 px-3 py-2">
               <Info color={colors.info} size={16} />
-              <Text className="flex-1 text-xs text-foreground">
-                Simulating journey to {sim.targetName} ({sim.step}/{sim.total})
-              </Text>
+              <Text className="flex-1 text-xs text-foreground">{tx('Simulating journey to {0} ({1}/{2})', { 0: sim.targetName, 1: sim.step, 2: sim.total })}</Text>
             </View>
           ) : null}
           {sharingLive ? (
             <Pressable onPress={() => router.push('/safety')} className="flex-row items-center gap-2 rounded-2xl bg-success/20 px-3 py-2">
               <View className="h-2 w-2 rounded-full bg-success" />
-              <Text className="flex-1 text-xs text-foreground">Sharing your live location with friends. Tap to manage.</Text>
+              <Text className="flex-1 text-xs text-foreground">{tx('Sharing your live location with friends. Tap to manage.')}</Text>
             </Pressable>
           ) : null}
           {destinations.isError && !destinations.data ? (
             <View className="rounded-2xl bg-card px-3 py-2">
-              <Text className="text-xs text-destructive">Unable to load destinations. Pull down on Home to retry.</Text>
+              <Text className="text-xs text-destructive">{tx('Unable to load destinations. Pull down on Home to retry.')}</Text>
             </View>
           ) : null}
           <LocationStatusCard compact />
@@ -188,10 +187,10 @@ export default function ExploreScreen() {
 
       {/* Right-side controls */}
       <View className="absolute right-3 gap-2" style={{ top: insets.top + 190 }}>
-        <IconButton icon={Crosshair} label="Show my location" onPress={locateMe} />
-        <IconButton icon={CircleDashed} label="Toggle geofence radius" active={showRadius} onPress={() => setShowRadius((v) => !v)} />
+        <IconButton icon={Crosshair} label={tx('Show my location')} onPress={locateMe} />
+        <IconButton icon={CircleDashed} label={tx('Toggle geofence radius')} active={showRadius} onPress={() => setShowRadius((v) => !v)} />
         {userId ? (
-          <IconButton icon={Users} label="Toggle friends on map" active={showFriends} onPress={() => setShowFriends((v) => !v)} />
+          <IconButton icon={Users} label={tx('Toggle friends on map')} active={showFriends} onPress={() => setShowFriends((v) => !v)} />
         ) : null}
       </View>
 
@@ -201,14 +200,12 @@ export default function ExploreScreen() {
           <View className="flex-row items-center gap-3 rounded-3xl bg-primary p-3 pl-4" style={{ boxShadow: '0 6px 18px rgba(15,76,74,0.25)' }}>
             <Navigation color={colors.primaryForeground} size={20} />
             <View className="flex-1">
-              <Text numberOfLines={1} className="text-base font-semibold text-white">
-                Navigating to {journey.target.name}
-              </Text>
+              <Text numberOfLines={1} className="text-base font-semibold text-white">{tx('Navigating to {0}', { 0: journey.target.name })}</Text>
               <Text className="text-xs text-white/80">
-                {journey.progress ? `${formatDistance(journey.progress.remaining)} left` : 'Tap Resume to continue'}
+                {journey.progress ? tx('{0} left', { 0: formatDistance(journey.progress.remaining) }) : tx('Tap Resume to continue')}
               </Text>
             </View>
-            <AppButton label="Resume" size="sm" variant="secondary" onPress={() => router.push('/journey/navigate')} />
+            <AppButton label={tx('Resume')} size="sm" variant="secondary" onPress={() => router.push('/journey/navigate')} />
           </View>
         ) : selected ? (
           <View className="flex-row gap-3 rounded-3xl border border-border bg-card p-3">
@@ -225,8 +222,8 @@ export default function ExploreScreen() {
                 {selected.short_description}
               </Text>
               <View className="mt-1 flex-row gap-2">
-                <AppButton label="Details" size="sm" variant="secondary" onPress={() => router.push({ pathname: '/destination/[id]', params: { id: selected.id } })} className="flex-1" />
-                <AppButton label="Directions" size="sm" icon={Navigation} onPress={() => navigateTo(selected)} className="flex-1" />
+                <AppButton label={tx('Details')} size="sm" variant="secondary" onPress={() => router.push({ pathname: '/destination/[id]', params: { id: selected.id } })} className="flex-1" />
+                <AppButton label={tx('Directions')} size="sm" icon={Navigation} onPress={() => navigateTo(selected)} className="flex-1" />
               </View>
             </View>
           </View>

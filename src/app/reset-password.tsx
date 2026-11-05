@@ -9,6 +9,7 @@ import { Screen } from '@/components/screen';
 import { InlineError, LoadingState } from '@/components/states';
 import { exchangeRecoveryCode, updatePassword, validatePassword } from '@/features/auth/api';
 import { errorMessage } from '@/lib/errors';
+import { tx } from '@/lib/i18n';
 
 /** Opened from the password-reset email (gotourgodevelopment://reset-password?code=...). */
 export default function ResetPassword() {
@@ -46,24 +47,24 @@ export default function ResetPassword() {
 
   if (!ready) {
     return (
-      <Screen title="Reset password">
-        <LoadingState label="Verifying link..." />
+      <Screen title={tx('Reset password')}>
+        <LoadingState label={tx('Verifying link...')} />
       </Screen>
     );
   }
 
   return (
-    <Screen keyboard title="Choose a new password" contentClassName="px-6 gap-4">
+    <Screen keyboard title={tx('Choose a new password')} contentClassName="px-6 gap-4">
       {done ? (
         <>
-          <Text className="text-base text-foreground">Your password has been updated.</Text>
-          <AppButton label="Continue" variant="accent" onPress={() => router.replace('/')} />
+          <Text className="text-base text-foreground">{tx('Your password has been updated.')}</Text>
+          <AppButton label={tx('Continue')} variant="accent" onPress={() => router.replace('/')} />
         </>
       ) : (
         <>
           {error ? <InlineError message={error} /> : null}
-          <TextField label="New password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" placeholder="At least 8 characters" />
-          <AppButton label="Update password" icon={KeyRound} onPress={submit} loading={loading} variant="accent" />
+          <TextField label={tx('New password')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" placeholder={tx('At least 8 characters')} />
+          <AppButton label={tx('Update password')} icon={KeyRound} onPress={submit} loading={loading} variant="accent" />
         </>
       )}
     </Screen>

@@ -11,6 +11,7 @@ import { signIn, validateEmail } from '@/features/auth/api';
 import { AuthShell, OrDivider } from '@/features/auth/auth-shell';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -40,14 +41,14 @@ export default function SignIn() {
 
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Sign in to pick up where your journey left off."
-      footer={<Text className="text-center text-xs text-faint">By continuing you agree to our Terms and Privacy Policy.</Text>}
+      title={tx('Welcome back')}
+      subtitle={tx('Sign in to pick up where your journey left off.')}
+      footer={<Text className="text-center text-xs text-faint">{tx('By continuing you agree to our Terms and Privacy Policy.')}</Text>}
     >
       {error ? <InlineError message={error} /> : null}
 
       <TextField
-        label="Email"
+        label={tx('Email')}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -60,19 +61,19 @@ export default function SignIn() {
         left={<Mail color={colors.faint} size={20} />}
       />
       <TextField
-        label="Password"
+        label={tx('Password')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry={!show}
         autoComplete="current-password"
         textContentType="password"
-        placeholder="Your password"
+        placeholder={tx('Your password')}
         error={passwordError}
         returnKeyType="go"
         onSubmitEditing={submit}
         left={<Lock color={colors.faint} size={20} />}
         right={
-          <Pressable accessibilityRole="button" accessibilityLabel={show ? 'Hide password' : 'Show password'} onPress={() => setShow((s) => !s)} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={show ? tx('Hide password') : tx('Show password')} onPress={() => setShow((s) => !s)} hitSlop={10}>
             {show ? <EyeOff color={colors.faint} size={20} /> : <Eye color={colors.faint} size={20} />}
           </Pressable>
         }
@@ -80,13 +81,13 @@ export default function SignIn() {
 
       <Link href="/forgot-password" asChild>
         <Pressable accessibilityRole="link" className="-mt-1 min-h-10 justify-center self-end">
-          <Text className="text-sm font-semibold text-primary">Forgot password?</Text>
+          <Text className="text-sm font-semibold text-primary">{tx('Forgot password?')}</Text>
         </Pressable>
       </Link>
 
-      <AppButton label="Sign in" onPress={submit} loading={loading} />
+      <AppButton label={tx('Sign in')} onPress={submit} loading={loading} />
       <OrDivider />
-      <AppButton label="Create an account" variant="secondary" onPress={() => router.push('/sign-up')} />
+      <AppButton label={tx('Create an account')} variant="secondary" onPress={() => router.push('/sign-up')} />
     </AuthShell>
   );
 }

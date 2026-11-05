@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 
+import { translateDestination } from '@/features/ai/api';
 import { readLocalDestinations } from '@/features/data/local-queries';
 import { useDataSync } from '@/features/data/sync';
 import { useLastLocation } from '@/features/location/location-store';
@@ -138,13 +139,23 @@ export function useDestinationDetail(id: string | undefined) {
         .eq('destination_id', d.id)
         .eq('locale', prefs.locale)
         .maybeSingle();
-      const tr = t as DestinationTranslation | null;
+      let tr = t as DestinationTranslation | null;
+      // Urdu guide missing sections: ask for a translation (made once, then stored for everyone).
+      const missing = (['description', 'history', 'significance', 'tips'] as const).some((f) => d[f] && !tr?.[f]);
+      if (prefs.locale === 'ur' && missing) {
+        tr = (await translateDestination(d.id).catch(() => null)) ?? tr;
+      }
       return {
         ...localise(d, prefs.locale, tr ?? undefined),
         description: tr?.description || d.description,
         history: tr?.history || d.history,
+        culture: tr?.culture || d.culture,
         significance: tr?.significance || d.significance,
+        local_customs: tr?.local_customs || d.local_customs,
+        food: tr?.food || d.food,
+        shopping: tr?.shopping || d.shopping,
         tips: tr?.tips || d.tips,
+        machine_translated: Boolean(tr?.machine_translated),
       };
     },
     staleTime: 1000 * 60 * 60,

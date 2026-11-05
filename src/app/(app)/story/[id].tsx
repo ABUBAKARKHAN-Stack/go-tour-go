@@ -11,6 +11,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { useStories, useStoryActions } from '@/features/community/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
+import { tx } from '@/lib/i18n';
 
 const STORY_MS = 6000;
 
@@ -37,26 +38,26 @@ export default function StoryViewer() {
   if (!story) {
     return (
       <View className="flex-1 items-center justify-center bg-black">
-        <Text className="text-white">This story has expired.</Text>
+        <Text className="text-white">{tx('This story has expired.')}</Text>
         <Pressable onPress={() => router.back()} className="mt-4 min-h-11 justify-center px-4">
-          <Text className="text-accent">Close</Text>
+          <Text className="text-accent">{tx('Close')}</Text>
         </Pressable>
       </View>
     );
   }
 
   const remove = () =>
-    Alert.alert('Delete story?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => actions.remove.mutate(story.id, { onSuccess: () => router.back() }) },
+    Alert.alert(tx('Delete story?'), undefined, [
+      { text: tx('Cancel'), style: 'cancel' },
+      { text: tx('Delete'), style: 'destructive', onPress: () => actions.remove.mutate(story.id, { onSuccess: () => router.back() }) },
     ]);
 
   return (
     <View className="flex-1 bg-black">
       <Image source={{ uri: story.image_url }} style={{ flex: 1 }} contentFit="contain" />
       <View className="absolute inset-0 flex-row">
-        <Pressable accessibilityLabel="Previous" className="flex-1" onPress={() => setIndex(Math.max(0, index - 1))} />
-        <Pressable accessibilityLabel="Next" className="flex-1" onPress={() => (index < items.length - 1 ? setIndex(index + 1) : router.back())} />
+        <Pressable accessibilityLabel={tx('Previous')} className="flex-1" onPress={() => setIndex(Math.max(0, index - 1))} />
+        <Pressable accessibilityLabel={tx('Next')} className="flex-1" onPress={() => (index < items.length - 1 ? setIndex(index + 1) : router.back())} />
       </View>
       <View className="absolute left-0 right-0 gap-3 px-3" style={{ top: insets.top + 6 }}>
         <View className="flex-row gap-1">
@@ -71,11 +72,11 @@ export default function StoryViewer() {
             <Text className="text-xs text-white/70">{timeAgo(story.created_at)}</Text>
           </View>
           {story.author_id === userId ? (
-            <Pressable accessibilityLabel="Delete story" onPress={remove} className="h-11 w-11 items-center justify-center">
+            <Pressable accessibilityLabel={tx('Delete story')} onPress={remove} className="h-11 w-11 items-center justify-center">
               <Trash2 color="#fff" size={20} />
             </Pressable>
           ) : null}
-          <Pressable accessibilityLabel="Close" onPress={() => router.back()} className="h-11 w-11 items-center justify-center">
+          <Pressable accessibilityLabel={tx('Close')} onPress={() => router.back()} className="h-11 w-11 items-center justify-center">
             <X color="#fff" size={24} />
           </Pressable>
         </View>

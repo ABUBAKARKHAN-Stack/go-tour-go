@@ -16,6 +16,7 @@ import { useDestinationsByDistance } from '@/features/destinations/api';
 import { describeWeather, type Weather } from '@/features/weather/api';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 type Msg = ChatTurn & { id: string };
 
@@ -48,7 +49,7 @@ export default function AssistantScreen() {
       location &&
       qc.getQueryData<Weather>(['weather', Math.round(location.latitude * 100) / 100, Math.round(location.longitude * 100) / 100]);
     return {
-      locale: prefs.locale,
+      locale: prefs.aiLanguage,
       destinationSlug: params.destination,
       latitude: location?.latitude,
       longitude: location?.longitude,
@@ -58,7 +59,7 @@ export default function AssistantScreen() {
         ? sorted.slice(0, 5).map((d) => ({ name: d.name, category: d.category, distanceKm: (d.distance ?? 0) / 1000 }))
         : undefined,
     };
-  }, [prefs.locale, params.destination, location, nearest, sorted, qc]);
+  }, [prefs.aiLanguage, params.destination, location, nearest, sorted, qc]);
 
   const suggestions = useMemo(() => {
     const place = focused?.name ?? nearest?.name ?? 'Badshahi Mosque';
@@ -100,9 +101,9 @@ export default function AssistantScreen() {
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <AppHeader
         back
-        title="AI travel guide"
-        subtitle={focused ? `About ${focused.name}` : context.locationLabel ?? 'Powered by Gemini'}
-        right={messages.length ? <IconButton icon={RotateCcw} label="New chat" onPress={() => setMessages([])} /> : undefined}
+        title={tx('AI travel guide')}
+        subtitle={focused ? tx('About {0}', { 0: focused.name }) : context.locationLabel ?? tx('Powered by Gemini')}
+        right={messages.length ? <IconButton icon={RotateCcw} label={tx('New chat')} onPress={() => setMessages([])} /> : undefined}
       />
       <KeyboardAvoidingView behavior="padding" className="flex-1" keyboardVerticalOffset={0}>
         <FlatList
@@ -117,9 +118,9 @@ export default function AssistantScreen() {
                 <View className="h-14 w-14 items-center justify-center rounded-full bg-secondary">
                   <Sparkles color={colors.primary} size={26} />
                 </View>
-                <Text className="text-center text-base font-semibold text-foreground">Ask about places, culture, food or travel tips</Text>
+                <Text className="text-center text-base font-semibold text-foreground">{tx('Ask about places, culture, food or travel tips')}</Text>
                 <Text className="text-center text-xs text-muted-foreground">
-                  Answers use your approximate location and GoTourGo destination data. AI can make mistakes; verify important details.
+                  {tx('Answers use your approximate location and GoTourGo destination data. AI can make mistakes; verify important details.')}
                 </Text>
               </View>
               <View className="gap-2">
@@ -147,7 +148,7 @@ export default function AssistantScreen() {
               {loading ? (
                 <View className="flex-row items-center gap-2 self-start rounded-3xl bg-card px-4 py-3">
                   <ActivityIndicator color={colors.primary} size="small" />
-                  <Text className="text-sm text-muted-foreground">Thinking...</Text>
+                  <Text className="text-sm text-muted-foreground">{tx('Thinking...')}</Text>
                 </View>
               ) : null}
               {error ? <InlineError message={error} /> : null}
@@ -158,16 +159,16 @@ export default function AssistantScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Ask your travel question..."
+            placeholder={tx('Ask your travel question...')}
             placeholderTextColor={`${colors.mutedForeground}99`}
             multiline
             maxLength={1000}
             className="max-h-32 min-h-12 flex-1 rounded-3xl bg-input px-4 py-3 text-base text-foreground"
-            accessibilityLabel="Message"
+            accessibilityLabel={tx('Message')}
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Send"
+            accessibilityLabel={tx('Send')}
             disabled={!input.trim() || loading}
             onPress={() => send(input)}
             className={`h-12 w-12 items-center justify-center rounded-full ${input.trim() && !loading ? 'bg-accent' : 'bg-muted'}`}

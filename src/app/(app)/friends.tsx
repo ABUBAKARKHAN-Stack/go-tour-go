@@ -13,6 +13,7 @@ import { displayName, useFriendships, useSocialActions, useUserSearch } from '@/
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 import type { ProfileSummary } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 type Tab = 'friends' | 'requests' | 'find';
 
@@ -44,17 +45,17 @@ export default function FriendsScreen() {
   const search = useUserSearch(term);
   const actions = useSocialActions();
 
-  const onError = (e: unknown) => Alert.alert('Something went wrong', errorMessage(e));
+  const onError = (e: unknown) => Alert.alert(tx('Something went wrong'), errorMessage(e));
 
   return (
-    <Screen back title="Friends" subtitle="Only accepted friends can see your shared location">
+    <Screen back title={tx('Friends')} subtitle={tx('Only accepted friends can see your shared location')}>
       <Segmented<Tab>
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'friends', label: `Friends (${friendships.friends.length})` },
-          { value: 'requests', label: `Requests${friendships.incoming.length ? ` (${friendships.incoming.length})` : ''}` },
-          { value: 'find', label: 'Find' },
+          { value: 'friends', label: tx('Friends ({0})', { 0: friendships.friends.length }) },
+          { value: 'requests', label: tx('Requests{0}', { 0: friendships.incoming.length ? ` (${friendships.incoming.length})` : '' }) },
+          { value: 'find', label: tx('Find') },
         ]}
       />
 
@@ -64,7 +65,7 @@ export default function FriendsScreen() {
         <ErrorState error={friendships.error} onRetry={friendships.refetch} />
       ) : tab === 'friends' ? (
         friendships.friends.length === 0 ? (
-          <EmptyState icon={Users} title="No friends yet" message="Find travellers by username and send a request." actionLabel="Find people" onAction={() => setTab('find')} />
+          <EmptyState icon={Users} title={tx('No friends yet')} message={tx('Find travellers by username and send a request.')} actionLabel={tx('Find people')} onAction={() => setTab('find')} />
         ) : (
           <View className="gap-2">
             {friendships.friends.map(({ profile }) => (
@@ -74,34 +75,34 @@ export default function FriendsScreen() {
         )
       ) : tab === 'requests' ? (
         <View className="gap-4">
-          <Text className="text-sm font-semibold text-foreground">Received</Text>
+          <Text className="text-sm font-semibold text-foreground">{tx('Received')}</Text>
           {friendships.incoming.length === 0 ? (
-            <Text className="text-sm text-muted-foreground">No pending requests.</Text>
+            <Text className="text-sm text-muted-foreground">{tx('No pending requests.')}</Text>
           ) : (
             friendships.incoming.map((f) => (
               <PersonRow
                 key={f.id}
                 profile={f.requester}
-                subtitle="Wants to be friends"
+                subtitle={tx('Wants to be friends')}
                 right={
                   <View className="flex-row gap-2">
-                    <IconButton icon={X} label="Decline" onPress={() => actions.respond.mutate({ id: f.id, accept: false }, { onError })} />
-                    <IconButton icon={Check} label="Accept" active onPress={() => actions.respond.mutate({ id: f.id, accept: true }, { onError })} />
+                    <IconButton icon={X} label={tx('Decline')} onPress={() => actions.respond.mutate({ id: f.id, accept: false }, { onError })} />
+                    <IconButton icon={Check} label={tx('Accept')} active onPress={() => actions.respond.mutate({ id: f.id, accept: true }, { onError })} />
                   </View>
                 }
               />
             ))
           )}
-          <Text className="text-sm font-semibold text-foreground">Sent</Text>
+          <Text className="text-sm font-semibold text-foreground">{tx('Sent')}</Text>
           {friendships.outgoing.length === 0 ? (
-            <Text className="text-sm text-muted-foreground">No sent requests.</Text>
+            <Text className="text-sm text-muted-foreground">{tx('No sent requests.')}</Text>
           ) : (
             friendships.outgoing.map((f) => (
               <PersonRow
                 key={f.id}
                 profile={f.addressee}
-                subtitle="Request sent"
-                right={<AppButton label="Cancel" size="sm" variant="outline" onPress={() => actions.remove.mutate(f.id, { onError })} />}
+                subtitle={tx('Request sent')}
+                right={<AppButton label={tx('Cancel')} size="sm" variant="outline" onPress={() => actions.remove.mutate(f.id, { onError })} />}
               />
             ))
           )}
@@ -115,19 +116,19 @@ export default function FriendsScreen() {
               value={term}
               onChangeText={setTerm}
               autoCapitalize="none"
-              placeholder="Search by username or name"
+              placeholder={tx('Search by username or name')}
               placeholderTextColor={`${colors.mutedForeground}99`}
               className="flex-1 text-base text-foreground"
             />
           </View>
           {term.trim().length < 2 ? (
-            <Text className="text-sm text-muted-foreground">Type at least 2 characters.</Text>
+            <Text className="text-sm text-muted-foreground">{tx('Type at least 2 characters.')}</Text>
           ) : search.isLoading ? (
-            <LoadingState label="Searching..." />
+            <LoadingState label={tx('Searching...')} />
           ) : search.isError ? (
             <ErrorState error={search.error} onRetry={search.refetch} />
           ) : (search.data ?? []).length === 0 ? (
-            <EmptyState title="No travellers found" message="Check the spelling or try their full name." />
+            <EmptyState title={tx('No travellers found')} message={tx('Check the spelling or try their full name.')} />
           ) : (
             search.data!.map((p) => {
               const status = friendships.statusWith(p.id);
@@ -138,9 +139,9 @@ export default function FriendsScreen() {
                   subtitle={p.home_city ? `@${p.username} · ${p.home_city}` : `@${p.username}`}
                   right={
                     status === 'none' ? (
-                      <IconButton icon={UserPlus} label={`Add ${p.username}`} active onPress={() => actions.sendRequest.mutate(p.id, { onError })} />
+                      <IconButton icon={UserPlus} label={tx('Add {0}', { 0: p.username })} active onPress={() => actions.sendRequest.mutate(p.id, { onError })} />
                     ) : (
-                      <Text className="text-xs text-muted-foreground">{status === 'friends' ? 'Friends' : status === 'outgoing' ? 'Requested' : 'Wants to connect'}</Text>
+                      <Text className="text-xs text-muted-foreground">{status === 'friends' ? tx('Friends') : status === 'outgoing' ? tx('Requested') : tx('Wants to connect')}</Text>
                     )
                   }
                 />

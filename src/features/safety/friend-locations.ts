@@ -6,6 +6,7 @@ import { useFriendships } from '@/features/social/api';
 import { subscribeToTopic } from '@/lib/realtime';
 import { supabase } from '@/lib/supabase';
 import type { LocationShare, ProfileSummary } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 export const STALE_AFTER_MS = 10 * 60_000;
 
@@ -58,11 +59,11 @@ export function useFriendLocations() {
 export function timeAgo(iso: string | number) {
   const ms = Date.now() - (typeof iso === 'number' ? iso : Date.parse(iso));
   const min = Math.round(ms / 60_000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min} min ago`;
+  if (min < 1) return tx('just now');
+  if (min < 60) return tx('{0} min ago', { 0: min });
   const h = Math.round(min / 60);
-  if (h < 24) return `${h} h ago`;
-  return `${Math.round(h / 24)} d ago`;
+  if (h < 24) return tx('{0} h ago', { 0: h });
+  return tx('{0} d ago', { 0: Math.round(h / 24) });
 }
 
 /** Current time that re-renders every `intervalMs` (for "stale" and "x min ago" labels). */

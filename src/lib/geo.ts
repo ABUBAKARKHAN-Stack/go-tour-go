@@ -1,3 +1,4 @@
+import { tx } from '@/lib/i18n';
 /** Pure geo helpers (no React Native imports, so they run in unit tests). */
 
 export type LatLng = { latitude: number; longitude: number };
@@ -64,10 +65,10 @@ export function formatDistance(meters: number): string {
 export function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds)) return '';
   const minutes = Math.max(1, Math.round(seconds / 60));
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return tx('{0} min', { 0: minutes });
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m ? `${h} h ${m} min` : `${h} h`;
+  return m ? tx('{0} h {1} min', { 0: h, 1: m }) : tx('{0} h', { 0: h });
 }
 
 /** Shortest distance from a point to a polyline of [lng, lat] (approximate, metres). */

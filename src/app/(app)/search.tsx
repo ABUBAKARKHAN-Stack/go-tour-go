@@ -32,6 +32,7 @@ import { StorageKeys, useStorage } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
+import { flipX, tx } from '@/lib/i18n';
 
 type Row =
   | { type: 'place'; id: string; name: string; subtitle: string; latitude: number; longitude: number; distance: number | null; online?: boolean }
@@ -40,23 +41,23 @@ type Row =
 type Recent = { id: string; name: string; subtitle: string; latitude: number; longitude: number; landmarkId?: string };
 
 const KIND_LABEL: Record<string, string> = {
-  city: 'City',
-  town: 'Town',
-  village: 'Village',
-  suburb: 'Area',
-  borough: 'Area',
-  quarter: 'Neighbourhood',
-  neighbourhood: 'Neighbourhood',
-  locality: 'Locality',
-  hamlet: 'Village',
-  university: 'University',
-  college: 'College',
-  hospital: 'Hospital',
-  airport: 'Airport',
-  railway_station: 'Railway station',
-  bus_station: 'Bus station',
-  mall: 'Shopping mall',
-  stadium: 'Stadium',
+  city: tx('City'),
+  town: tx('Town'),
+  village: tx('Village'),
+  suburb: tx('Area'),
+  borough: tx('Area'),
+  quarter: tx('Neighbourhood'),
+  neighbourhood: tx('Neighbourhood'),
+  locality: tx('Locality'),
+  hamlet: tx('Village'),
+  university: tx('University'),
+  college: tx('College'),
+  hospital: tx('Hospital'),
+  airport: tx('Airport'),
+  railway_station: tx('Railway station'),
+  bus_station: tx('Bus station'),
+  mall: tx('Shopping mall'),
+  stadium: tx('Stadium'),
 };
 
 function useDebounced<T>(value: T, ms: number) {
@@ -130,7 +131,7 @@ export default function SearchScreen() {
         type: 'place',
         id: p.id,
         name: p.name,
-        subtitle: [KIND_LABEL[p.kind] ?? 'Place', p.district ?? p.province].filter(Boolean).join(' · '),
+        subtitle: [KIND_LABEL[p.kind] ?? tx('Place'), p.district ?? p.province].filter(Boolean).join(' · '),
         latitude: p.latitude,
         longitude: p.longitude,
         distance: p.distance,
@@ -139,7 +140,7 @@ export default function SearchScreen() {
     for (const r of remote.data ?? []) {
       if (r.result_type === 'place' && !seen.has(r.name.toLowerCase())) {
         seen.add(r.name.toLowerCase());
-        places.push({ type: 'place', id: r.id, name: r.name, subtitle: [KIND_LABEL[r.kind] ?? 'Place', r.area].filter(Boolean).join(' · '), latitude: r.latitude, longitude: r.longitude, distance: null });
+        places.push({ type: 'place', id: r.id, name: r.name, subtitle: [KIND_LABEL[r.kind] ?? tx('Place'), r.area].filter(Boolean).join(' · '), latitude: r.latitude, longitude: r.longitude, distance: null });
       }
     }
     for (const o of online.data ?? []) {
@@ -160,8 +161,8 @@ export default function SearchScreen() {
       });
     }
     return [
-      { key: 'places', title: 'PLACES', data: places.slice(0, 12) },
-      { key: 'landmarks', title: 'FAMOUS PLACES', data: landmarks.slice(0, 10) },
+      { key: 'places', title: tx('PLACES'), data: places.slice(0, 12) },
+      { key: 'landmarks', title: tx('FAMOUS PLACES'), data: landmarks.slice(0, 10) },
     ].filter((s) => s.data.length);
   }, [local.data, online.data, remote.data]);
 
@@ -193,14 +194,14 @@ export default function SearchScreen() {
         <View className="flex-row items-center gap-3">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={tx('Go back')}
             hitSlop={8}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
           >
-            <ArrowLeft color={colors.foreground} size={20} />
+            <ArrowLeft color={colors.foreground} size={20} style={flipX} />
           </Pressable>
-          <Text className="font-display text-2xl text-foreground">Plan a journey</Text>
+          <Text className="font-display text-2xl text-foreground">{tx('Plan a journey')}</Text>
         </View>
 
         <View className="flex-row items-center gap-3 rounded-3xl border border-border bg-card px-4 py-1">
@@ -208,9 +209,9 @@ export default function SearchScreen() {
             <View className="min-h-14 flex-row items-center gap-3">
               <CircleDot color={colors.primary} size={20} />
               <View className="flex-1">
-                <Text className="text-xs text-faint">From</Text>
+                <Text className="text-xs text-faint">{tx('From')}</Text>
                 <Text numberOfLines={1} className="text-base font-semibold text-muted-foreground">
-                  Your location
+                  {tx('Your location')}
                 </Text>
               </View>
             </View>
@@ -218,20 +219,20 @@ export default function SearchScreen() {
             <View className="min-h-14 flex-row items-center gap-3">
               <MapPin color={colors.accent} size={20} />
               <View className="flex-1">
-                <Text className="text-xs text-faint">To</Text>
+                <Text className="text-xs text-faint">{tx('To')}</Text>
                 <TextInput
                   autoFocus={!params.category}
                   value={term}
                   onChangeText={setTerm}
-                  placeholder="City, area, landmark or address"
+                  placeholder={tx('City, area, landmark or address')}
                   placeholderTextColor={colors.faint}
                   className="p-0 text-base font-semibold text-foreground"
                   returnKeyType="search"
-                  accessibilityLabel="Destination"
+                  accessibilityLabel={tx('Destination')}
                 />
               </View>
               {term ? (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear" onPress={() => setTerm('')} hitSlop={10}>
+                <Pressable accessibilityRole="button" accessibilityLabel={tx('Clear')} onPress={() => setTerm('')} hitSlop={10}>
                   <X color={colors.faint} size={18} />
                 </Pressable>
               ) : null}
@@ -246,7 +247,7 @@ export default function SearchScreen() {
       {browsing ? (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="gap-5 px-5" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-2 px-5">
-            <Chip label="All" selected={!category} onPress={() => setCategory(null)} />
+            <Chip label={tx('All')} selected={!category} onPress={() => setCategory(null)} />
             {CATEGORY_ORDER.map((c) => (
               <Chip key={c} label={DESTINATION_CATEGORIES[c].label} selected={category === c} onPress={() => setCategory(category === c ? null : c)} />
             ))}
@@ -262,13 +263,13 @@ export default function SearchScreen() {
             ) : isLoading ? (
               <LoadingState />
             ) : (
-              <EmptyState icon={SearchX} title="Nothing here yet" message="No landmarks in this category have been added." />
+              <EmptyState icon={SearchX} title={tx('Nothing here yet')} message={tx('No landmarks in this category have been added.')} />
             )
           ) : (
             <>
               {recent.length ? (
                 <View className="gap-1">
-                  <SectionTitle title="RECENT" action="Clear" onAction={() => setRecent([])} />
+                  <SectionTitle title={tx('RECENT')} action={tx('Clear')} onAction={() => setRecent([])} />
                   {recent.map((r) => (
                     <ResultRow key={r.id} icon={Clock} tint="muted" title={r.name} subtitle={r.subtitle} onPress={() => openRecent(r)} />
                   ))}
@@ -276,7 +277,7 @@ export default function SearchScreen() {
               ) : null}
               {nearby.length ? (
                 <View className="gap-1">
-                  <SectionTitle title="FAMOUS PLACES NEAR YOU" />
+                  <SectionTitle title={tx('FAMOUS PLACES NEAR YOU')} />
                   {nearby.map((d) => (
                     <ResultRow
                       key={d.id}
@@ -295,12 +296,12 @@ export default function SearchScreen() {
           )}
         </ScrollView>
       ) : searching ? (
-        <LoadingState label="Searching..." />
+        <LoadingState label={tx('Searching...')} />
       ) : sections.length === 0 ? (
         <EmptyState
           icon={SearchX}
-          title="No matches"
-          message={online.isFetching ? 'Still looking online...' : 'Try another spelling, or a nearby area or landmark.'}
+          title={tx('No matches')}
+          message={online.isFetching ? tx('Still looking online...') : tx('Try another spelling, or a nearby area or landmark.')}
         />
       ) : (
         <SectionList
@@ -388,9 +389,7 @@ function OfflineNote({ places }: { places: number }) {
   return (
     <View className="mt-4 flex-row items-center gap-2 rounded-2xl bg-muted px-3 py-2.5">
       <ShieldCheck color={colors.success} size={16} />
-      <Text className="flex-1 text-xs text-muted-foreground">
-        Search works offline across {places.toLocaleString()} places in Pakistan
-      </Text>
+      <Text className="flex-1 text-xs text-muted-foreground">{tx('Search works offline across {0} places in Pakistan', { 0: places.toLocaleString() })}</Text>
     </View>
   );
 }

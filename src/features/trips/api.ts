@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/auth-provider';
 import { supabase } from '@/lib/supabase';
 import type { TripItem, TripStatus } from '@/lib/types';
+import { tx } from '@/lib/i18n';
 
 export const TRIP_STATUSES: { value: TripStatus; label: string }[] = [
-  { value: 'todo', label: 'To Do' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'visited', label: 'Visited' },
+  { value: 'todo', label: tx('To Do') },
+  { value: 'in_progress', label: tx('In Progress') },
+  { value: 'visited', label: tx('Visited') },
 ];
 
 export function useTrips() {

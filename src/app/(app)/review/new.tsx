@@ -15,6 +15,7 @@ import { useDestination } from '@/features/destinations/api';
 import { useDeleteReview, useReviews, useSaveReview } from '@/features/reviews/api';
 import { errorMessage } from '@/lib/errors';
 import { chooseImageSource } from '@/lib/pick-image';
+import { tx } from '@/lib/i18n';
 
 /** Write or edit your single review for a destination (duplicates are prevented by the DB). */
 export default function ReviewEditor() {
@@ -57,18 +58,18 @@ export default function ReviewEditor() {
   const preview = image ?? existingImage;
 
   return (
-    <Screen back title={existing ? 'Edit review' : 'Write a review'} subtitle={destination?.name} keyboard>
+    <Screen back title={existing ? tx('Edit review') : tx('Write a review')} subtitle={destination?.name} keyboard>
       {error ? <InlineError message={error} /> : null}
       <View className="items-center gap-2 py-2">
-        <Text className="text-sm text-muted-foreground">Your rating</Text>
+        <Text className="text-sm text-muted-foreground">{tx('Your rating')}</Text>
         <RatingStars value={rating} size={34} onChange={setRating} />
       </View>
-      <TextField label="Your experience" value={body} onChangeText={setBody} multiline maxLength={2000} placeholder="What did you love? Any tips for other travellers?" />
+      <TextField label={tx('Your experience')} value={body} onChangeText={setBody} multiline maxLength={2000} placeholder={tx('What did you love? Any tips for other travellers?')} />
       {preview ? (
         <View>
           <Image source={{ uri: preview }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" />
           <Pressable
-            accessibilityLabel="Remove photo"
+            accessibilityLabel={tx('Remove photo')}
             onPress={() => {
               setImage(null);
               setExistingImage(null);
@@ -79,18 +80,18 @@ export default function ReviewEditor() {
           </Pressable>
         </View>
       ) : (
-        <AppButton label="Add photo (optional)" icon={ImagePlus} variant="outline" onPress={() => chooseImageSource(setImage)} />
+        <AppButton label={tx('Add photo (optional)')} icon={ImagePlus} variant="outline" onPress={() => chooseImageSource(setImage)} />
       )}
-      <AppButton label={existing ? 'Update review' : 'Post review'} icon={Send} variant="accent" loading={save.isPending} onPress={submit} />
+      <AppButton label={existing ? tx('Update review') : tx('Post review')} icon={Send} variant="accent" loading={save.isPending} onPress={submit} />
       {existing ? (
         <AppButton
-          label="Delete review"
+          label={tx('Delete review')}
           icon={Trash2}
           variant="ghost"
           onPress={() =>
-            Alert.alert('Delete your review?', undefined, [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: () => del.mutate({ id: existing.id, destinationId }, { onSuccess: () => router.back() }) },
+            Alert.alert(tx('Delete your review?'), undefined, [
+              { text: tx('Cancel'), style: 'cancel' },
+              { text: tx('Delete'), style: 'destructive', onPress: () => del.mutate({ id: existing.id, destinationId }, { onSuccess: () => router.back() }) },
             ])
           }
         />

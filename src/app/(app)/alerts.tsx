@@ -10,15 +10,16 @@ import { useLastLocation } from '@/features/location/location-store';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
+import { tx } from '@/lib/i18n';
 
 export default function AlertsScreen() {
   const alerts = useRoadAlerts();
   const location = useLastLocation();
 
   return (
-    <Screen back title="Road & travel alerts" subtitle="Demo data for the FYP" scroll={false}>
+    <Screen back title={tx('Road & travel alerts')} subtitle={tx('Demo data for the FYP')} scroll={false}>
       {alerts.isLoading ? (
-        <LoadingState label="Loading alerts..." />
+        <LoadingState label={tx('Loading alerts...')} />
       ) : alerts.isError && !alerts.data ? (
         <ErrorState error={alerts.error} onRetry={alerts.refetch} />
       ) : (
@@ -27,7 +28,7 @@ export default function AlertsScreen() {
           keyExtractor={(a) => a.id}
           contentContainerClassName="gap-3 px-4 pb-8"
           refreshControl={<RefreshControl refreshing={alerts.isRefetching} onRefresh={() => void alerts.refetch()} tintColor={colors.primary} />}
-          ListEmptyComponent={<EmptyState icon={ShieldCheck} title="No active alerts" message="Roads look clear. Have a safe trip!" />}
+          ListEmptyComponent={<EmptyState icon={ShieldCheck} title={tx('No active alerts')} message={tx('Roads look clear. Have a safe trip!')} />}
           renderItem={({ item: a }) => (
             <Pressable
               accessibilityRole="button"
@@ -46,10 +47,10 @@ export default function AlertsScreen() {
               </View>
               <Text className="text-xs text-muted-foreground">
                 {ALERT_LABELS[a.alert_type]} · {a.city ?? a.region} · {timeAgo(a.starts_at)}
-                {location ? ` · ${formatDistance(distanceMeters(location, a))} away` : ''}
+                {location ? tx(' · {0} away', { 0: formatDistance(distanceMeters(location, a)) }) : ''}
               </Text>
               <Text className="text-sm text-foreground">{a.description}</Text>
-              <Text className="text-[11px] text-muted-foreground">Source: {a.source}</Text>
+              <Text className="text-[11px] text-muted-foreground">{tx('Source: {0}', { 0: a.source })}</Text>
             </Pressable>
           )}
         />

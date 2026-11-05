@@ -219,6 +219,16 @@ src/lib/                 supabase client, storage, query client, geo maths, them
 - **Settings → Demo tools → Simulate journey** drives a synthetic path through any landmark's radius, so the whole flow can
   be shown without travelling. *Reset landmark cooldowns* lets you repeat it.
 
+### Languages (English and Urdu)
+
+- Interface text is written in English in the code and wrapped in `tx()` (`src/lib/i18n.ts`); Urdu lives in
+  `src/i18n/ur.ts`, keyed by the English text. `node scripts/check-translations.cjs` lists any string without Urdu.
+- Choosing a language (onboarding or Settings) restarts the app so text and right-to-left layout switch together.
+  Urdu text uses Noto Nastaliq Urdu with taller lines (`src/components/text.tsx`).
+- Landmark guides: Urdu Wikipedia summaries via the import; missing sections are translated once by the `ai`
+  function (`mode: "translate"`), stored in `destination_translations` with `machine_translated = true` and labelled
+  in the app.
+
 ### Journey mode (turn-by-turn)
 
 ```
@@ -264,4 +274,4 @@ Radii vary per landmark, for example: Wazir Khan Mosque 300 m, Minar-e-Pakistan 
 - Seed destinations ship without photos (category placeholders). Add licensed image URLs with `update public.destinations set image_url = … where slug = …`.
 - Road alerts and nearby-service fallbacks are seeded demo data.
 - Visual Lens and Smart Scan are demonstrations, and AI answers can be wrong.
-- Urdu/Chinese/Arabic translations cover names and short descriptions. Longer content falls back to English, and the UI chrome is English.
+- English and Urdu are fully supported (interface, right-to-left layout, Nastaliq font). Urdu landmark guides come from Urdu Wikipedia where available and are otherwise translated once by AI (labelled as such). Chinese and Arabic are available for the AI guide and Visual Lens answers only. Turn-by-turn voice uses Urdu only if the phone has an Urdu text-to-speech voice, otherwise English.

@@ -28,6 +28,7 @@ import { displayName, useFollowCounts, useFriendships } from '@/features/social/
 import { stopSharing } from '@/features/safety/sharing';
 import { useTrips } from '@/features/trips/api';
 import { colors } from '@/lib/theme';
+import { flipX, tx } from '@/lib/i18n';
 
 function Row({ icon: Icon, label, onPress, value }: { icon: LucideIcon; label: string; onPress: () => void; value?: string }) {
   return (
@@ -37,7 +38,7 @@ function Row({ icon: Icon, label, onPress, value }: { icon: LucideIcon; label: s
       </View>
       <Text className="flex-1 text-base text-foreground">{label}</Text>
       {value ? <Text className="text-sm text-muted-foreground">{value}</Text> : null}
-      <ChevronRight color={colors.mutedForeground} size={18} />
+      <ChevronRight color={colors.mutedForeground} size={18} style={flipX} />
     </Pressable>
   );
 }
@@ -51,10 +52,10 @@ export default function ProfileScreen() {
   const visited = (trips.data ?? []).filter((t) => t.status === 'visited').length;
 
   const confirmSignOut = () =>
-    Alert.alert('Sign out?', 'Location sharing will stop.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tx('Sign out?'), tx('Location sharing will stop.'), [
+      { text: tx('Cancel'), style: 'cancel' },
       {
-        text: 'Sign out',
+        text: tx('Sign out'),
         style: 'destructive',
         onPress: async () => {
           await stopSharing().catch(() => undefined);
@@ -64,7 +65,7 @@ export default function ProfileScreen() {
     ]);
 
   return (
-    <Screen inTabs title="Profile" right={<AppButton label="Edit" icon={Pencil} size="sm" variant="secondary" onPress={() => router.push('/profile/edit')} />}>
+    <Screen inTabs title={tx('Profile')} right={<AppButton label={tx('Edit')} icon={Pencil} size="sm" variant="secondary" onPress={() => router.push('/profile/edit')} />}>
       {profileLoading && !profile ? (
         <LoadingState />
       ) : (
@@ -82,10 +83,10 @@ export default function ProfileScreen() {
           {profile?.bio ? <Text className="text-center text-sm text-foreground">{profile.bio}</Text> : null}
           <View className="w-full flex-row justify-around pt-3">
             {[
-              { label: 'Visited', value: visited },
-              { label: 'Saved', value: saved.data?.length ?? 0 },
-              { label: 'Friends', value: friends.friends.length },
-              { label: 'Followers', value: follows.data?.followers ?? 0 },
+              { label: tx('Visited'), value: visited },
+              { label: tx('Saved'), value: saved.data?.length ?? 0 },
+              { label: tx('Friends'), value: friends.friends.length },
+              { label: tx('Followers'), value: follows.data?.followers ?? 0 },
             ].map((s) => (
               <View key={s.label} className="items-center">
                 <Text className="text-lg font-bold text-foreground">{s.value}</Text>
@@ -93,23 +94,21 @@ export default function ProfileScreen() {
               </View>
             ))}
           </View>
-          <Text className="pt-1 text-xs text-muted-foreground">
-            Profile visibility: {profile?.visibility === 'friends' ? 'Friends only' : 'Public'}
-          </Text>
+          <Text className="pt-1 text-xs text-muted-foreground">{tx('Profile visibility: {0}', { 0: profile?.visibility === 'friends' ? tx('Friends only') : tx('Public') })}</Text>
         </Card>
       )}
 
       <Card className="gap-0 py-2">
-        <Row icon={ClipboardList} label="My trip" value={`${trips.data?.length ?? 0}`} onPress={() => router.navigate('/trips')} />
-        <Row icon={Bookmark} label="Saved places" onPress={() => router.push('/saved')} />
-        <Row icon={Users} label="Friends" onPress={() => router.push('/friends')} />
-        <Row icon={MessagesSquare} label="Messages" onPress={() => router.push('/messages')} />
-        <Row icon={Bell} label="Notifications" onPress={() => router.push('/notifications')} />
-        <Row icon={ShieldCheck} label="Safety & SOS" onPress={() => router.push('/safety')} />
-        <Row icon={Settings} label="Settings" onPress={() => router.push('/settings')} />
+        <Row icon={ClipboardList} label={tx('My trip')} value={`${trips.data?.length ?? 0}`} onPress={() => router.navigate('/trips')} />
+        <Row icon={Bookmark} label={tx('Saved places')} onPress={() => router.push('/saved')} />
+        <Row icon={Users} label={tx('Friends')} onPress={() => router.push('/friends')} />
+        <Row icon={MessagesSquare} label={tx('Messages')} onPress={() => router.push('/messages')} />
+        <Row icon={Bell} label={tx('Notifications')} onPress={() => router.push('/notifications')} />
+        <Row icon={ShieldCheck} label={tx('Safety & SOS')} onPress={() => router.push('/safety')} />
+        <Row icon={Settings} label={tx('Settings')} onPress={() => router.push('/settings')} />
       </Card>
 
-      <AppButton label="Sign out" icon={LogOut} variant="outline" onPress={confirmSignOut} />
+      <AppButton label={tx('Sign out')} icon={LogOut} variant="outline" onPress={confirmSignOut} />
     </Screen>
   );
 }
