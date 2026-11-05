@@ -46,8 +46,8 @@ Not in Figma (designed in code): Offline Pakistan, SOS/live link screen, Guest w
   - Extra blocks between the header and "Near you" (location status card, travel alerts) push the carousel
     below the fold; Figma shows "Near you" directly after the chips.
   - Destination tiles have no **bookmark button** on the photo (Figma: white square button, top right).
-  - Most OSM landmarks have **no photo** (about 310 of 502), so many tiles show a category icon instead
-    of a photo; Figma assumes photos everywhere. Needs a better placeholder or more photos.
+  - **235 of 545** active destinations have no photo (310 have one, checked 5 Nov), so those tiles show a
+    category icon; Figma assumes photos everywhere. Needs a better placeholder or more photos.
   - The "You're near" card only shows within 5 km of a landmark; Figma shows it as a permanent spotlight.
   - Extra sections below (shortcuts grid, weather, popular, trips, saved) are not in Figma; keep them below
     "Near you" but match the card styles.
