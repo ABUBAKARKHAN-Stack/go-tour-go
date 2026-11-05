@@ -74,7 +74,7 @@ export default function SignIn() {
 
       <AppButton label={tx('Sign in')} onPress={submit} loading={formState.isSubmitting} />
       <OrDivider />
-      <AppButton label={tx('Create an account')} variant="secondary" onPress={() => router.push('/sign-up')} />
+      <AppButton label={tx('Create an account')} variant="outline" onPress={() => router.push('/sign-up')} />
     </AuthShell>
   );
 }

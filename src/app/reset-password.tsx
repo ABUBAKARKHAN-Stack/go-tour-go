@@ -1,17 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { KeyRound } from 'lucide-react-native';
+import { KeyRound, Lock } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
-import { Screen } from '@/components/screen';
 import { InlineError, LoadingState } from '@/components/states';
 import { exchangeRecoveryCode, updatePassword } from '@/features/auth/api';
+import { AuthShell } from '@/features/auth/auth-shell';
 import { resetPasswordSchema } from '@/features/auth/schemas';
 import { errorMessage } from '@/lib/errors';
 import { serverError, useZodForm } from '@/lib/forms';
 import { tx } from '@/lib/i18n';
+import { colors } from '@/lib/theme';
 
 /** Opened from the password-reset email (gotourgodevelopment://reset-password?code=...). */
 export default function ResetPassword() {
@@ -40,19 +40,20 @@ export default function ResetPassword() {
 
   if (!ready) {
     return (
-      <Screen title={tx('Reset password')}>
+      <AuthShell compact title={tx('Reset password')} subtitle={tx('Verifying link...')}>
         <LoadingState label={tx('Verifying link...')} />
-      </Screen>
+      </AuthShell>
     );
   }
 
   return (
-    <Screen keyboard title={tx('Choose a new password')} contentClassName="px-6 gap-4">
+    <AuthShell
+      compact
+      title={done ? tx('Password updated') : tx('Choose a new password')}
+      subtitle={done ? tx('Your password has been updated.') : tx('Use at least 8 characters with letters and numbers.')}
+    >
       {done ? (
-        <>
-          <Text className="text-base text-foreground">{tx('Your password has been updated.')}</Text>
-          <AppButton label={tx('Continue')} variant="accent" onPress={() => router.replace('/')} />
-        </>
+        <AppButton label={tx('Continue')} onPress={() => router.replace('/')} />
       ) : (
         <>
           {error ? <InlineError message={error} /> : null}
@@ -65,10 +66,11 @@ export default function ResetPassword() {
             placeholder={tx('At least 8 characters')}
             returnKeyType="go"
             onSubmitEditing={() => submit()}
+            left={<Lock color={colors.faint} size={20} />}
           />
-          <AppButton label={tx('Update password')} icon={KeyRound} onPress={submit} loading={formState.isSubmitting} variant="accent" />
+          <AppButton label={tx('Update password')} icon={KeyRound} onPress={submit} loading={formState.isSubmitting} />
         </>
       )}
-    </Screen>
+    </AuthShell>
   );
 }

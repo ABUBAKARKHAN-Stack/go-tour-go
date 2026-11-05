@@ -959,4 +959,18 @@ export const ur: Record<string, string> = {
   "Last error · {0}": "آخری خرابی · {0}",
   "No errors recorded on this phone.": "اس فون پر کوئی خرابی ریکارڈ نہیں ہوئی۔",
   "Share details": "تفصیلات شیئر کریں",
+  // Auth screens
+  "@{0} is available.": "@{0} دستیاب ہے۔",
+  "@{0} is available. You can change it.": "@{0} دستیاب ہے۔ آپ اسے بدل سکتے ہیں۔",
+  "Available": "دستیاب",
+  "Checking @{0}…": "@{0} دیکھا جا رہا ہے…",
+  "Could not check right now; we will check when you sign up.": "ابھی چیک نہیں ہو سکا؛ سائن اپ کرتے وقت چیک کیا جائے گا۔",
+  "Did not get it? Check your spam folder, or sign up again in a few minutes.": "نہیں ملا؟ اسپام فولڈر دیکھیں، یا چند منٹ بعد دوبارہ سائن اپ کریں۔",
+  "Did not get it? Check your spam folder, or try again in a few minutes.": "نہیں ملا؟ اسپام فولڈر دیکھیں، یا چند منٹ بعد دوبارہ کوشش کریں۔",
+  "Finding a free username…": "خالی یوزرنیم تلاش کیا جا رہا ہے…",
+  "Friends find you by this name. Filled in from your name.": "دوست آپ کو اسی نام سے ڈھونڈتے ہیں۔ آپ کے نام سے بھرا گیا ہے۔",
+  "Password updated": "پاس ورڈ اپ ڈیٹ ہو گیا",
+  "Taken": "پہلے سے لیا گیا",
+  "That username is taken. Try another.": "یہ یوزرنیم پہلے سے لیا جا چکا ہے۔ کوئی اور آزمائیں۔",
+  "Use at least 8 characters with letters and numbers.": "کم از کم 8 حروف، جن میں حروف اور اعداد دونوں ہوں، استعمال کریں۔",
 };

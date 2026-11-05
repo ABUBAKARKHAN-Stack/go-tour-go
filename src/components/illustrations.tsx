@@ -8,40 +8,8 @@ import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-na
 
 type Props = { size?: number; width?: number; height?: number };
 
-const SAND = '#B5583A';
-const SAND_DARK = '#9E4A2F';
-const SAND_DEEP = '#7E3622';
-const MARBLE = '#F4EEE6';
-const MARBLE_EDGE = '#E0D5C4';
 const TEAL = '#0F4C4A';
 const TERRACOTTA = '#C8643B';
-
-function Minaret({ cx, top, base = 246 }: { cx: number; top: number; base?: number }) {
-  const h = base - top;
-  return (
-    <G>
-      <Rect x={cx - 6} y={top} width={12} height={h} fill={SAND} />
-      <Rect x={cx - 7} y={top + h * 0.3} width={14} height={3} fill={SAND_DARK} />
-      <Rect x={cx - 7} y={top + h * 0.6} width={14} height={3} fill={SAND_DARK} />
-      <Rect x={cx - 9} y={top - 6} width={18} height={6} fill={SAND_DARK} />
-      <Path d={`M${cx - 7} ${top - 6} Q${cx - 7} ${top - 18} ${cx} ${top - 21} Q${cx + 7} ${top - 18} ${cx + 7} ${top - 6} Z`} fill={MARBLE} />
-    </G>
-  );
-}
-
-function Dome({ cx, base, w, h }: { cx: number; base: number; w: number; h: number }) {
-  return (
-    <G>
-      <Path
-        d={`M${cx - w / 2} ${base} Q${cx - w / 2} ${base - h * 0.8} ${cx} ${base - h} Q${cx + w / 2} ${base - h * 0.8} ${cx + w / 2} ${base} Z`}
-        fill={MARBLE}
-        stroke={MARBLE_EDGE}
-        strokeWidth={1.5}
-      />
-      <Path d={`M${cx} ${base - h} L${cx} ${base - h - 9}`} stroke={TERRACOTTA} strokeWidth={2} />
-    </G>
-  );
-}
 
 /** A map with a landmark's alert radius, the traveller arriving and the notification. */
 export function ArrivalScene({ size = 360 }: Props) {
@@ -104,40 +72,6 @@ export function SafetyScene({ size = 360 }: Props) {
           <Path d={`M${x - 10} ${y + 11} Q${x} ${y} ${x + 10} ${y + 11} Z`} fill={TERRACOTTA} />
         </G>
       ))}
-    </Svg>
-  );
-}
-
-/** Wide evening scene for auth headers: same landmark, warmer sky. */
-export function HeroScene({ width = 412, height = 300 }: Props) {
-  return (
-    <Svg width={width} height={height} viewBox="0 30 360 262" preserveAspectRatio="xMidYMid slice">
-      <Defs>
-        <LinearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#F2C9A8" />
-          <Stop offset="0.6" stopColor="#F6E3D9" />
-          <Stop offset="1" stopColor="#FBF8F3" />
-        </LinearGradient>
-      </Defs>
-      <Rect y={0} width={360} height={360} fill="url(#dusk)" />
-      <Circle cx={92} cy={118} r={40} fill="#F5D3A4" />
-      <Path d="M0 214 L58 146 L98 178 L150 104 L204 170 L250 120 L300 166 L360 116 L360 236 L0 236 Z" fill="#D9C7BE" />
-      <Path d="M0 244 Q90 208 180 234 T360 230 L360 276 L0 276 Z" fill="#C9B3A6" />
-      <Rect y={254} width={360} height={106} fill="#EFE3D0" />
-      <Rect x={66} y={244} width={228} height={12} fill={SAND_DARK} />
-      <Rect x={108} y={200} width={144} height={46} fill={SAND} />
-      {[116, 129, 142, 205, 218, 231].map((x) => (
-        <Path key={x} d={`M${x} 238 L${x} 222 Q${x + 4.5} 214 ${x + 9} 222 L${x + 9} 238 Z`} fill={SAND_DEEP} opacity={0.85} />
-      ))}
-      <Rect x={158} y={192} width={44} height={54} fill="#C46A48" />
-      <Path d="M167 246 L167 216 Q180 200 193 216 L193 246 Z" fill={SAND_DEEP} />
-      <Dome cx={180} base={194} w={52} h={36} />
-      <Dome cx={130} base={201} w={30} h={22} />
-      <Dome cx={230} base={201} w={30} h={22} />
-      <Minaret cx={80} top={148} />
-      <Minaret cx={280} top={148} />
-      <Minaret cx={106} top={176} base={244} />
-      <Minaret cx={254} top={176} base={244} />
     </Svg>
   );
 }
