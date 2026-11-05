@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import type { DestinationCategory } from '@/lib/types';
@@ -11,13 +11,14 @@ type Props = {
   className?: string;
   iconSize?: number;
   recyclingKey?: string;
+  style?: StyleProp<ViewStyle>;
 };
 
 /**
  * Destination photo with a category-styled placeholder when no image exists
  * or it fails to load (seed data ships without image URLs).
  */
-export function DestinationImage({ uri, category, className, iconSize = 36, recyclingKey }: Props) {
+export function DestinationImage({ uri, category, className, iconSize = 36, recyclingKey, style }: Props) {
   const [failed, setFailed] = useState(false);
   const meta = DESTINATION_CATEGORIES[category] ?? DESTINATION_CATEGORIES.attraction;
   const Icon = meta.icon;
@@ -26,7 +27,7 @@ export function DestinationImage({ uri, category, className, iconSize = 36, recy
   return (
     <View
       className={`overflow-hidden ${className ?? ''}`}
-      style={{ experimental_backgroundImage: `linear-gradient(135deg, ${meta.gradient[0]}, ${meta.gradient[1]})` }}
+      style={[{ experimental_backgroundImage: `linear-gradient(135deg, ${meta.gradient[0]}, ${meta.gradient[1]})` }, style]}
     >
       {showImage ? (
         <Image
