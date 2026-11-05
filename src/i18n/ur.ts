@@ -955,4 +955,8 @@ export const ur: Record<string, string> = {
   "{0} from you": "آپ سے {0}",
   "{0} pressed SOS in GoTourGo {1}.": "{0} نے {1} GoTourGo میں SOS دبایا۔",
   "{0}'s location": "{0} کی لوکیشن",
+  // Error log
+  "Last error · {0}": "آخری خرابی · {0}",
+  "No errors recorded on this phone.": "اس فون پر کوئی خرابی ریکارڈ نہیں ہوئی۔",
+  "Share details": "تفصیلات شیئر کریں",
 };
