@@ -1,6 +1,7 @@
 // Background tasks must be defined at module scope, before anything renders.
 import '@/features/proximity/geofence-task';
 import '@/features/safety/sharing';
+import '@/features/journey/journey-task';
 
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';

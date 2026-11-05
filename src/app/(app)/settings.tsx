@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, Database, FlaskConical, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
+import { Bell, Database, FlaskConical, Navigation, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, FlatList, Linking, Modal, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
@@ -9,6 +9,7 @@ import { AppButton, IconButton } from '@/components/app-button';
 import { Card, Chip, Segmented, ToggleRow } from '@/components/form';
 import { Screen } from '@/components/screen';
 import { syncLocalData, useDataSync } from '@/features/data/sync';
+import { useJourney } from '@/features/journey/journey-store';
 import { useDestinations } from '@/features/destinations/api';
 import { requestBackgroundPermission } from '@/features/location/location-provider';
 import { locationStore, useLocationState } from '@/features/location/location-store';
@@ -25,6 +26,7 @@ export default function SettingsScreen() {
   const sim = useSimulator();
   const destinations = useDestinations();
   const dataSync = useDataSync();
+  const journey = useJourney();
   const insets = useSafeAreaInsets();
   const [picking, setPicking] = useState(false);
 
@@ -121,8 +123,9 @@ export default function SettingsScreen() {
           value={prefs.travelMode}
           onChange={(v) => setPrefs({ travelMode: v })}
           options={[
-            { value: 'driving', label: 'Driving' },
-            { value: 'walking', label: 'Walking' },
+            { value: 'driving', label: 'Drive' },
+            { value: 'cycling', label: 'Bike' },
+            { value: 'walking', label: 'Walk' },
           ]}
         />
       </Card>
@@ -171,7 +174,21 @@ export default function SettingsScreen() {
             <AppButton label="Stop simulation" icon={Square} variant="secondary" onPress={() => simulator.stop()} />
           </>
         ) : (
-          <AppButton label="Simulate journey" icon={Play} variant="secondary" onPress={() => setPicking(true)} />
+          <>
+            <AppButton label="Simulate journey" icon={Play} variant="secondary" onPress={() => setPicking(true)} />
+            <AppButton
+              label={journey.phase === 'active' ? `Drive the journey to ${journey.target?.name}` : 'Drive the active journey'}
+              icon={Navigation}
+              variant="secondary"
+              disabled={journey.phase !== 'active' || !journey.route}
+              onPress={() => {
+                if (!journey.route || !journey.target) return;
+                simulator.startAlongRoute(journey.route.coordinates, journey.target.name);
+                router.push('/journey/navigate');
+              }}
+            />
+            <Text className="text-xs text-faint">Start a journey first (search a place, then Start journey), then come back here to drive it at 50 km/h.</Text>
+          </>
         )}
         <AppButton
           label="Reset landmark cooldowns"

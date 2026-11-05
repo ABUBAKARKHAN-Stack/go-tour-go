@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 
 import { dataSyncStore, syncLocalData } from '@/features/data/sync';
 import { useInboxRealtime } from '@/features/inbox/api';
+import { useJourneyEffects } from '@/features/journey/use-journey-effects';
 import { LocationProvider } from '@/features/location/location-provider';
 import { locationStore } from '@/features/location/location-store';
 import { useNotificationRouting } from '@/features/notifications/use-notification-routing';
@@ -15,6 +16,7 @@ import { colors } from '@/lib/theme';
 function AppEffects() {
   useNotificationRouting();
   useInboxRealtime();
+  useJourneyEffects();
 
   // Keep the offline copy of places and landmarks current: on start, then when
   // the app returns to the foreground at most every 6 hours (a version check
@@ -52,6 +54,8 @@ export default function AppLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="journey/index" options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="journey/navigate" options={{ gestureEnabled: false, animation: 'fade' }} />
           <Stack.Screen name="scan" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="lens" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="post/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

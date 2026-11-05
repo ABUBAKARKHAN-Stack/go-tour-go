@@ -1,24 +1,23 @@
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
 
-import { getCurrentFix } from '@/features/location/location-provider';
-import { locationStore } from '@/features/location/location-store';
-import { routeStore } from '@/features/routing/route-store';
-import { getPreferences } from '@/lib/preferences';
-
-type Target = { id: string; name: string; latitude: number; longitude: number };
+type Target = { id: string; name: string; latitude: number; longitude: number; subtitle?: string };
 
 /**
- * One-tap navigation from anywhere (details screen, proximity card,
- * notification action): computes the route from the current location and
- * opens the map with it drawn. The user never has to search again.
+ * One-tap navigation from anywhere (details, Home, the "You're near" card,
+ * notification actions, search): opens the journey preview, which plans the
+ * route from the current location with the landmarks and hazards on the way.
+ * Landmark ids are passed on so "Learn more" works on arrival; places from
+ * search use ids like "place:n123".
  */
-export async function navigateTo(target: Target) {
-  router.navigate('/explore');
-  const fix = locationStore.get().fix ?? (await getCurrentFix());
-  if (!fix) {
-    Alert.alert('Location needed', 'Turn on location so GoTourGo can calculate a route from where you are.');
-    return;
-  }
-  await routeStore.request(fix, target, getPreferences().travelMode);
+export function navigateTo(target: Target) {
+  router.push({
+    pathname: '/journey',
+    params: {
+      name: target.name,
+      lat: String(target.latitude),
+      lng: String(target.longitude),
+      id: target.id,
+      ...(target.subtitle ? { subtitle: target.subtitle } : {}),
+    },
+  });
 }

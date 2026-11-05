@@ -83,4 +83,5 @@ export const StorageKeys = {
   queryCache: 'gtg.query.cache',
   sharingSession: 'gtg.sharing.session',
   recentSearches: 'gtg.search.recent',
+  activeJourney: 'gtg.journey.active',
 } as const;
