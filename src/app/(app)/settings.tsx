@@ -169,8 +169,9 @@ export default function SettingsScreen() {
             contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => {
+                onPress={async () => {
                   setPicking(false);
+                  await requestNotificationPermission();
                   simulator.start({ latitude: item.latitude, longitude: item.longitude, name: item.name, radius: item.radius_m });
                 }}
                 className="min-h-14 flex-row items-center gap-3 rounded-2xl bg-card px-4 py-3"

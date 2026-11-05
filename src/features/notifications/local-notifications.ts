@@ -20,13 +20,19 @@ export const PROXIMITY_CATEGORY = 'landmark';
 export const ACTION_LEARN_MORE = 'learn-more';
 export const ACTION_NAVIGATE = 'navigate';
 
-let configured = false;
+let configuring: Promise<void> | null = null;
 
-/** Safe to call multiple times (root layout and background task both call it). */
-export async function configureNotifications() {
-  if (configured) return;
-  configured = true;
+/**
+ * Safe to call multiple times (root layout and background task both call it);
+ * concurrent callers share one setup so channels exist before any permission
+ * prompt (required on Android 13+).
+ */
+export function configureNotifications(): Promise<void> {
+  configuring ??= setup();
+  return configuring;
+}
 
+async function setup() {
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
       // While the app is open the proximity card is shown in-app, but we still

@@ -1,56 +1,189 @@
-# Welcome to your Expo app 👋
+# GoTourGo: Smart Travel Companion (FYP Android MVP)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+GoTourGo is an Expo / React Native travel companion for Pakistan. Its core experience is a **proximity-aware map**:
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+Open GoTourGo → see your location → explore nearby landmarks → travel toward one →
+enter its geofence radius → notification → (app open) contextual card →
+Learn more / Navigate → route drawn from your location → continue exploring
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Stack: Expo SDK 58 · Expo Router · TypeScript · Supabase (Auth, Postgres + RLS, Realtime Broadcast, Storage, Edge Functions) ·
+MapLibre React Native v11 · expo-location + expo-task-manager (geofencing) · expo-notifications · Gemini (server-side) ·
+gluestack-ui v5 + Uniwind · TanStack Query (offline cache).
 
-### Other setup steps
+> Gamification, achievements, badges, leaderboards, VR/AR and music are developed separately and are intentionally not part of this codebase.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+---
 
-## Learn more
+## 1. Environment variables
 
-To learn more about developing your project with Expo, look at the following resources:
+| Variable | Service | Purpose | Required | Where | Client-safe |
+|---|---|---|---|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL` | Supabase | Project URL | **Yes** | `.env.local` + EAS env | Yes |
+| `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase | Publishable key (`sb_publishable_…`; legacy anon key also works) | **Yes** | `.env.local` + EAS env | Yes (RLS protects data) |
+| `EXPO_PUBLIC_MAP_STYLE_URL` | MapLibre tiles | Override map style (default OpenFreeMap *liberty*, no key) | No | `.env.local` + EAS env | Yes |
+| `GEMINI_API_KEY` | Google Gemini | AI assistant + Visual Lens | Yes, for AI | Supabase secret | **No, server-only** |
+| `GEMINI_MODEL` | Gemini | Model override (default `gemini-flash-latest`) | No | Supabase secret | Server-only |
+| `AI_DAILY_LIMIT` | Edge Function | Requests per user per day (default 50) | No | Supabase secret | Server-only |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` … | Supabase | Injected into Edge Functions automatically | Auto | none | **Never in the app** |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Only `EXPO_PUBLIC_*` variables are bundled into the app. Never put the Gemini key or any secret/service-role key in `.env.local`.
 
-## Join the community
+```bash
+cp .env.example .env.local   # then fill in your project URL and publishable key
+```
 
-Join our community of developers creating universal apps.
+If the build is missing the Supabase variables, the app shows a "Backend not configured" screen instead of crashing.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 2. Supabase setup
+
+Everything lives in `supabase/`:
+
+```
+supabase/migrations/   schema, RLS, realtime, storage, AI quota (apply in order)
+supabase/seed.sql      Pakistan-wide demo data (43 landmarks, services, road alerts)
+supabase/functions/ai  Gemini proxy Edge Function (Deno)
+supabase/config.toml   CLI config (auth redirect, function JWT verification)
+```
+
+Option A, with the Supabase CLI:
+
+```bash
+bunx supabase login
+```
+
+```bash
+bunx supabase link --project-ref <your-project-ref>
+```
+
+```bash
+bunx supabase db push --include-seed
+```
+
+```bash
+bunx supabase secrets set GEMINI_API_KEY=<your-gemini-key>
+```
+
+```bash
+bunx supabase functions deploy ai
+```
+
+If your CLI version has no `--include-seed`, run `bunx supabase db push`, then paste `supabase/seed.sql` into the Dashboard SQL editor.
+
+Option B, from the dashboard: run each file in `supabase/migrations/` in order in the SQL editor, then `supabase/seed.sql`.
+Set the `GEMINI_API_KEY` secret under *Edge Functions → Secrets* and deploy the `ai` function with the CLI.
+
+Then in the dashboard:
+
+- **Authentication → URL Configuration → Redirect URLs:** add `gotourgodevelopment://reset-password` (password reset) and `gotourgodevelopment://` (email confirmation).
+- **Authentication → Providers → Email:** enabled. Disable "Confirm email" if you want instant sign-up for demos.
+
+The migrations were validated on PostgreSQL 16 with stubbed Supabase schemas, plus 35 behavioural RLS checks
+(cross-user access, friendship gating, expiry, storage folders, realtime topics).
+
+## 3. Run and build
+
+Expo Go is **not** supported: MapLibre, background geofencing and the location foreground service need a development build or an APK.
+
+```bash
+bun install
+```
+
+Installable APK, built in the EAS cloud (no Android Studio needed):
+
+```bash
+bunx eas-cli env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value https://<ref>.supabase.co --visibility plaintext
+```
+
+```bash
+bunx eas-cli env:create --environment preview --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value sb_publishable_... --visibility plaintext
+```
+
+```bash
+bunx eas-cli build --platform android --profile preview
+```
+
+Development build, for live reload against `bunx expo start`:
+
+```bash
+bunx eas-cli build --platform android --profile development
+```
+
+```bash
+bunx expo start --dev-client
+```
+
+Quality checks:
+
+```bash
+bunx tsc --noEmit
+```
+
+```bash
+bunx expo lint
+```
+
+```bash
+bun test
+```
+
+## 4. Architecture
+
+```
+src/app/                 Expo Router routes only
+  _layout.tsx            providers, splash/hydration gate, Stack.Protected guards
+  onboarding.tsx, (auth)/, reset-password.tsx
+  (app)/_layout.tsx      location + proximity providers, realtime inbox, notification routing, proximity card
+  (app)/(tabs)/          Home · Explore (map) · Trips · Community · Profile (native Material 3 tabs)
+  (app)/…                destination/[id], search, nearby, alerts, offline-maps, assistant, lens, scan,
+                         friends, users/[id], messages, notifications, safety, post, story, review, settings
+src/features/<area>/     data access + hooks + feature components (proximity, location, map, routing, …)
+src/components/          shared UI (screen scaffold, buttons, forms, states, cards)
+src/lib/                 supabase client, storage, query client, geo maths, theme, types
+components/ui/           gluestack-ui v5 kit (vendored)
+```
+
+### Proximity system (core feature)
+
+- `features/proximity/engine.ts` is a **pure, unit-tested** geofence engine shared by the foreground watcher, the background
+  task and the simulator. It handles GPS drift with 2-fix confirmation and exit hysteresis (`radius × 1.15 + 50 m`), and
+  ignores repeated events (it only announces the outside→inside transition). Re-entry needs an exit **and** a cooldown
+  (1/6/24 h, configurable). It drops inaccurate fixes, GPS jumps above 300 km/h and out-of-order events. Overlapping radii
+  produce one grouped notification, nearest first.
+- **Foreground:** `watchPositionAsync` (Balanced, ≥10 s / ≥25 m), paused when the app is backgrounded. It only does local
+  distance maths, with no network calls per fix.
+- **Background:** OS geofencing (`startGeofencingAsync`, nearest ≤90 landmarks), opt-in from Settings. It needs notification
+  permission and location "Allow all the time". Shared persisted state de-duplicates it against the foreground engine.
+- **Notifications** have *Learn more* / *Navigate* actions. While the app is open, a contextual card shows the image,
+  description, why it matters, nearby attractions and distance, with Learn more / Navigate / Dismiss.
+- **Navigate** computes an OSRM route from the current location and draws it on the map, without searching again.
+- **Settings → Demo tools → Simulate journey** drives a synthetic path through any landmark's radius, so the whole flow can
+  be shown without travelling. *Reset landmark cooldowns* lets you repeat it.
+
+### Seeded landmarks for geofence testing
+
+Radii vary per landmark, for example: Wazir Khan Mosque 300 m, Minar-e-Pakistan 500 m, Badshahi Mosque 1000 m
+(overlaps Fort Road Food Street 300 m), Jahangir's Tomb 1500 m, Lake Saiful Muluk / Attabad Lake 3000 m.
+
+## 5. External services (free tiers)
+
+| Service | Used for | Key | Notes |
+|---|---|---|---|
+| Supabase | Auth, DB, Realtime, Storage, Edge Functions | publishable key (client), secrets (server) | Free tier pauses inactive projects |
+| OpenFreeMap | Vector map tiles/style | none | Fair use; keep offline downloads small |
+| FOSSGIS OSRM (`routing.openstreetmap.de`) | Car/foot routes | none | Fair use, no SLA; one request per user action |
+| Overpass API | Live nearby services (OSM) | none | Rate-limited; falls back to seeded `nearby_services` |
+| Open-Meteo | Weather | none | Non-commercial free use; cached 30 min |
+| Google Gemini | AI assistant, Visual Lens | `GEMINI_API_KEY` (server) | Free-tier quotas; per-user daily cap enforced |
+
+## 6. Known limitations (FYP scope)
+
+- Background geofencing stops if the user force-stops the app. Android may delay geofence events by a few minutes.
+- No remote push (FCM). Friend/message/SOS alerts show as local notifications while the app process is alive, and always in the in-app feed.
+- SOS is a **demonstration**. It opens WhatsApp share links to trusted contacts and alerts GoTourGo friends in-app. It never contacts emergency services.
+- Offline: downloaded map regions, cached destinations/trip/saved places and the last route. No offline routing or sync queue.
+- Seed destinations ship without photos (category placeholders). Add licensed image URLs with `update public.destinations set image_url = … where slug = …`.
+- Road alerts and nearby-service fallbacks are seeded demo data.
+- Visual Lens and Smart Scan are demonstrations, and AI answers can be wrong.
+- Urdu/Chinese/Arabic translations cover names and short descriptions. Longer content falls back to English, and the UI chrome is English.

@@ -8,6 +8,7 @@ import {
   startWatching,
 } from '@/features/location/location-provider';
 import { useLocationState } from '@/features/location/location-store';
+import { requestNotificationPermission } from '@/features/notifications/local-notifications';
 import { colors } from '@/lib/theme';
 
 /**
@@ -26,7 +27,14 @@ export function LocationStatusCard({ compact }: { compact?: boolean }) {
   if (s.permission === 'undetermined') {
     title = 'Turn on location';
     message = 'GoTourGo uses your location to show nearby landmarks, alert you when you arrive and calculate routes.';
-    action = { label: 'Allow location', onPress: requestLocationPermission, icon: LocateFixed };
+    action = {
+      label: 'Allow location',
+      // After location, ask for notifications so landmark arrival alerts can be shown.
+      onPress: async () => {
+        if (await requestLocationPermission()) await requestNotificationPermission();
+      },
+      icon: LocateFixed,
+    };
   } else if (s.permission === 'denied') {
     title = 'Location permission denied';
     message = 'Enable location for GoTourGo in Settings to see where you are and get landmark alerts.';

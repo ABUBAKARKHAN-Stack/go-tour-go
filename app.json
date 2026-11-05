@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "go-tour-go-development",
+    "name": "GoTourGo",
     "slug": "go-tour-go-development",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gotourgodevelopment",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#160B2E",
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -19,9 +20,21 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.abubakaraijaz.gotourgodevelopment",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -33,7 +46,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#160B2E",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
@@ -42,7 +55,37 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "GoTourGo needs your location to display your position on the map."
+          "locationWhenInUsePermission": "GoTourGo uses your location to show nearby landmarks, alert you when you arrive and calculate routes.",
+          "locationAlwaysAndWhenInUsePermission": "Allow GoTourGo to use your location in the background to alert you near landmarks and keep sharing your live location with friends when you choose.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "androidForegroundServiceIcon": "./assets/images/android-icon-monochrome.png"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#723CD6",
+          "defaultChannel": "proximity",
+          "enableRemoteNotifications": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "GoTourGo uses the camera for Smart Scan (QR codes) and Visual Lens.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GoTourGo lets you choose photos for posts, stories, reviews and Visual Lens.",
+          "cameraPermission": "GoTourGo uses the camera to take photos for posts, stories, reviews and Visual Lens.",
+          "microphonePermission": false
         }
       ],
       "expo-sqlite",
