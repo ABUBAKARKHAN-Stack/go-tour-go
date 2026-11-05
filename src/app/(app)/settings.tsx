@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Bell, Database, FlaskConical, Map as MapIcon, Navigation, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, FlatList, Linking, Modal, Pressable, View } from 'react-native';
+import { Alert, FlatList, Linking, Modal, Pressable, Share, View } from 'react-native';
 import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +16,7 @@ import { locationStore, useLocationState } from '@/features/location/location-st
 import { CHANNELS, notifyNow, requestNotificationPermission } from '@/features/notifications/local-notifications';
 import { registerGeofences, stopGeofences } from '@/features/proximity/geofence-task';
 import { simulator, useSimulator } from '@/features/proximity/simulator';
+import { crashReport, useLastError } from '@/lib/crash-log';
 import { formatDistance } from '@/lib/geo';
 import { AI_LANGUAGES, LOCALES, usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
@@ -214,6 +215,7 @@ export default function SettingsScreen() {
           }}
         />
         <AppButton label={tx('Offline map engine test')} variant="ghost" size="sm" onPress={() => router.push('/map-engine-test')} />
+        <LastErrorRow />
       </Card>
 
       <Text className="text-center text-xs text-muted-foreground">{tx('GoTourGo FYP MVP · Map data © OpenStreetMap contributors')}</Text>
@@ -249,5 +251,23 @@ export default function SettingsScreen() {
         </View>
       </Modal>
     </Screen>
+  );
+}
+
+/** The last JavaScript error saved on this phone, to share with the developer after a crash. */
+function LastErrorRow() {
+  const [last, setLast] = useLastError();
+  if (!last) return <Text className="text-xs text-faint">{tx('No errors recorded on this phone.')}</Text>;
+  return (
+    <View className="gap-2 rounded-2xl bg-destructive-soft p-3">
+      <Text className="text-xs font-semibold text-destructive">{tx('Last error · {0}', { 0: new Date(last.at).toLocaleString() })}</Text>
+      <Text numberOfLines={3} className="text-xs text-foreground">
+        {last.message}
+      </Text>
+      <View className="flex-row gap-2">
+        <AppButton label={tx('Share details')} size="sm" variant="secondary" onPress={() => Share.share({ message: crashReport(last) })} className="flex-1" />
+        <AppButton label={tx('Clear')} size="sm" variant="ghost" onPress={() => setLast(null)} />
+      </View>
+    </View>
   );
 }
