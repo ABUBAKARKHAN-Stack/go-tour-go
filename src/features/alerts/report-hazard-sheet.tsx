@@ -1,14 +1,18 @@
 import { Ban, CarFront, CloudFog, Construction, Droplets, Mountain, OctagonX, Snowflake, TriangleAlert, X, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
-import { Segmented, TextField } from '@/components/form';
+import { Segmented } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { Text } from '@/components/text';
 import { ALERT_LABELS, HAZARD_TYPES, useReportHazard } from '@/features/alerts/api';
+import { hazardReportSchema } from '@/features/alerts/schemas';
 import { getCurrentFix } from '@/features/location/location-provider';
 import { errorMessage } from '@/lib/errors';
+import { useZodForm } from '@/lib/forms';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 import type { HazardType } from '@/lib/types';
@@ -32,20 +36,15 @@ const ICONS: Record<HazardType, LucideIcon> = {
 export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const report = useReportHazard();
-  const [type, setType] = useState<HazardType | null>(null);
-  const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('medium');
-  const [note, setNote] = useState('');
   const [locating, setLocating] = useState(false);
+  const { control, handleSubmit, reset } = useZodForm(hazardReportSchema, { defaultValues: { hazardType: null, severity: 'medium', note: '' } });
 
   const close = () => {
-    setType(null);
-    setSeverity('medium');
-    setNote('');
+    reset();
     onClose();
   };
 
-  const submit = async () => {
-    if (!type) return;
+  const submit = handleSubmit(async ({ hazardType, severity, note }) => {
     setLocating(true);
     const fix = await getCurrentFix();
     setLocating(false);
@@ -54,7 +53,7 @@ export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onCl
       return;
     }
     report.mutate(
-      { hazard_type: type, severity, description: note, latitude: fix.latitude, longitude: fix.longitude },
+      { hazard_type: hazardType, severity, description: note, latitude: fix.latitude, longitude: fix.longitude },
       {
         onSuccess: () => {
           close();
@@ -63,7 +62,7 @@ export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onCl
         onError: (e) => Alert.alert(tx('Could not report'), errorMessage(e)),
       },
     );
-  };
+  });
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
@@ -83,54 +82,76 @@ export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onCl
         </View>
 
         <ScrollView className="mt-4 max-h-[440px]" contentContainerClassName="gap-4" keyboardShouldPersistTaps="handled">
-          <View className="flex-row flex-wrap justify-between gap-y-2.5">
-            {HAZARD_TYPES.map(({ type: t }) => {
-              const Icon = ICONS[t];
-              const selected = type === t;
-              return (
-                <Pressable
-                  key={t}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={ALERT_LABELS[t]}
-                  onPress={() => setType(t)}
-                  className={`w-[31.5%] items-center gap-1.5 rounded-2xl border py-3 ${selected ? 'border-destructive bg-destructive-soft' : 'border-border bg-card'}`}
-                >
-                  <Icon color={selected ? colors.destructive : colors.mutedForeground} size={22} />
-                  <Text numberOfLines={1} className={`text-xs ${selected ? 'font-semibold text-destructive' : 'text-foreground'}`}>
-                    {ALERT_LABELS[t]}
+          <Controller
+            control={control}
+            name="hazardType"
+            render={({ field, fieldState }) => (
+              <View className="gap-2">
+                <View className="flex-row flex-wrap justify-between gap-y-2.5" accessibilityRole="radiogroup">
+                  {HAZARD_TYPES.map(({ type: t }) => (
+                    <HazardChoice key={t} type={t} selected={field.value === t} onPress={() => field.onChange(t)} />
+                  ))}
+                </View>
+                {fieldState.error?.message ? (
+                  <Text className="text-xs text-destructive" accessibilityLiveRegion="polite">
+                    {fieldState.error.message}
                   </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                ) : null}
+              </View>
+            )}
+          />
 
           <View className="gap-2">
             <Text className="text-sm font-medium text-muted-foreground">{tx('How serious is it?')}</Text>
-            <Segmented
-              value={severity}
-              onChange={setSeverity}
-              options={[
-                { value: 'low', label: tx('Minor') },
-                { value: 'medium', label: tx('Slow down') },
-                { value: 'high', label: tx('Dangerous') },
-              ]}
+            <Controller
+              control={control}
+              name="severity"
+              render={({ field }) => (
+                <Segmented
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={[
+                    { value: 'low', label: tx('Minor') },
+                    { value: 'medium', label: tx('Slow down') },
+                    { value: 'high', label: tx('Dangerous') },
+                  ]}
+                />
+              )}
             />
           </View>
 
-          <TextField
+          <FormTextField
+            control={control}
+            name="note"
             label={tx('What did you see? (optional)')}
-            value={note}
-            onChangeText={(v) => setNote(v.slice(0, 280))}
+            maxLength={280}
             placeholder={tx('e.g. Water up to the knees near the bridge')}
             multiline
           />
         </ScrollView>
 
         <View className="pt-4">
-          <AppButton label={tx('Report hazard')} disabled={!type} loading={locating || report.isPending} onPress={submit} />
+          <AppButton label={tx('Report hazard')} loading={locating || report.isPending} onPress={submit} />
         </View>
       </View>
     </Modal>
+  );
+}
+
+function HazardChoice({ type, selected, onPress }: { type: HazardType; selected: boolean; onPress: () => void }) {
+  const Icon = ICONS[type];
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={ALERT_LABELS[type]}
+      onPress={onPress}
+      className={`w-[31.5%] items-center gap-1.5 rounded-2xl border py-3 ${selected ? 'border-destructive bg-destructive-soft' : 'border-border bg-card'}`}
+    >
+      <Icon color={selected ? colors.destructive : colors.mutedForeground} size={22} />
+      <Text numberOfLines={1} className={`text-xs ${selected ? 'font-semibold text-destructive' : 'text-foreground'}`}>
+        {ALERT_LABELS[type]}
+      </Text>
+    </Pressable>
   );
 }

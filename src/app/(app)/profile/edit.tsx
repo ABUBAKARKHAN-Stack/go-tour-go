@@ -1,18 +1,20 @@
 import { router } from 'expo-router';
 import { Camera, Save } from 'lucide-react-native';
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
-import { Card, Segmented, TextField, ToggleRow } from '@/components/form';
+import { Card, Segmented, ToggleRow } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { Screen } from '@/components/screen';
 import { InlineError, LoadingState } from '@/components/states';
-import { validateUsername } from '@/features/auth/api';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useUpdateProfile } from '@/features/social/api';
-import { errorMessage } from '@/lib/errors';
+import { profileSchema } from '@/features/social/schemas';
+import { serverError, useZodForm } from '@/lib/forms';
 import { chooseImageSource } from '@/lib/pick-image';
 import { colors } from '@/lib/theme';
 import type { Profile } from '@/lib/types';
@@ -26,36 +28,33 @@ export default function EditProfile() {
 
 function EditForm({ profile }: { profile: Profile }) {
   const update = useUpdateProfile();
-  const [fullName, setFullName] = useState(profile.full_name ?? '');
-  const [username, setUsername] = useState(profile.username);
-  const [bio, setBio] = useState(profile.bio ?? '');
-  const [homeCity, setHomeCity] = useState(profile.home_city ?? '');
-  const [visibility, setVisibility] = useState(profile.visibility);
-  const [allowRequests, setAllowRequests] = useState(profile.allow_friend_requests);
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [schema] = useState(() => profileSchema(profile.username));
+  const { control, handleSubmit, setError, formState } = useZodForm(schema, {
+    defaultValues: {
+      fullName: profile.full_name ?? '',
+      username: profile.username,
+      bio: profile.bio ?? '',
+      homeCity: profile.home_city ?? '',
+      visibility: profile.visibility,
+      allowFriendRequests: profile.allow_friend_requests,
+    },
+  });
 
-  const usernameError = validateUsername(username);
-
-  const save = () => {
-    if (usernameError) {
-      setError(usernameError);
-      return;
-    }
-    setError(null);
+  const save = handleSubmit((v) =>
     update.mutate(
       {
-        full_name: fullName.trim() || null,
-        username: username.trim().toLowerCase(),
-        bio: bio.trim() || null,
-        home_city: homeCity.trim() || null,
-        visibility,
-        allow_friend_requests: allowRequests,
+        full_name: v.fullName,
+        username: v.username,
+        bio: v.bio,
+        home_city: v.homeCity,
+        visibility: v.visibility,
+        allow_friend_requests: v.allowFriendRequests,
         avatarLocalUri: avatar,
       },
-      { onSuccess: () => router.back(), onError: (e) => setError(errorMessage(e)) },
-    );
-  };
+      { onSuccess: () => router.back(), onError: (e) => setError('root', serverError(e)) },
+    ),
+  );
 
   return (
     <Screen back title={tx('Edit profile')} keyboard>
@@ -68,23 +67,35 @@ function EditForm({ profile }: { profile: Profile }) {
         </View>
         <Text className="text-sm text-accent">{tx('Change photo')}</Text>
       </Pressable>
-      {error ? <InlineError message={error} /> : null}
-      <TextField label={tx('Name')} value={fullName} onChangeText={setFullName} maxLength={80} />
-      <TextField label={tx('Username')} value={username} onChangeText={(t) => setUsername(t.toLowerCase())} autoCapitalize="none" error={username !== profile.username ? usernameError : null} />
-      <TextField label={tx('Bio')} value={bio} onChangeText={setBio} multiline maxLength={280} placeholder={tx('Where have you been? Where next?')} />
-      <TextField label={tx('Home city')} value={homeCity} onChangeText={setHomeCity} maxLength={80} placeholder={tx('Lahore')} />
+      {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
+      <FormTextField control={control} name="fullName" label={tx('Name')} autoComplete="name" maxLength={80} />
+      <FormTextField control={control} name="username" label={tx('Username')} transform={(t) => t.toLowerCase()} autoCapitalize="none" />
+      <FormTextField control={control} name="bio" label={tx('Bio')} multiline maxLength={280} placeholder={tx('Where have you been? Where next?')} />
+      <FormTextField control={control} name="homeCity" label={tx('Home city')} maxLength={80} placeholder={tx('Lahore')} />
       <Card className="gap-3">
         <Text className="text-base font-semibold text-foreground">{tx('Privacy')}</Text>
         <Text className="text-xs text-muted-foreground">{tx('Who can see your profile and posts list')}</Text>
-        <Segmented
-          value={visibility}
-          onChange={setVisibility}
-          options={[
-            { value: 'public', label: tx('Everyone') },
-            { value: 'friends', label: tx('Friends only') },
-          ]}
+        <Controller
+          control={control}
+          name="visibility"
+          render={({ field }) => (
+            <Segmented
+              value={field.value}
+              onChange={field.onChange}
+              options={[
+                { value: 'public', label: tx('Everyone') },
+                { value: 'friends', label: tx('Friends only') },
+              ]}
+            />
+          )}
         />
-        <ToggleRow title={tx('Allow friend requests')} description={tx('Others can send you requests')} value={allowRequests} onChange={setAllowRequests} />
+        <Controller
+          control={control}
+          name="allowFriendRequests"
+          render={({ field }) => (
+            <ToggleRow title={tx('Allow friend requests')} description={tx('Others can send you requests')} value={field.value} onChange={field.onChange} />
+          )}
+        />
         <Text className="text-xs text-muted-foreground">{tx('Your email and trusted contacts are never shown to others. Your location is only visible to friends while you share it.')}</Text>
       </Card>
       <AppButton label={tx('Save changes')} icon={Save} variant="accent" loading={update.isPending} onPress={save} />

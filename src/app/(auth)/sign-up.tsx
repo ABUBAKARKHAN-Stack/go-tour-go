@@ -4,48 +4,30 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
-import { TextField } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { Screen } from '@/components/screen';
 import { EmptyState, InlineError } from '@/components/states';
-import { signUp, validateEmail, validatePassword, validateUsername } from '@/features/auth/api';
+import { signUp } from '@/features/auth/api';
 import { AuthShell } from '@/features/auth/auth-shell';
+import { signUpSchema } from '@/features/auth/schemas';
+import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
-import { errorMessage } from '@/lib/errors';
 import { tx } from '@/lib/i18n';
 
 export default function SignUp() {
-  const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [touched, setTouched] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [confirmSent, setConfirmSent] = useState(false);
+  const [confirmSent, setConfirmSent] = useState<string | null>(null);
+  const { control, handleSubmit, setError, setFocus, formState } = useZodForm(signUpSchema, {
+    defaultValues: { fullName: '', username: '', email: '', password: '' },
+  });
 
-  const errors = {
-    fullName: touched && fullName.trim().length < 2 ? 'Enter your name.' : null,
-    username: touched ? validateUsername(username) : null,
-    email: touched && !validateEmail(email) ? 'Enter a valid email.' : null,
-    password: touched ? validatePassword(password) : null,
-  };
-  const valid =
-    fullName.trim().length >= 2 && !validateUsername(username) && validateEmail(email) && !validatePassword(password);
-
-  const submit = async () => {
-    setTouched(true);
-    if (!valid) return;
-    setLoading(true);
-    setError(null);
+  const submit = handleSubmit(async (values) => {
     try {
-      const { needsConfirmation } = await signUp({ email, password, fullName, username });
-      if (needsConfirmation) setConfirmSent(true);
+      const { needsConfirmation } = await signUp(values);
+      if (needsConfirmation) setConfirmSent(values.email);
     } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoading(false);
+      setError('root', serverError(e));
     }
-  };
+  });
 
   if (confirmSent) {
     return (
@@ -53,7 +35,7 @@ export default function SignUp() {
         <EmptyState
           icon={MailCheck}
           title={tx('Confirm your email')}
-          message={tx('We sent a confirmation link to {0}. Open it on this phone, then sign in.', { 0: email.trim() })}
+          message={tx('We sent a confirmation link to {0}. Open it on this phone, then sign in.', { 0: confirmSent })}
           actionLabel={tx('Back to sign in')}
           onAction={() => router.replace('/sign-in')}
         />
@@ -63,42 +45,55 @@ export default function SignUp() {
 
   return (
     <AuthShell back compact title={tx('Create your account')} subtitle={tx('Save places, plan journeys and travel with friends.')}>
-      {error ? <InlineError message={error} /> : null}
-      <TextField label={tx('Full name')} value={fullName} onChangeText={setFullName} autoComplete="name" placeholder={tx('Ayesha Khan')} error={errors.fullName} left={<UserRound color={colors.faint} size={20} />} />
-      <TextField
+      {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
+      <FormTextField
+        control={control}
+        name="fullName"
+        label={tx('Full name')}
+        autoComplete="name"
+        placeholder={tx('Ayesha Khan')}
+        returnKeyType="next"
+        onSubmitEditing={() => setFocus('username')}
+        left={<UserRound color={colors.faint} size={20} />}
+      />
+      <FormTextField
+        control={control}
+        name="username"
         label={tx('Username')}
-        value={username}
-        onChangeText={(t) => setUsername(t.toLowerCase())}
+        transform={(t) => t.toLowerCase()}
         autoCapitalize="none"
         autoComplete="username"
         placeholder="ayesha_travels"
-        error={errors.username}
+        returnKeyType="next"
+        onSubmitEditing={() => setFocus('email')}
         hint={tx('Friends find you by this name.')}
         left={<AtSign color={colors.faint} size={20} />}
       />
-      <TextField
+      <FormTextField
+        control={control}
+        name="email"
         label={tx('Email')}
-        value={email}
-        onChangeText={setEmail}
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
         placeholder="you@example.com"
-        error={errors.email}
+        returnKeyType="next"
+        onSubmitEditing={() => setFocus('password')}
         left={<Mail color={colors.faint} size={20} />}
       />
-      <TextField
+      <FormTextField
+        control={control}
+        name="password"
         label={tx('Password')}
-        value={password}
-        onChangeText={setPassword}
         secureTextEntry
         autoComplete="new-password"
         placeholder={tx('At least 8 characters')}
-        error={errors.password}
+        returnKeyType="go"
+        onSubmitEditing={() => submit()}
         left={<Lock color={colors.faint} size={20} />}
       />
       <View className="pt-2">
-        <AppButton label={tx('Create account')} onPress={submit} loading={loading} />
+        <AppButton label={tx('Create account')} onPress={submit} loading={formState.isSubmitting} />
       </View>
     </AuthShell>
   );

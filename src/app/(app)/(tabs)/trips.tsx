@@ -2,6 +2,7 @@ import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { CalendarDays, ClipboardList, NotebookPen, Plus, Search, Trash2, X } from 'lucide-react-native';
 import { memo, useMemo, useState } from 'react';
+import { Controller, useWatch } from 'react-hook-form';
 import { Alert, FlatList, Modal, Platform, Pressable, RefreshControl, View } from 'react-native';
 import { Text, TextInput } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,12 +11,15 @@ import { AppButton, IconButton } from '@/components/app-button';
 import { useIsOnline } from '@/components/offline-banner';
 import { DestinationCard } from '@/components/destination-card';
 import { DestinationImage } from '@/components/destination-image';
-import { Chip, Segmented, TextField } from '@/components/form';
+import { Chip, Segmented } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/states';
 import { searchDestinations, useDestinations } from '@/features/destinations/api';
 import { TRIP_STATUSES, useTripActions, useTrips } from '@/features/trips/api';
+import { tripItemSchema } from '@/features/trips/schemas';
 import { errorMessage } from '@/lib/errors';
+import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
 import type { DestinationSummary, TripItem, TripStatus } from '@/lib/types';
 import { tx } from '@/lib/i18n';
@@ -154,21 +158,21 @@ const TripRow = memo(function TripRow({
 });
 
 function EditTripModal({ item, destination, onClose }: { item: TripItem | null; destination?: DestinationSummary; onClose: () => void }) {
+  return (
+    <Modal visible={Boolean(item)} transparent animationType="slide" onRequestClose={onClose}>
+      {item ? <EditTripForm key={item.id} item={item} destination={destination} onClose={onClose} /> : null}
+    </Modal>
+  );
+}
+
+function EditTripForm({ item, destination, onClose }: { item: TripItem; destination?: DestinationSummary; onClose: () => void }) {
   const actions = useTripActions();
   const insets = useSafeAreaInsets();
-  const [notes, setNotes] = useState('');
-  const [date, setDate] = useState<string | null>(null);
-  const [status, setStatus] = useState<TripStatus>('todo');
-  const [loadedFor, setLoadedFor] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  if (item && loadedFor !== item.id) {
-    setLoadedFor(item.id);
-    setNotes(item.notes ?? '');
-    setDate(item.planned_date);
-    setStatus(item.status);
-    setError(null);
-  }
+  const { control, handleSubmit, setError, setValue, formState } = useZodForm(tripItemSchema, {
+    defaultValues: { status: item.status, plannedDate: item.planned_date, notes: item.notes ?? '' },
+  });
+  const date = useWatch({ control, name: 'plannedDate' });
+  const setDate = (value: string | null) => setValue('plannedDate', value, { shouldDirty: true });
 
   const pickDate = () => {
     const value = date ? new Date(`${date}T00:00:00`) : new Date();
@@ -189,28 +193,25 @@ function EditTripModal({ item, destination, onClose }: { item: TripItem | null; 
     }
   };
 
-  const save = () => {
-    if (!item) return;
+  const save = handleSubmit((v) =>
     actions.update.mutate(
-      { id: item.id, patch: { notes: notes.trim() || null, planned_date: date, status } },
-      { onSuccess: onClose, onError: (e) => setError(errorMessage(e)) },
-    );
-  };
+      { id: item.id, patch: { notes: v.notes, planned_date: v.plannedDate, status: v.status } },
+      { onSuccess: onClose, onError: (e) => setError('root', serverError(e)) },
+    ),
+  );
 
   const remove = () => {
-    if (!item) return;
     Alert.alert(tx('Remove from trip?'), destination?.name, [
       { text: tx('Cancel'), style: 'cancel' },
       {
         text: tx('Remove'),
         style: 'destructive',
-        onPress: () => actions.remove.mutate(item.id, { onSuccess: onClose, onError: (e) => setError(errorMessage(e)) }),
+        onPress: () => actions.remove.mutate(item.id, { onSuccess: onClose, onError: (e) => setError('root', serverError(e)) }),
       },
     ]);
   };
 
   return (
-    <Modal visible={Boolean(item)} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/60">
         <View className="gap-4 rounded-t-3xl bg-card p-5" style={{ paddingBottom: insets.bottom + 16 }}>
           <View className="flex-row items-center justify-between">
@@ -219,8 +220,8 @@ function EditTripModal({ item, destination, onClose }: { item: TripItem | null; 
             </Text>
             <IconButton icon={X} label={tx('Close')} onPress={onClose} />
           </View>
-          {error ? <InlineError message={error} /> : null}
-          <Segmented value={status} onChange={setStatus} options={TRIP_STATUSES} />
+          {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
+          <Controller control={control} name="status" render={({ field }) => <Segmented value={field.value} onChange={field.onChange} options={TRIP_STATUSES} />} />
           <Pressable onPress={pickDate} className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border px-4">
             <CalendarDays color={colors.primary} size={18} />
             <Text className="flex-1 text-base text-foreground">{formatDate(date) ?? tx('Add planned visit date')}</Text>
@@ -230,14 +231,13 @@ function EditTripModal({ item, destination, onClose }: { item: TripItem | null; 
               </Pressable>
             ) : null}
           </Pressable>
-          <TextField label={tx('Notes')} value={notes} onChangeText={setNotes} multiline maxLength={1000} placeholder={tx('Opening times, who to go with, what to try...')} />
+          <FormTextField control={control} name="notes" label={tx('Notes')} multiline maxLength={1000} placeholder={tx('Opening times, who to go with, what to try...')} />
           <View className="flex-row gap-2">
             <AppButton label={tx('Remove')} icon={Trash2} variant="outline" onPress={remove} className="flex-1" />
             <AppButton label={tx('Save')} variant="accent" onPress={save} loading={actions.update.isPending} className="flex-1" />
           </View>
         </View>
       </View>
-    </Modal>
   );
 }
 

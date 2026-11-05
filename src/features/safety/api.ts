@@ -5,6 +5,8 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { supabase } from '@/lib/supabase';
 import type { TrustedContact } from '@/lib/types';
 
+import { tx } from '@/lib/i18n';
+
 import { isValidPhone, normalizePhone, whatsappLink } from './phone-helpers';
 
 export { isValidPhone, mapsLink, normalizePhone, sosMessage, whatsappLink } from './phone-helpers';
@@ -30,8 +32,8 @@ export function useContactActions() {
     save: useMutation({
       mutationFn: async (c: { id?: string; name: string; phone: string; relationship?: string }) => {
         const phone = normalizePhone(c.phone);
-        if (!c.name.trim()) throw new Error('Enter a name.');
-        if (!isValidPhone(phone)) throw new Error('Enter a valid phone number with country code, e.g. +923001234567.');
+        if (!c.name.trim()) throw new Error(tx('Enter a name.'));
+        if (!isValidPhone(phone)) throw new Error(tx('Enter a valid phone number with country code, e.g. +923001234567.'));
         const row = { user_id: userId, name: c.name.trim(), phone, relationship: c.relationship?.trim() || null };
         const { error } = c.id
           ? await supabase.from('trusted_contacts').update(row).eq('id', c.id)
