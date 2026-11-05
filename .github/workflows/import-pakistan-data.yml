@@ -32,6 +32,11 @@ jobs:
             echo "::error::Add the SUPABASE_DB_URL repository secret first (see README, 'Pakistan places and landmarks')."
             exit 1
           fi
+          # GitHub runners have no IPv6; Supabase's direct host (db.<ref>.supabase.co) is IPv6-only.
+          if echo "$SUPABASE_DB_URL" | grep -Eq '@db\.[a-z0-9]+\.supabase\.co'; then
+            echo "::error::SUPABASE_DB_URL is the Direct connection string (db.<ref>.supabase.co), which GitHub cannot reach (IPv6 only). Use the Session pooler string instead: Supabase dashboard > Connect > Session pooler (host ...pooler.supabase.com, user postgres.<ref>)."
+            exit 1
+          fi
 
       - uses: actions/setup-python@v5
         with:
@@ -79,7 +84,9 @@ jobs:
       - name: Load into Supabase
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
         run: |
+          set -euo pipefail
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
             -c "truncate private.stage_places, private.stage_landmarks" \
             -c "\copy private.stage_places from 'import-out/places.csv' with (format csv, header true)" \
