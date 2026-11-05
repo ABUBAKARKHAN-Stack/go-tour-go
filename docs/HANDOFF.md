@@ -141,11 +141,14 @@ bun test
 node scripts/check-translations.cjs        # must print "0 missing"
 node node_modules/@expo/fingerprint/bin/cli.js fingerprint:generate --platform android   # compare .hash
 EXPO_OFFLINE=1 CI=1 bunx expo export --platform android --output-dir /tmp/export
-python3 -m unittest discover -s scripts/tests
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/tests
 ```
 
 Do **not** run `prettier --write` on the repo: there is no Prettier config, and the defaults reformat
 every file (double quotes, 80 columns).
+
+Do not edit `.gitignore` in a JS-only PR: it is part of the native fingerprint. Run the Python tests
+with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 
 ## 8. Debugging on a device
 
