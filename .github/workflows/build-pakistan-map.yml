@@ -38,6 +38,18 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
           df -h .
 
+      # Source downloads (about 1.2 GB) are cached between runs, so a retry
+      # does not depend on the slow mirrors again. Refreshed weekly.
+      - name: Week number
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: map-build/data/sources
+          key: map-sources-${{ steps.week.outputs.week }}
+          restore-keys: map-sources-
+
       - name: Build map files
         run: bash scripts/build-pakistan-map.sh
 

@@ -22,22 +22,46 @@ PLANETILER_URL="${PLANETILER_URL:-https://github.com/onthegomap/planetiler/relea
 MAXZOOM="${MAXZOOM:-14}"
 mkdir -p "$OUT" data
 
-if [ ! -f planetiler.jar ]; then
-  curl -fL --retry 3 -o planetiler.jar "$PLANETILER_URL"
-fi
+SRC=data/sources
+mkdir -p "$SRC"
+
+# Download with retries and long timeouts. Planetiler's own downloader gives up
+# after a short timeout when a mirror is slow (seen with osmdata.openstreetmap.de),
+# so every source is fetched here and handed to Planetiler as a local path.
+fetch() {
+  local url="$1" dest="$2"
+  if [ -s "$dest" ]; then echo "Using cached $dest"; return; fi
+  echo "Downloading $url"
+  curl -fL --retry 8 --retry-delay 20 --retry-all-errors \
+    --connect-timeout 60 --max-time 3600 -C - -o "$dest.part" "$url"
+  mv "$dest.part" "$dest"
+}
+
+fetch "$PLANETILER_URL" planetiler.jar
+fetch "https://download.geofabrik.de/asia/pakistan-latest.osm.pbf" "$SRC/pakistan.osm.pbf"
+fetch "https://osmdata.openstreetmap.de/download/water-polygons-split-3857.zip" "$SRC/water-polygons-split-3857.zip"
+fetch "https://naciscdn.org/naturalearth/packages/natural_earth_vector.sqlite.zip" "$SRC/natural_earth_vector.sqlite.zip"
+fetch "https://github.com/acalcutt/osm-lakelines/releases/download/v12/lake_centerline.shp.zip" "$SRC/lake_centerline.shp.zip"
+ls -lh "$SRC"
+
 java -jar planetiler.jar --version || true
 
-# Full country. --download fetches the Geofabrik Pakistan extract plus the
-# water polygons and Natural Earth data Planetiler needs.
-java -Xmx8g -jar planetiler.jar \
-  --download --area=pakistan \
+SOURCES=(
+  --osm_path="$SRC/pakistan.osm.pbf"
+  --water_polygons_path="$SRC/water-polygons-split-3857.zip"
+  --natural_earth_path="$SRC/natural_earth_vector.sqlite.zip"
+  --lake_centerlines_path="$SRC/lake_centerline.shp.zip"
+)
+
+# Full country, street level. No --download: everything above is local.
+java -Xmx8g -jar planetiler.jar "${SOURCES[@]}" \
   --output="$OUT/pakistan.pmtiles" --force \
   --maxzoom="$MAXZOOM" --render_maxzoom="$MAXZOOM" \
   --nodemap-type=sparsearray --storage=mmap
 
-# Small test extract (central Karachi) from the already-downloaded data.
-java -Xmx4g -jar planetiler.jar \
-  --area=pakistan --bounds=66.95,24.80,67.15,24.97 \
+# Small test extract (central Karachi) for the in-app map engine test.
+java -Xmx4g -jar planetiler.jar "${SOURCES[@]}" \
+  --bounds=66.95,24.80,67.15,24.97 \
   --output="$OUT/karachi-test.pmtiles" --force \
   --maxzoom="$MAXZOOM" --render_maxzoom="$MAXZOOM"
 
