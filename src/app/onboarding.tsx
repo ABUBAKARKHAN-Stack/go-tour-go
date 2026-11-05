@@ -3,7 +3,7 @@ import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
-import { ArrivalScene, LandmarkScene, SafetyScene } from '@/components/illustrations';
+import { ArrivalScene, SafetyScene, TravellerScene } from '@/components/illustrations';
 import { Text } from '@/components/text';
 import { changeLanguage, language, tx } from '@/lib/i18n';
 import { LOCALES } from '@/lib/preferences';
@@ -17,7 +17,7 @@ const SLIDES: Slide[] = [
     overline: tx('Discover'),
     title: tx('Stories wait around every corner'),
     body: tx('GoTourGo notices the landmarks you pass and tells you why they matter: history, food and local tips, right when you arrive.'),
-    Art: LandmarkScene,
+    Art: TravellerScene,
   },
   {
     key: 'journey',
