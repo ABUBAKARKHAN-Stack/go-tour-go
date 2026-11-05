@@ -17,7 +17,7 @@ import type { Route } from '@/features/routing/osrm';
 import type { FriendLocation } from '@/features/safety/friend-locations';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
-import { env } from '@/lib/env';
+import { useMapStyle } from '@/features/offline/use-map-style';
 import { boundsOf, circleRing } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
 import type { DestinationSummary, RoadAlert } from '@/lib/types';
@@ -60,6 +60,7 @@ const categoryColorExpression = [
  * many destinations and does not re-render on every GPS fix.
  */
 function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
+  const mapStyle = useMapStyle();
   const camera = useRef<CameraRef>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -122,7 +123,7 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
   return (
     <Map
       style={{ flex: 1 }}
-      mapStyle={env.mapStyleUrl}
+      mapStyle={mapStyle as never}
       compass
       compassPosition={{ top: 140, right: 12 }}
       attributionPosition={{ bottom: 8, left: 8 }}

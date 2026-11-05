@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, Database, FlaskConical, Navigation, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
+import { Bell, Database, FlaskConical, Map as MapIcon, Navigation, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, FlatList, Linking, Modal, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
@@ -170,6 +170,7 @@ export default function SettingsScreen() {
           loading={dataSync.status === 'syncing'}
           onPress={() => syncLocalData({ force: true })}
         />
+        <AppButton label={tx('Offline maps')} icon={MapIcon} variant="ghost" size="sm" onPress={() => router.push('/offline-maps')} />
       </Card>
 
       <Card className="gap-3">

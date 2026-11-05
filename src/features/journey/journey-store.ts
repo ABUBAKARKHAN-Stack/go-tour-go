@@ -232,6 +232,25 @@ export const journeyStore = {
     set({ mode, route, items: itemsFor(route) });
   },
 
+  /** Shows a route saved for offline use in the preview, without asking the routing server. */
+  loadSaved(target: JourneyTarget, route: Route) {
+    if (state.phase === 'active') return;
+    planController?.abort();
+    indexRoute(route);
+    set({
+      ...idle,
+      voice: state.voice,
+      phase: 'preview',
+      target,
+      origin: route.from,
+      mode: route.mode,
+      routes: { [route.mode]: route },
+      route,
+      items: itemsFor(route),
+      error: null,
+    });
+  },
+
   start() {
     if (!state.route || !state.target) return;
     lastReroute = 0;

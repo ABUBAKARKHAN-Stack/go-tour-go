@@ -1,5 +1,9 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
+import { GLYPH_FONT } from './offline-style';
+
+export { GLYPH_FONT, OFFLINE_LAYER_IDS, offlineBaseStyle, offlineStyle } from './offline-style';
+
 /**
  * Offline map files built by .github/workflows/build-pakistan-map.yml from
  * OpenStreetMap and published on the repository's "pakistan-map" release.
@@ -35,80 +39,15 @@ export function localMapFile(name: string) {
   return new File(mapsDirectory(), name);
 }
 
+/** Label glyphs for the offline style: maps/glyphs/NotoSans/<range>.pbf. */
+export function glyphsDirectory() {
+  const dir = new Directory(mapsDirectory(), 'glyphs', GLYPH_FONT);
+  if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
+  return dir;
+}
+
 /** MapLibre source URL for a PMTiles file, local (file://) or remote (https://). */
 export function pmtilesUrl(location: string) {
   return `pmtiles://${location}`;
 }
 
-/**
- * Self-contained style for OpenMapTiles-schema vector tiles in the redesign
- * palette. It has no labels, so it needs no glyph server and renders fully
- * offline. Layer ids are prefixed "omt-" so callers can query them.
- */
-export function offlineBaseStyle(sourceUrl: string) {
-  return {
-    version: 8,
-    name: 'GoTourGo offline',
-    sources: { openmaptiles: { type: 'vector', url: sourceUrl } },
-    layers: [
-      { id: 'omt-background', type: 'background', paint: { 'background-color': '#F3EDE4' } },
-      {
-        id: 'omt-landcover',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'landcover',
-        paint: { 'fill-color': '#DCE6D5', 'fill-opacity': 0.7 },
-      },
-      {
-        id: 'omt-park',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'park',
-        paint: { 'fill-color': '#D4E6D8' },
-      },
-      {
-        id: 'omt-water',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'water',
-        paint: { 'fill-color': '#BFDCE2' },
-      },
-      {
-        id: 'omt-building',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'building',
-        minzoom: 13,
-        paint: { 'fill-color': '#E6DCCB', 'fill-outline-color': '#D9CCB8' },
-      },
-      {
-        id: 'omt-road-minor',
-        type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'transportation',
-        filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'tertiary', 'track']]],
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#FFFFFF', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 6] },
-      },
-      {
-        id: 'omt-road-major',
-        type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'transportation',
-        filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary']]],
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#F2D7A6', 'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.6, 16, 9] },
-      },
-      {
-        id: 'omt-boundary',
-        type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'boundary',
-        filter: ['<=', ['get', 'admin_level'], 4],
-        paint: { 'line-color': '#B5A58E', 'line-dasharray': [3, 2], 'line-width': 1 },
-      },
-    ],
-  };
-}
-
-export const OFFLINE_LAYER_IDS = ['omt-water', 'omt-park', 'omt-landcover', 'omt-building', 'omt-road-minor', 'omt-road-major'];
