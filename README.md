@@ -157,7 +157,7 @@ server changes. Curated destinations are never overwritten: a matching landmark 
 One-time setup, the database connection for the import:
 
 1. In the Supabase dashboard, open your project and click **Connect** (top bar).
-2. Choose the **Session pooler** connection string (GitHub's machines need IPv4) and copy the URI. Replace
+2. Choose the **Session pooler** connection string and copy the URI (host `…pooler.supabase.com`, user `postgres.<project-ref>`). Do not use "Direct connection" (`db.<ref>.supabase.co`): it is IPv6-only and GitHub cannot reach it. Replace
    `[YOUR-PASSWORD]` with your database password (**Project Settings → Database → Reset database password** if you do not know it).
 3. On GitHub: **Settings → Secrets and variables → Actions → New repository secret**. Name: `SUPABASE_DB_URL`, value: the URI.
 
