@@ -9,7 +9,7 @@ import { tx } from '@/lib/i18n';
 
 import { isValidPhone, normalizePhone, whatsappLink } from './phone-helpers';
 
-export { isValidPhone, mapsLink, normalizePhone, sosMessage, whatsappLink } from './phone-helpers';
+export { isValidPhone, normalizePhone, osmLink, sosMessage, whatsappLink } from './phone-helpers';
 
 export function useTrustedContacts() {
   const { userId } = useAuth();
@@ -61,18 +61,4 @@ export async function openWhatsApp(phone: string, text: string): Promise<boolean
     await Share.share({ message: text });
     return false;
   }
-}
-
-export async function logSosEvent(input: { latitude: number | null; longitude: number | null; accuracy: number | null; message: string; contacts: number }) {
-  const { data } = await supabase.auth.getSession();
-  const userId = data.session?.user.id;
-  if (!userId) return;
-  await supabase.from('sos_events').insert({
-    user_id: userId,
-    latitude: input.latitude,
-    longitude: input.longitude,
-    accuracy: input.accuracy,
-    message: input.message.slice(0, 500),
-    contacts_notified: input.contacts,
-  });
 }

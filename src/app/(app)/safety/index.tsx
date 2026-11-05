@@ -1,18 +1,19 @@
 import { router } from 'expo-router';
-import { Info, MapPin, MessageCircle, Phone, Radio, Share2, ShieldAlert, Square, UserPlus, Users } from 'lucide-react-native';
+import { CheckCircle2, Info, Link2, MapPin, MessageCircle, Phone, Radio, Share2, ShieldAlert, Square, UserPlus, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Linking, Pressable, Share, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
-import { Card, SectionHeader } from '@/components/form';
+import { Card, SectionHeader, TextField } from '@/components/form';
 import { Screen } from '@/components/screen';
 import { LoadingState } from '@/components/states';
 import { useAuth } from '@/features/auth/auth-provider';
 import { getCurrentFix, requestBackgroundPermission, requestLocationPermission } from '@/features/location/location-provider';
 import { useLocationState } from '@/features/location/location-store';
 import { LocationStatusCard } from '@/features/location/location-status-card';
-import { logSosEvent, mapsLink, openWhatsApp, sosMessage, useTrustedContacts } from '@/features/safety/api';
+import { openWhatsApp, sosMessage, useTrustedContacts } from '@/features/safety/api';
+import { createShareLink, endLiveLinks, endShareLink, shareUrl, useOwnPhone } from '@/features/safety/share-links';
 import { timeAgo, useFriendLocations } from '@/features/safety/friend-locations';
 import { isSessionLive, SHARING_DURATIONS, startSharing, stopSharing, useSharingSession } from '@/features/safety/sharing';
 import { displayName } from '@/features/social/api';
@@ -27,7 +28,7 @@ const EMERGENCY_NUMBERS = [
   { label: tx('Motorway police'), number: '130' },
 ];
 
-type SosState = { message: string; lat: number | null; lng: number | null } | null;
+type SosState = { message: string; lat: number | null; lng: number | null; token: string | null } | null;
 
 export default function SafetyScreen() {
   const { profile } = useAuth();
@@ -38,6 +39,8 @@ export default function SafetyScreen() {
   const [sos, setSos] = useState<SosState>(null);
   const [triggering, setTriggering] = useState(false);
   const [sharingBusy, setSharingBusy] = useState(false);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [ownPhone, setOwnPhone] = useOwnPhone();
   const live = isSessionLive(session);
 
   const triggerSos = async () => {
@@ -46,17 +49,20 @@ export default function SafetyScreen() {
       if (location.permission !== 'granted') await requestLocationPermission();
       const fix = await getCurrentFix();
       const name = displayName(profile);
-      const message = sosMessage(name, fix?.latitude ?? null, fix?.longitude ?? null);
-      setSos({ message, lat: fix?.latitude ?? null, lng: fix?.longitude ?? null });
-      // Log (friends get an in-app alert via a DB trigger) and share live location for 1 hour.
-      logSosEvent({
+      // Share live location for 1 hour, so the SOS link follows the traveller.
+      if (fix && !live) await startSharing(60 * 60_000, fix).catch(() => undefined);
+      // The SOS link (friends also get an in-app alert via a DB trigger). Without
+      // internet the message falls back to coordinates.
+      const token = await createShareLink({
+        kind: 'sos',
         latitude: fix?.latitude ?? null,
         longitude: fix?.longitude ?? null,
         accuracy: fix?.accuracy ?? null,
-        message,
+        message: 'SOS',
         contacts: contacts.data?.length ?? 0,
-      }).catch(() => undefined);
-      if (fix && !live) startSharing(60 * 60_000, fix).catch(() => undefined);
+      }).catch(() => null);
+      const message = sosMessage(name, token ? shareUrl('sos', token) : null, fix?.latitude ?? null, fix?.longitude ?? null);
+      setSos({ message, lat: fix?.latitude ?? null, lng: fix?.longitude ?? null, token });
     } catch (e) {
       Alert.alert('SOS', errorMessage(e));
     } finally {
@@ -69,6 +75,7 @@ export default function SafetyScreen() {
     try {
       if (live) {
         await stopSharing();
+        await endLiveLinks().catch(() => undefined);
         return;
       }
       if (location.permission !== 'granted' && !(await requestLocationPermission())) return;
@@ -88,6 +95,31 @@ export default function SafetyScreen() {
     } finally {
       setSharingBusy(false);
     }
+  };
+
+  const shareLiveLink = async () => {
+    setLinkBusy(true);
+    try {
+      const fix = await getCurrentFix();
+      const token = await createShareLink({
+        kind: 'live',
+        latitude: fix?.latitude ?? null,
+        longitude: fix?.longitude ?? null,
+        accuracy: fix?.accuracy ?? null,
+        expiresAt: session.expiresAt,
+      });
+      if (!token) return;
+      await Share.share({ message: tx('Follow my live location on GoTourGo: {0}', { 0: shareUrl('live', token) }) });
+    } catch (e) {
+      Alert.alert(tx('Could not create the link'), errorMessage(e));
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  const imSafe = async () => {
+    if (sos?.token) await endShareLink(sos.token).catch(() => undefined);
+    setSos(null);
   };
 
   return (
@@ -122,7 +154,11 @@ export default function SafetyScreen() {
         <Card className="gap-3 border-destructive/50">
           <Text className="text-base font-bold text-foreground">{tx('Send your SOS')}</Text>
           {sos.lat != null ? (
-            <Pressable onPress={() => Linking.openURL(mapsLink(sos.lat!, sos.lng!))} className="flex-row items-center gap-1">
+            <Pressable
+              disabled={!sos.token}
+              onPress={() => sos.token && router.push({ pathname: '/sos', params: { t: sos.token } })}
+              className="flex-row items-center gap-1"
+            >
               <MapPin color={colors.primary} size={14} />
               <Text className="text-xs text-accent">
                 {sos.lat.toFixed(5)}, {sos.lng!.toFixed(5)}
@@ -139,7 +175,12 @@ export default function SafetyScreen() {
             <AppButton label={tx('Add a trusted contact')} icon={UserPlus} variant="secondary" onPress={() => router.push('/safety/contacts')} />
           ) : null}
           <AppButton label={tx('Share another way')} icon={Share2} variant="outline" onPress={() => Share.share({ message: sos.message })} />
-          <AppButton label={tx('Done')} variant="ghost" onPress={() => setSos(null)} />
+          {sos.token ? (
+            <Text className="text-xs text-muted-foreground">{tx('Your SOS link shows your live location for 24 hours, or until you say you are safe.')}</Text>
+          ) : (
+            <Text className="text-xs text-accent">{tx('No internet: the message has your coordinates instead of a live link.')}</Text>
+          )}
+          <AppButton label={sos.token ? tx("I'm safe · end SOS link") : tx('Done')} icon={sos.token ? CheckCircle2 : undefined} variant="ghost" onPress={imSafe} />
         </Card>
       ) : null}
 
@@ -173,6 +214,7 @@ export default function SafetyScreen() {
         {live ? (
           <>
             <Text className="text-sm text-muted-foreground">{tx('Your accepted friends can see your location {0}. {1}', { 0: session.expiresAt ? tx('until {0}', { 0: new Date(session.expiresAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) }) : tx('until you stop'), 1: session.lastSentAt ? tx(' Last update {0}.', { 0: timeAgo(session.lastSentAt) }) : '' })}</Text>
+            <AppButton label={tx('Share live link')} icon={Link2} variant="secondary" loading={linkBusy} onPress={shareLiveLink} />
             <AppButton label={tx('Stop sharing')} icon={Square} variant="destructive" loading={sharingBusy} onPress={() => toggleSharing(null)} />
           </>
         ) : (
@@ -207,6 +249,15 @@ export default function SafetyScreen() {
 
       <Card className="gap-3">
         <SectionHeader title={tx('Trusted contacts')} actionLabel={tx('Manage')} onAction={() => router.push('/safety/contacts')} />
+        <TextField
+          label={tx('Your phone number (optional)')}
+          value={ownPhone}
+          onChangeText={setOwnPhone}
+          keyboardType="phone-pad"
+          autoComplete="tel"
+          placeholder="+92 300 1234567"
+          hint={tx('Shown on your SOS link so people can call you. Saved on this phone only.')}
+        />
         {(contacts.data ?? []).length === 0 ? (
           <Text className="text-sm text-muted-foreground">{tx('Add family or friends who should receive your SOS on WhatsApp.')}</Text>
         ) : (
