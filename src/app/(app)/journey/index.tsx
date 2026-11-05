@@ -1,0 +1,300 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { ArrowLeft, Bike, Car, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { AppButton } from '@/components/app-button';
+import { EmptyState } from '@/components/states';
+import { Text } from '@/components/text';
+import { isOnRoute, type JourneyItem } from '@/features/journey/journey-items';
+import { JourneyMap } from '@/features/journey/journey-map';
+import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
+import { hasBackgroundLocation, startJourneyUpdates } from '@/features/journey/journey-task';
+import { arrivalClock, formatEta } from '@/features/journey/navigation';
+import { getCurrentFix, requestBackgroundPermission, requestLocationPermission } from '@/features/location/location-provider';
+import { useLastLocation, useLocationState } from '@/features/location/location-store';
+import { requestNotificationPermission } from '@/features/notifications/local-notifications';
+import type { TravelMode } from '@/features/routing/osrm';
+import { formatDistance } from '@/lib/geo';
+import { usePreferences } from '@/lib/preferences';
+import { colors } from '@/lib/theme';
+
+const MODES: { mode: TravelMode; label: string; icon: LucideIcon }[] = [
+  { mode: 'driving', label: 'Drive', icon: Car },
+  { mode: 'cycling', label: 'Bike', icon: Bike },
+  { mode: 'walking', label: 'Walk', icon: Footprints },
+];
+
+/** The road the route spends longest on, for "via …". */
+function mainRoad(steps: { name: string | null; distance: number }[]) {
+  const totals = new Map<string, number>();
+  for (const s of steps) if (s.name) totals.set(s.name, (totals.get(s.name) ?? 0) + s.distance);
+  let best: string | null = null;
+  let max = 0;
+  totals.forEach((d, name) => {
+    if (d > max) {
+      max = d;
+      best = name;
+    }
+  });
+  return best;
+}
+
+/**
+ * Route preview (design screen 08): routes for each travel mode, time and
+ * distance, and the landmarks and hazards on the way, then "Start journey".
+ */
+export default function JourneyPreview() {
+  const params = useLocalSearchParams<{ name: string; lat: string; lng: string; id?: string; subtitle?: string }>();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const [prefs, setPrefs] = usePreferences();
+  const journey = useJourney();
+  const location = useLastLocation();
+  const locationState = useLocationState();
+  const [starting, setStarting] = useState(false);
+
+  const target = useMemo(
+    () => ({
+      name: params.name ?? 'Destination',
+      latitude: Number(params.lat),
+      longitude: Number(params.lng),
+      id: params.id,
+      subtitle: params.subtitle,
+    }),
+    [params.name, params.lat, params.lng, params.id, params.subtitle],
+  );
+  const validTarget = Number.isFinite(target.latitude) && Number.isFinite(target.longitude);
+
+  // Plan once per destination (and again if location becomes available).
+  const hasFix = Boolean(location);
+  useEffect(() => {
+    if (!validTarget) return;
+    const current = journeyStore.get();
+    if (current.phase === 'active') return;
+    const same =
+      current.target &&
+      current.target.latitude === target.latitude &&
+      current.target.longitude === target.longitude &&
+      (current.phase === 'preview' || current.phase === 'planning');
+    if (same) return;
+    let cancelled = false;
+    getCurrentFix().then((fix) => {
+      if (cancelled || !fix) return;
+      journeyStore.plan(target, fix, prefs.travelMode);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [target, validTarget, hasFix, prefs.travelMode]);
+
+  const sheetHeight = Math.min(height * 0.56, 520);
+  const route = journey.route;
+  const landmarks = journey.items.filter((i) => i.kind === 'landmark');
+  const hazards = journey.items.filter((i) => i.kind === 'hazard');
+  const via = route ? mainRoad(route.steps) : null;
+
+  const start = async () => {
+    if (!route) return;
+    setStarting(true);
+    try {
+      await requestNotificationPermission();
+      let backgroundAllowed = await hasBackgroundLocation();
+      if (!backgroundAllowed) {
+        const allow = await new Promise<boolean>((resolve) =>
+          Alert.alert(
+            'Alerts with the screen off',
+            'To announce landmarks and hazards while your phone is locked or GoTourGo is in the background, Android needs location access "All the time". Location is only used while a journey or alerts are on.',
+            [
+              { text: 'Only while open', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Allow', onPress: () => resolve(true) },
+            ],
+          ),
+        );
+        if (allow) backgroundAllowed = await requestBackgroundPermission();
+      }
+      // Save the journey first: the background task reads it on its first update.
+      journeyStore.start();
+      const background = backgroundAllowed ? await startJourneyUpdates(target.name) : 'no-permission';
+      router.replace({ pathname: '/journey/navigate', params: { background: background === 'started' ? '1' : '0' } });
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const back = () => {
+    if (journeyStore.get().phase !== 'active') journeyStore.stop();
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
+
+  if (!validTarget) {
+    return (
+      <View className="flex-1 justify-center bg-background" style={{ paddingTop: insets.top }}>
+        <EmptyState title="Destination missing" message="Choose a place to plan a journey." actionLabel="Search places" onAction={() => router.replace('/search')} />
+      </View>
+    );
+  }
+
+  const needsLocation = locationState.permission !== 'granted' || locationState.servicesEnabled === false;
+
+  return (
+    <View className="flex-1 bg-background">
+      <JourneyMap
+        route={route}
+        index={routeIndex()}
+        items={journey.items}
+        progress={null}
+        fix={location}
+        follow={false}
+        padding={{ top: insets.top + 84, bottom: sheetHeight }}
+      />
+
+      <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-3xl bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(28,26,23,0.10)' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
+          <ArrowLeft color={colors.foreground} size={20} />
+        </Pressable>
+        <View className="flex-1">
+          <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+            Your location → {target.name}
+          </Text>
+          <Text numberOfLines={1} className="text-xs text-faint">
+            {via ? `Fastest route · via ${via}` : target.subtitle ?? 'Planning your route'}
+          </Text>
+        </View>
+      </View>
+
+      <View
+        className="absolute bottom-0 left-0 right-0 rounded-t-[28px] bg-background"
+        style={{ height: sheetHeight, boxShadow: '0 -8px 24px rgba(28,26,23,0.10)' }}
+      >
+        <View className="items-center pb-1 pt-3">
+          <View className="h-1 w-10 rounded-full bg-border-strong" />
+        </View>
+        <ScrollView contentContainerClassName="gap-4 px-6 pt-2" contentContainerStyle={{ paddingBottom: 16 }}>
+          {needsLocation ? (
+            <View className="gap-3">
+              <View className="flex-row items-center gap-3">
+                <MapPinOff color={colors.accent} size={22} />
+                <Text className="flex-1 text-base text-foreground">Turn on location to plan a route from where you are.</Text>
+              </View>
+              <AppButton label="Enable location" onPress={() => requestLocationPermission()} />
+            </View>
+          ) : (
+            <>
+              <View className="flex-row gap-2">
+                {MODES.map(({ mode, label, icon: Icon }) => {
+                  const r = journey.routes[mode];
+                  const selected = journey.mode === mode && Boolean(r);
+                  const disabled = journey.phase !== 'planning' && !r;
+                  return (
+                    <Pressable
+                      key={mode}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected, disabled }}
+                      accessibilityLabel={`${label}${r ? `, ${formatEta(r.duration)}` : ''}`}
+                      disabled={!r}
+                      onPress={() => {
+                        journeyStore.selectMode(mode);
+                        setPrefs({ travelMode: mode });
+                      }}
+                      className={`min-h-10 flex-row items-center gap-1.5 rounded-full px-3.5 ${selected ? 'bg-primary' : 'bg-secondary'} ${disabled ? 'opacity-40' : ''}`}
+                    >
+                      <Icon color={selected ? colors.primaryForeground : colors.mutedForeground} size={16} />
+                      <Text className={`text-sm font-semibold ${selected ? 'text-white' : 'text-muted-foreground'}`}>
+                        {r ? formatEta(r.duration) : journey.phase === 'planning' ? '…' : label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {journey.phase === 'planning' ? (
+                <View className="gap-2 py-2">
+                  <Text className="font-display text-[28px] text-foreground">Finding the best route…</Text>
+                  <Text className="text-sm text-muted-foreground">Looking for landmarks and road alerts on the way.</Text>
+                </View>
+              ) : !route ? (
+                <View className="gap-3 py-2">
+                  <Text className="font-display text-2xl text-foreground">No route found</Text>
+                  <Text className="text-sm text-muted-foreground">{journey.error ?? 'Check your internet connection and try again.'}</Text>
+                  <AppButton
+                    label="Try again"
+                    variant="secondary"
+                    onPress={async () => {
+                      const fix = await getCurrentFix();
+                      if (fix) journeyStore.plan(target, fix, prefs.travelMode);
+                    }}
+                  />
+                </View>
+              ) : (
+                <>
+                  <View className="gap-1">
+                    <Text className="font-display text-[30px] leading-9 text-foreground">
+                      {formatEta(route.duration)} · {formatDistance(route.distance)}
+                    </Text>
+                    <Text className="text-sm text-muted-foreground">
+                      Arrive {arrivalClock(route.duration)}
+                      {landmarks.length || hazards.length
+                        ? ` · ${landmarks.length} landmark${landmarks.length === 1 ? '' : 's'}${hazards.length ? ` and ${hazards.length} alert${hazards.length === 1 ? '' : 's'}` : ''} on your way`
+                        : ''}
+                    </Text>
+                  </View>
+
+                  {journey.items.length ? (
+                    <View>
+                      <Text className="pb-1 text-[11px] font-bold tracking-[1.6px] text-faint">ON YOUR WAY</Text>
+                      {journey.items.slice(0, 12).map((item) => (
+                        <ItemRow key={item.id} item={item} />
+                      ))}
+                      {journey.items.length > 12 ? (
+                        <Text className="pt-1 text-xs text-faint">+{journey.items.length - 12} more along the route</Text>
+                      ) : null}
+                    </View>
+                  ) : (
+                    <Text className="text-sm text-muted-foreground">
+                      No famous landmarks or road alerts on this route. Landmarks near you will still be announced as you travel.
+                    </Text>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </ScrollView>
+        <View className="border-t border-border px-6 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
+          <AppButton label="Start journey" onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function ItemRow({ item }: { item: JourneyItem }) {
+  const hazard = item.kind === 'hazard';
+  const where = `${formatDistance(item.along)} in · ${isOnRoute(item) ? 'on route' : `${formatDistance(item.offRoute)} off route`}`;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${item.name}, ${where}`}
+      disabled={hazard}
+      onPress={() => router.push({ pathname: '/destination/[id]', params: { id: item.id } })}
+      className="min-h-14 flex-row items-center gap-3 py-2"
+    >
+      <View className={`h-10 w-10 items-center justify-center rounded-xl ${hazard ? 'bg-destructive-soft' : 'bg-primary-soft'}`}>
+        {hazard ? <TriangleAlert color={colors.destructive} size={18} /> : <Landmark color={colors.primary} size={18} />}
+      </View>
+      <View className="flex-1">
+        <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+          {item.name}
+        </Text>
+        <Text numberOfLines={1} className="text-xs text-faint">
+          {where}
+        </Text>
+      </View>
+      <Text className={`text-xs font-semibold ${hazard ? 'text-destructive' : 'text-primary'}`}>
+        {hazard ? (item.severity === 'critical' ? 'Critical' : item.severity === 'high' ? 'High' : 'Caution') : 'Alert on'}
+      </Text>
+    </Pressable>
+  );
+}

@@ -1,3 +1,4 @@
+import type { TravelMode } from '@/features/routing/osrm';
 import { storage, StorageKeys, useStorage } from '@/lib/storage';
 
 export type ContentLocale = 'en' | 'ur' | 'zh' | 'ar';
@@ -13,7 +14,7 @@ export type Preferences = {
   inAppProximityCard: boolean;
   /** Notify about high/critical road alerts near the user. */
   roadAlertNotifications: boolean;
-  travelMode: 'driving' | 'walking';
+  travelMode: TravelMode;
 };
 
 export const defaultPreferences: Preferences = {

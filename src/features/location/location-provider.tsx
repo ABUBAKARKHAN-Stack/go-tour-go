@@ -6,7 +6,7 @@ import { locationStore, type Fix } from '@/features/location/location-store';
 
 /**
  * Foreground location: Balanced accuracy, at most one update every 10 s or
- * 25 m, only while the app is active. Background proximity is handled by OS
+ * 25 m, only while the app is active (navigation switches to high accuracy). Background proximity is handled by OS
  * geofencing (see proximity/geofence-task.ts), not by this watcher.
  */
 const WATCH_OPTIONS: Location.LocationOptions = {
@@ -16,8 +16,27 @@ const WATCH_OPTIONS: Location.LocationOptions = {
   mayShowUserSettingsDialog: true,
 };
 
+/** While navigating: high accuracy, about once a second or every 5 m. */
+const NAVIGATION_OPTIONS: Location.LocationOptions = {
+  accuracy: Location.Accuracy.BestForNavigation,
+  timeInterval: 1000,
+  distanceInterval: 5,
+  mayShowUserSettingsDialog: true,
+};
+
 let subscription: Location.LocationSubscription | null = null;
 let starting = false;
+let navigationMode = false;
+
+/** Switches the foreground watcher between battery-friendly and navigation accuracy. */
+export function setNavigationMode(on: boolean) {
+  if (navigationMode === on) return;
+  navigationMode = on;
+  if (subscription) {
+    stopWatching();
+    startWatching();
+  }
+}
 
 function toFix(l: Location.LocationObject): Fix {
   return {
@@ -61,7 +80,7 @@ export async function startWatching() {
     if (last) locationStore.pushFix(toFix(last));
 
     subscription = await Location.watchPositionAsync(
-      WATCH_OPTIONS,
+      navigationMode ? NAVIGATION_OPTIONS : WATCH_OPTIONS,
       (l) => locationStore.pushFix(toFix(l)),
       (reason) => locationStore.set({ status: 'error', error: reason || 'Location unavailable.' }),
     );

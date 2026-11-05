@@ -219,6 +219,26 @@ src/lib/                 supabase client, storage, query client, geo maths, them
 - **Settings → Demo tools → Simulate journey** drives a synthetic path through any landmark's radius, so the whole flow can
   be shown without travelling. *Reset landmark cooldowns* lets you repeat it.
 
+### Journey mode (turn-by-turn)
+
+```
+Search "Qayyumabad" → route preview (drive / bike / walk, landmarks and road alerts on the way) → Start journey →
+turn-by-turn with voice, landmark alerts and "hazard ahead" warnings → automatic re-route when off route → arrival
+```
+
+- **Routing:** FOSSGIS OSRM car, bike and foot profiles, fetched in parallel for the preview (modes that make no sense
+  for the distance are skipped). Re-routing is throttled to once per 20 s.
+- **Along the route** (`features/journey/route-geometry.ts`, `journey-items.ts`): landmarks within their alert radius or
+  800 m of the route and active medium/high/critical road alerts are found on the phone with a grid-indexed corridor
+  search, so it works with thousands of landmarks and offline.
+- **Navigation** (`features/journey/navigation.ts`, unit tested): snaps GPS to the route, next manoeuvre and distance, time
+  left, off-route after 3 fixes beyond an accuracy-aware threshold, arrival. Voice (expo-speech) at 800/300/60 m when
+  driving (shorter when cycling or walking), "You're near …" for landmarks, "Caution …" about 2 km before hazards.
+- **Background:** with "Allow all the time", an Android foreground service ("Navigating to …") keeps alerts, hazard
+  warnings and arrival working with the screen off (`features/journey/journey-task.ts`). Without it, guidance and alerts
+  run while the app is open. The active journey survives an app restart.
+- **Demo:** Settings → Demo tools → **Drive the active journey** drives the planned route at 50 km/h.
+
 ### Seeded landmarks for geofence testing
 
 Radii vary per landmark, for example: Wazir Khan Mosque 300 m, Minar-e-Pakistan 500 m, Badshahi Mosque 1000 m
