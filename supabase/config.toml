@@ -1,0 +1,14 @@
+# Minimal Supabase CLI config for GoTourGo. `supabase link --project-ref <ref>`
+# connects it to your hosted project; unspecified settings use CLI defaults.
+project_id = "go-tour-go"
+
+[auth]
+site_url = "gotourgodevelopment://"
+# Deep link used by the password-reset email (also add it in the dashboard:
+# Authentication > URL Configuration > Redirect URLs).
+additional_redirect_urls = ["gotourgodevelopment://reset-password"]
+
+[functions.ai]
+# User-facing function: the platform verifies the caller's JWT, and
+# withSupabase({ auth: 'user' }) verifies it again inside the handler.
+verify_jwt = true

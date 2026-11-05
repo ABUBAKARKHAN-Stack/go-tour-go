@@ -15,6 +15,9 @@ import Animated, {
   ZoomIn
 } from 'react-native-reanimated';
 
+// Reanimated's typed ZoomIn initial values only accept transforms on RN 0.88.
+const zoomInitialValues = { transform: [{ scale: 0.9 }] as [{ scale: number }] };
+
 const SCOPE = 'ALERT_DIALOG';
 
 const RootComponent = withStyleContext(View, SCOPE);
@@ -135,10 +138,7 @@ const AlertDialogContent = React.forwardRef<
   return (
     <UIAccessibleAlertDialog.Content
       pointerEvents="auto"
-      entering={ZoomIn.duration(200).withInitialValues({
-        transform: [{ scale: 0.9 }],
-        opacity: 0,
-      })}
+      entering={ZoomIn.duration(200).withInitialValues(zoomInitialValues)}
       exiting={FadeOut.duration(200)}
       ref={ref}
       {...props}

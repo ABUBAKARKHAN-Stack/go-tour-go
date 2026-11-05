@@ -8,6 +8,9 @@ import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeOut, ZoomIn } from 'react-native-reanimated';
 
+// Reanimated's typed ZoomIn initial values only accept transforms on RN 0.88.
+const zoomInitialValues = { transform: [{ scale: 0.9 }] as [{ scale: number }] };
+
 const AnimatedView = Animated.createAnimatedComponent(ScrollView);
 
 const menuStyle = tva({
@@ -122,10 +125,7 @@ const Menu = React.forwardRef<React.ComponentRef<typeof UIMenu>, IMenuProps>(
   function Menu({ className, ...props }, ref) {
     return (
       <UIMenu
-        entering={ZoomIn.duration(150).withInitialValues({
-          transform: [{ scale: 0.9 }],
-          opacity: 0,
-        })}
+        entering={ZoomIn.duration(150).withInitialValues(zoomInitialValues)}
         exiting={FadeOut.duration(150)}
         ref={ref}
         className={menuStyle({

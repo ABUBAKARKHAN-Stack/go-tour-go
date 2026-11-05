@@ -1,0 +1,113 @@
+import { router } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
+import type { ReactNode } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View, type ScrollViewProps } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { OfflineBanner } from '@/components/offline-banner';
+import { colors } from '@/lib/theme';
+
+type HeaderProps = {
+  title?: string;
+  subtitle?: string;
+  back?: boolean;
+  right?: ReactNode;
+};
+
+export function AppHeader({ title, subtitle, back, right }: HeaderProps) {
+  return (
+    <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
+      {back ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={8}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          className="h-11 w-11 items-center justify-center rounded-full bg-secondary"
+        >
+          <ArrowLeft color={colors.foreground} size={22} />
+        </Pressable>
+      ) : null}
+      <View className="flex-1">
+        {title ? (
+          <Text numberOfLines={1} className="text-xl font-bold text-foreground">
+            {title}
+          </Text>
+        ) : null}
+        {subtitle ? (
+          <Text numberOfLines={1} className="text-sm text-muted-foreground">
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {right}
+    </View>
+  );
+}
+
+type ScreenProps = HeaderProps & {
+  children: ReactNode;
+  /** Wrap content in a ScrollView (default true). */
+  scroll?: boolean;
+  /** Avoid the keyboard (forms, chat). */
+  keyboard?: boolean;
+  /** Skip bottom inset when a tab bar already handles it. */
+  inTabs?: boolean;
+  /** Hide the header row entirely. */
+  headerless?: boolean;
+  contentClassName?: string;
+  refreshControl?: ScrollViewProps['refreshControl'];
+  footer?: ReactNode;
+};
+
+/** Standard screen scaffold: safe areas, header, offline banner, scroll and keyboard handling. */
+export function Screen({
+  children,
+  scroll = true,
+  keyboard,
+  inTabs,
+  headerless,
+  contentClassName,
+  refreshControl,
+  footer,
+  ...header
+}: ScreenProps) {
+  const insets = useSafeAreaInsets();
+  const bottom = inTabs ? 16 : insets.bottom + 16;
+
+  const body = scroll ? (
+    <ScrollView
+      className="flex-1"
+      contentContainerClassName={contentClassName ?? 'px-4 gap-4'}
+      contentContainerStyle={{ paddingBottom: bottom }}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={refreshControl}
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View className={contentClassName ?? 'flex-1'} style={{ paddingBottom: footer ? 0 : inTabs ? 0 : insets.bottom }}>
+      {children}
+    </View>
+  );
+
+  const content = (
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+      {headerless ? null : <AppHeader {...header} />}
+      <OfflineBanner />
+      {body}
+      {footer ? (
+        <View className="border-t border-border/30 bg-background px-4 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
+          {footer}
+        </View>
+      ) : null}
+    </View>
+  );
+
+  if (!keyboard) return content;
+  return (
+    <KeyboardAvoidingView className="flex-1 bg-background" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {content}
+    </KeyboardAvoidingView>
+  );
+}
