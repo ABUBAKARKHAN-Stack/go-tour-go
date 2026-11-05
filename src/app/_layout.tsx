@@ -81,13 +81,19 @@ function RootNavigator() {
         animation: 'fade_from_bottom',
       }}
     >
-      <Stack.Protected guard={!onboarded}>
+      {/*
+        Every guard needs an explicit redirectTo. Without one, expo-router falls
+        back to the first unguarded route's URL; for the (auth) group that is
+        "/(auth)", which has no index screen and renders "Unmatched route"
+        (seen after finishing onboarding and after signing out).
+      */}
+      <Stack.Protected guard={!onboarded} redirectTo={userId ? '/' : '/sign-in'}>
         <Stack.Screen name="onboarding" />
       </Stack.Protected>
-      <Stack.Protected guard={onboarded && !userId}>
+      <Stack.Protected guard={onboarded && !userId} redirectTo={onboarded ? '/' : '/onboarding'}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
-      <Stack.Protected guard={onboarded && Boolean(userId)}>
+      <Stack.Protected guard={onboarded && Boolean(userId)} redirectTo={onboarded ? '/sign-in' : '/onboarding'}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
       {/* Reachable from the password-reset email deep link in any state. */}
