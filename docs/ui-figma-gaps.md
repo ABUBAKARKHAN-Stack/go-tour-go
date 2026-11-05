@@ -27,9 +27,20 @@ records what was verified on 5 Nov 2026 so the work can be picked up later.
 
 Not in Figma (designed in code): Offline Pakistan, SOS/live link screen, Guest welcome.
 
+## Progress
+
+| Area | Status |
+|---|---|
+| Auth (02) | **Done** in PR #22: Figma photo hero (412×300 export upscaled; a 3× export from Figma would be sharper), one `AuthShell` for every auth screen with consistent keyboard-aware scrolling, outlined secondary button, auto username from the full name with a live availability check. |
+| Home (03) | **Done** in PR #23: "Near you" right after the chips, bookmark button on tiles, closest-landmark card within 40 km. Still open: a better placeholder for destinations without a photo. |
+| Destination details (05) | **Done** in PR #23: taller hero with back/share/bookmark, overline + display name + rating · distance · hours, Navigate + square Listen/Add-to-trip, Overview/History/Tips tabs, Hours/Entry cards. Not done: photo count badge (one photo per place today). |
+| Onboarding (01) | Figma illustration on slide 1 (PR #14). |
+| Explore (04) | **Open**: Figma has icon markers (white circles with category icons), a teal geofence ring for the selected landmark, only two map buttons (layers, locate) and an "Around you" bottom sheet listing nearby places. The app has coloured dots, five map buttons and a single selected-place card. Needs on-device checking (MapLibre symbol layers with icon images). |
+| 06–10 (proximity, where to, route, navigating, hazard) | Built from the Figma frames in PRs #8–#12; compare against app screenshots. |
+
 ## Gaps found so far (code compared with the frames)
 
-### Auth (02 Sign in; Sign up, Forgot/Reset password follow it)
+### Auth (02 Sign in; Sign up, Forgot/Reset password follow it) — done in #22, notes kept for reference
 - **Hero art:** Figma uses a full-bleed **photo** of the Badshahi Mosque at sunset (300 px high, fading into
   the background). The app draws a vector scene (`HeroScene` in `src/components/illustrations.tsx`), made
   when Figma exports were rate-limited. Export `7:20` with `download_assets` and use it as the hero image.
