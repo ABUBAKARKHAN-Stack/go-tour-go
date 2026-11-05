@@ -1,7 +1,9 @@
-import { useState, type ReactNode } from 'react';
-import { Pressable, View, type TextInputProps } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { I18nManager, Pressable, View, type TextInputProps } from 'react-native';
+import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Text, TextInput } from '@/components/text';
 
+import { EASE_IN_OUT, usePressScale } from '@/lib/motion';
 import { colors } from '@/lib/theme';
 
 export type FieldProps = TextInputProps & {
@@ -64,18 +66,22 @@ export function Chip({
   onPress?: () => void;
   icon?: ReactNode;
 }) {
+  const press = usePressScale(0.95);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      className={`min-h-10 flex-row items-center gap-1.5 rounded-full border px-4 ${
-        selected ? 'border-inverse bg-inverse' : 'border-border bg-card'
-      }`}
-    >
-      {icon}
-      <Text className={`text-sm font-medium ${selected ? 'text-white' : 'text-foreground'}`}>{label}</Text>
-    </Pressable>
+    <Animated.View style={press.style}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        onPress={onPress}
+        {...press.handlers}
+        className={`min-h-10 flex-row items-center gap-1.5 rounded-full border px-4 ${
+          selected ? 'border-inverse bg-inverse' : 'border-border bg-card'
+        }`}
+      >
+        {icon}
+        <Text className={`text-sm font-medium ${selected ? 'text-white' : 'text-foreground'}`}>{label}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -89,8 +95,33 @@ export function Segmented<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  // The white indicator glides to the selected option (250 ms ease-in-out).
+  const [width, setWidth] = useState(0);
+  const segment = width ? (width - 8) / options.length : 0;
+  const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const x = useSharedValue(0);
+  const placed = useRef(false);
+  useEffect(() => {
+    if (!segment) return;
+    const target = index * segment * (I18nManager.isRTL ? -1 : 1);
+    if (!placed.current) {
+      placed.current = true;
+      x.set(target);
+      return;
+    }
+    x.set(withTiming(target, { duration: 250, easing: EASE_IN_OUT, reduceMotion: ReduceMotion.System }));
+  }, [index, segment, x]);
+  const indicatorStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
+
   return (
-    <View className="flex-row rounded-full bg-secondary p-1" accessibilityRole="tablist">
+    <View className="flex-row rounded-full bg-secondary p-1" accessibilityRole="tablist" onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {segment ? (
+        <Animated.View
+          pointerEvents="none"
+          className="absolute rounded-full bg-card"
+          style={[{ top: 4, bottom: 4, start: 4, width: segment, boxShadow: '0 1px 3px rgba(28,26,23,0.10)' }, indicatorStyle]}
+        />
+      ) : null}
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -99,7 +130,7 @@ export function Segmented<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.value)}
-            className={`min-h-10 flex-1 items-center justify-center rounded-full px-2 ${active ? 'bg-card shadow-sm' : ''}`}
+            className={`min-h-10 flex-1 items-center justify-center rounded-full px-2 ${active && !segment ? 'bg-card shadow-sm' : ''}`}
           >
             <Text numberOfLines={1} className={`text-sm font-semibold ${active ? 'text-foreground' : 'text-faint'}`}>
               {o.label}

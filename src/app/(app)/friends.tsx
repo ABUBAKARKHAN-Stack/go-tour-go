@@ -124,7 +124,7 @@ export default function FriendsScreen() {
           {term.trim().length < 2 ? (
             <Text className="text-sm text-muted-foreground">{tx('Type at least 2 characters.')}</Text>
           ) : search.isLoading ? (
-            <LoadingState label={tx('Searching...')} />
+            <LoadingState variant="spinner" label={tx('Searching...')} />
           ) : search.isError ? (
             <ErrorState error={search.error} onRetry={search.refetch} />
           ) : (search.data ?? []).length === 0 ? (

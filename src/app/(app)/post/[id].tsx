@@ -37,7 +37,7 @@ export default function PostDetail() {
   return (
     <Screen back title={tx('Post')} scroll={false} keyboard>
       {post.isLoading ? (
-        <LoadingState />
+        <LoadingState variant="feed" />
       ) : post.isError ? (
         <ErrorState error={post.error} onRetry={post.refetch} />
       ) : !post.data ? (

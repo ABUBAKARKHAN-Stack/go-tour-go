@@ -3,17 +3,30 @@ import { ActivityIndicator, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
+import { Skeleton } from '@/components/skeleton';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
-export function LoadingState({ label = 'Loading...' }: { label?: string }) {
-  return (
-    <View className="items-center justify-center gap-3 py-12" accessibilityLiveRegion="polite">
-      <ActivityIndicator color={colors.primary} />
-      <Text className="text-sm text-muted-foreground">{label}</Text>
-    </View>
-  );
+export type LoadingVariant = 'spinner' | 'list' | 'cards' | 'feed' | 'profile' | 'detail';
+
+/**
+ * Loading placeholder. Screens pass the variant that matches what will appear
+ * (a skeleton of rows, cards, posts...), so content replaces shapes in place
+ * instead of jumping in under a spinner. "spinner" is for actions in progress
+ * (searching, analysing a photo).
+ */
+export function LoadingState({ label, variant = 'list' }: { label?: string; variant?: LoadingVariant }) {
+  const text = label ?? tx('Loading...');
+  if (variant === 'spinner') {
+    return (
+      <View className="items-center justify-center gap-3 py-12" accessibilityLiveRegion="polite">
+        <ActivityIndicator color={colors.primary} />
+        <Text className="text-sm text-muted-foreground">{text}</Text>
+      </View>
+    );
+  }
+  return <Skeleton variant={variant} label={text} />;
 }
 
 export function EmptyState({

@@ -22,7 +22,7 @@ import { tx } from '@/lib/i18n';
 
 export default function EditProfile() {
   const { profile } = useAuth();
-  if (!profile) return <LoadingState />;
+  if (!profile) return <LoadingState variant="profile" />;
   return <EditForm profile={profile} />;
 }
 

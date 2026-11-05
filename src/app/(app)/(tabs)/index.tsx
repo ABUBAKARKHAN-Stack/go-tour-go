@@ -17,6 +17,7 @@ import {
 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { Avatar } from '@/components/avatar';
 import { IconButton } from '@/components/app-button';
@@ -39,6 +40,7 @@ import { useSavedIds } from '@/features/saved/api';
 import { TRIP_STATUSES, useTrips } from '@/features/trips/api';
 import { useWeather } from '@/features/weather/api';
 import { formatDistance } from '@/lib/geo';
+import { enterAt } from '@/lib/motion';
 import { colors, severityColors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
@@ -182,13 +184,13 @@ export default function Home() {
       </ScrollView>
 
       {isLoading && sorted.length === 0 ? (
-        <LoadingState label={tx('Loading destinations...')} />
+        <LoadingState variant="cards" label={tx('Loading destinations...')} />
       ) : isError && sorted.length === 0 ? (
         <ErrorState error={error} onRetry={refetch} />
       ) : (
         <>
           {near.length ? (
-            <View className="gap-3">
+            <Animated.View entering={enterAt(0)} className="gap-3">
               <SectionHeader title={tx('Near you')} actionLabel={tx('See map')} onAction={() => router.navigate('/explore')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
                 {near.map((d) => (
@@ -198,11 +200,11 @@ export default function Home() {
               {near[0]?.distance != null && near[0].distance > 50_000 ? (
                 <Text className="text-xs text-muted-foreground">{tx('The closest GoTourGo destination is {0} away.', { 0: formatDistance(near[0].distance) })}</Text>
               ) : null}
-            </View>
+            </Animated.View>
           ) : null}
 
           {urgent.length ? (
-            <View className="gap-2">
+            <Animated.View entering={enterAt(1)} className="gap-2">
               <SectionHeader title={tx('Travel alerts')} actionLabel={tx('See all')} onAction={() => router.push('/alerts')} />
               {urgent.map((a) => (
                 <Pressable key={a.id} onPress={() => router.push('/alerts')} className="flex-row items-center gap-3 rounded-2xl bg-destructive-soft p-3">
@@ -219,33 +221,35 @@ export default function Home() {
                   </View>
                 </Pressable>
               ))}
-            </View>
+            </Animated.View>
           ) : null}
 
           {current.length || upcoming.length ? (
-            <Card className="gap-2">
-              <SectionHeader title={tx('Your trip')} actionLabel={tx('Open')} onAction={() => router.navigate('/trips')} />
-              {[...current, ...upcoming].slice(0, 3).map((t) => {
-                const d = byId.get(t.destination_id);
-                if (!d) return null;
-                return (
-                  <Pressable
-                    key={t.id}
-                    onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })}
-                    className="min-h-11 flex-row items-center gap-3"
-                  >
-                    <View className={`h-2.5 w-2.5 rounded-full ${t.status === 'in_progress' ? 'bg-accent' : 'bg-border-strong'}`} />
-                    <Text numberOfLines={1} className="flex-1 text-sm font-medium text-foreground">
-                      {d.name}
-                    </Text>
-                    <Text className="text-xs text-faint">{TRIP_STATUSES.find((s) => s.value === t.status)?.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </Card>
+            <Animated.View entering={enterAt(2)}>
+              <Card className="gap-2">
+                <SectionHeader title={tx('Your trip')} actionLabel={tx('Open')} onAction={() => router.navigate('/trips')} />
+                {[...current, ...upcoming].slice(0, 3).map((t) => {
+                  const d = byId.get(t.destination_id);
+                  if (!d) return null;
+                  return (
+                    <Pressable
+                      key={t.id}
+                      onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })}
+                      className="min-h-11 flex-row items-center gap-3"
+                    >
+                      <View className={`h-2.5 w-2.5 rounded-full ${t.status === 'in_progress' ? 'bg-accent' : 'bg-border-strong'}`} />
+                      <Text numberOfLines={1} className="flex-1 text-sm font-medium text-foreground">
+                        {d.name}
+                      </Text>
+                      <Text className="text-xs text-faint">{TRIP_STATUSES.find((s) => s.value === t.status)?.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </Card>
+            </Animated.View>
           ) : null}
 
-          <View className="gap-3">
+          <Animated.View entering={enterAt(3)} className="gap-3">
             <SectionHeader title={tx('Explore more')} />
             <View className="flex-row flex-wrap justify-between gap-y-3">
               {SHORTCUTS.map((s) => (
@@ -254,7 +258,7 @@ export default function Home() {
                   accessibilityRole="button"
                   accessibilityLabel={s.label}
                   onPress={() => router.push(s.href as never)}
-                  className="w-[23%] items-center gap-2 rounded-2xl border border-border bg-card py-3 active:opacity-70"
+                  className="w-[23%] items-center gap-2 rounded-2xl border border-border bg-card py-3 active:bg-muted"
                 >
                   <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
                     <s.icon color={colors.primary} size={19} />
@@ -265,28 +269,28 @@ export default function Home() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </Animated.View>
 
           <WeatherCard point={location} title={tx('Weather where you are')} />
 
-          <View className="gap-3">
+          <Animated.View entering={enterAt(4)} className="gap-3">
             <SectionHeader title={tx('Popular in Pakistan')} actionLabel={tx('See all')} onAction={() => router.push('/search')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
               {popular.map((d) => (
                 <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.[d.id]?.average_rating} />
               ))}
             </ScrollView>
-          </View>
+          </Animated.View>
 
           {savedPlaces.length ? (
-            <View className="gap-3">
+            <Animated.View entering={enterAt(5)} className="gap-3">
               <SectionHeader title={tx('Saved places')} actionLabel={tx('See all')} onAction={() => router.push('/saved')} />
               <View className="gap-2.5">
                 {savedPlaces.slice(0, 3).map((d) => (
                   <DestinationCard key={d.id} variant="row" destination={d} distance={d.distance} />
                 ))}
               </View>
-            </View>
+            </Animated.View>
           ) : null}
         </>
       )}

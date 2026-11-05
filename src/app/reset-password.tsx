@@ -41,7 +41,7 @@ export default function ResetPassword() {
   if (!ready) {
     return (
       <AuthShell compact title={tx('Reset password')} subtitle={tx('Verifying link...')}>
-        <LoadingState label={tx('Verifying link...')} />
+        <LoadingState variant="spinner" label={tx('Verifying link...')} />
       </AuthShell>
     );
   }

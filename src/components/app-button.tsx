@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { Text } from '@/components/text';
+import Animated from 'react-native-reanimated';
 
+import { Text } from '@/components/text';
+import { usePressScale } from '@/lib/motion';
 import { colors } from '@/lib/theme';
 import { flipX } from '@/lib/i18n';
 
@@ -66,7 +68,10 @@ export function AppButton({
   delayLongPress,
 }: Props) {
   const isDisabled = disabled || loading;
+  const press = usePressScale();
+  // The wrapper takes layout classes (flex-1, margins) and shrinks on press-in.
   return (
+    <Animated.View className={className} style={press.style}>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -76,7 +81,9 @@ export function AppButton({
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={delayLongPress}
-      className={`${size === 'md' ? 'min-h-14 px-6' : 'min-h-11 px-4'} flex-row items-center justify-center gap-2 rounded-full active:opacity-85 ${containerClass[variant]} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`}
+      {...press.handlers}
+      pressRetentionOffset={16}
+      className={`${size === 'md' ? 'min-h-14 px-6' : 'min-h-11 px-4'} flex-row items-center justify-center gap-2 rounded-full ${containerClass[variant]} ${isDisabled ? 'opacity-50' : ''}`}
     >
       {loading ? (
         <ActivityIndicator color={iconColor[variant]} size="small" />
@@ -85,6 +92,7 @@ export function AppButton({
       ) : null}
       <Text className={`${size === 'md' ? 'text-base' : 'text-sm'} font-semibold ${textClass[variant]}`}>{label}</Text>
     </Pressable>
+    </Animated.View>
   );
 }
 
@@ -105,13 +113,17 @@ export function IconButton({
   /** Mirror the icon in right-to-left (back arrows, chevrons). */
   flip?: boolean;
 }) {
+  const press = usePressScale(0.94);
   return (
+    <Animated.View style={press.style}>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
+      pressRetentionOffset={16}
       onPress={onPress}
-      className={`h-11 w-11 items-center justify-center rounded-full active:opacity-80 ${active ? 'bg-primary' : 'border border-border bg-card'}`}
+      {...press.handlers}
+      className={`h-11 w-11 items-center justify-center rounded-full ${active ? 'bg-primary' : 'border border-border bg-card'}`}
     >
       <Icon color={active ? colors.primaryForeground : colors.foreground} size={20} style={flip ? flipX : undefined} />
       {badge ? (
@@ -120,5 +132,6 @@ export function IconButton({
         </View>
       ) : null}
     </Pressable>
+    </Animated.View>
   );
 }

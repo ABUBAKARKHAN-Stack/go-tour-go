@@ -89,7 +89,7 @@ export default function CommunityScreen() {
         }
         ListEmptyComponent={
           feed.isLoading ? (
-            <LoadingState label={tx('Loading posts...')} />
+            <LoadingState variant="feed" label={tx('Loading posts...')} />
           ) : feed.isError ? (
             <ErrorState error={feed.error} onRetry={feed.refetch} />
           ) : (

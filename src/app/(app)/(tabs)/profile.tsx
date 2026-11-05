@@ -67,7 +67,7 @@ export default function ProfileScreen() {
   return (
     <Screen inTabs title={tx('Profile')} right={<AppButton label={tx('Edit')} icon={Pencil} size="sm" variant="secondary" onPress={() => router.push('/profile/edit')} />}>
       {profileLoading && !profile ? (
-        <LoadingState />
+        <LoadingState variant="profile" />
       ) : (
         <Card className="items-center gap-2">
           <Avatar profile={profile} size={88} />
