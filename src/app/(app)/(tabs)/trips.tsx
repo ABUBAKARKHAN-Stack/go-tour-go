@@ -17,7 +17,7 @@ import { searchDestinations, useDestinations } from '@/features/destinations/api
 import { TRIP_STATUSES, useTripActions, useTrips } from '@/features/trips/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
-import type { Destination, TripItem, TripStatus } from '@/lib/types';
+import type { DestinationSummary, TripItem, TripStatus } from '@/lib/types';
 
 type Filter = TripStatus | 'all';
 
@@ -44,7 +44,7 @@ export default function TripsScreen() {
     return c;
   }, [trips.data]);
 
-  const add = (d: Destination) => {
+  const add = (d: DestinationSummary) => {
     setAdding(false);
     if (!online) {
       Alert.alert('No internet connection', 'Connect to the internet to add to your trip.');
@@ -115,7 +115,7 @@ const TripRow = memo(function TripRow({
   onStatus,
 }: {
   item: TripItem;
-  destination: Destination | undefined;
+  destination: DestinationSummary | undefined;
   onEdit: () => void;
   onStatus: (s: TripStatus) => void;
 }) {
@@ -152,7 +152,7 @@ const TripRow = memo(function TripRow({
   );
 });
 
-function EditTripModal({ item, destination, onClose }: { item: TripItem | null; destination?: Destination; onClose: () => void }) {
+function EditTripModal({ item, destination, onClose }: { item: TripItem | null; destination?: DestinationSummary; onClose: () => void }) {
   const actions = useTripActions();
   const insets = useSafeAreaInsets();
   const [notes, setNotes] = useState('');
@@ -248,9 +248,9 @@ function AddDestinationModal({
   onClose,
 }: {
   visible: boolean;
-  destinations: Destination[];
+  destinations: DestinationSummary[];
   existing: Set<string>;
-  onPick: (d: Destination) => void;
+  onPick: (d: DestinationSummary) => void;
   onClose: () => void;
 }) {
   const [term, setTerm] = useState('');

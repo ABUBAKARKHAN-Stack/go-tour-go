@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/text';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +32,7 @@ import { RatingStars } from '@/components/rating-stars';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { WeatherCard } from '@/components/weather-card';
 import { useAuth } from '@/features/auth/auth-provider';
-import { useDestination, useDestinations, useRatings } from '@/features/destinations/api';
+import { useDestinationDetail, useDestinations, useRatings } from '@/features/destinations/api';
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { destinationQrValue } from '@/features/destinations/qr';
 import { useLastLocation } from '@/features/location/location-store';
@@ -54,7 +54,7 @@ export default function DestinationDetails() {
   const insets = useSafeAreaInsets();
   const { userId } = useAuth();
   const [prefs, setPrefs] = usePreferences();
-  const { destination: d, isLoading, isError, error, refetch } = useDestination(id);
+  const { destination: d, isLoading, isError, error, refetch, isFallback } = useDestinationDetail(id);
   const all = useDestinations();
   const ratings = useRatings();
   const reviews = useReviews(d?.id);
@@ -245,10 +245,39 @@ export default function DestinationDetails() {
             .filter((s) => s.body)
             .map((s) => (
               <View key={s.title} className="gap-1.5">
-                <Text className="text-lg font-bold text-foreground">{s.title}</Text>
+                <Text className="font-display text-xl text-foreground">{s.title}</Text>
                 <Text className="text-base leading-6 text-muted-foreground">{s.body}</Text>
               </View>
             ))}
+
+          {isFallback ? (
+            <Text className="text-xs text-faint">Showing the offline summary. The full guide loads when you are connected.</Text>
+          ) : null}
+
+          {d.wikipedia_url || d.image_credit ? (
+            <View className="gap-1">
+              {d.wikipedia_url ? (
+                <Pressable accessibilityRole="link" onPress={() => Linking.openURL(d.wikipedia_url!)} hitSlop={6}>
+                  <Text className="text-xs text-faint">
+                    Text from <Text className="text-xs font-semibold text-primary">Wikipedia</Text> (CC BY-SA 4.0)
+                  </Text>
+                </Pressable>
+              ) : null}
+              {d.image_credit ? (
+                <Pressable
+                  accessibilityRole="link"
+                  disabled={!d.image_page_url}
+                  onPress={() => d.image_page_url && Linking.openURL(d.image_page_url)}
+                  hitSlop={6}
+                >
+                  <Text className="text-xs text-faint">
+                    Photo: {d.image_credit}
+                    {d.image_license ? ` (${d.image_license})` : ''}, Wikimedia Commons
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
           <WeatherCard point={d} title={`Weather at ${d.name}`} />
 

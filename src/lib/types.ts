@@ -12,10 +12,15 @@ export type DestinationCategory =
   | 'park'
   | 'nature';
 
-export type Destination = {
+/**
+ * Compact destination record kept on the phone for every landmark (curated and
+ * imported). Enough for the map, proximity alerts, lists and search.
+ */
+export type DestinationSummary = {
   id: string;
   slug: string;
   name: string;
+  name_ur: string | null;
   category: DestinationCategory;
   city: string;
   region: string;
@@ -23,6 +28,15 @@ export type Destination = {
   longitude: number;
   radius_m: number;
   short_description: string;
+  image_url: string | null;
+  is_landmark: boolean;
+  popularity: number;
+  featured: boolean;
+  source: 'curated' | 'osm';
+};
+
+/** Full destination row, fetched online for the details screen. */
+export type Destination = DestinationSummary & {
   description: string;
   history: string | null;
   culture: string | null;
@@ -34,9 +48,23 @@ export type Destination = {
   opening_hours: string | null;
   entry_fee: string | null;
   best_time: string | null;
-  image_url: string | null;
-  is_landmark: boolean;
-  popularity: number;
+  wikipedia_url: string | null;
+  image_credit: string | null;
+  image_license: string | null;
+  image_page_url: string | null;
+};
+
+/** A searchable place (city, town, neighbourhood, university...). */
+export type Place = {
+  id: string;
+  name: string;
+  name_ur: string | null;
+  kind: string;
+  district: string | null;
+  province: string | null;
+  latitude: number;
+  longitude: number;
+  rank: number;
 };
 
 export type DestinationTranslation = {

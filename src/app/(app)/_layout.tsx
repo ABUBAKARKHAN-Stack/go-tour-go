@@ -1,6 +1,8 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 
+import { dataSyncStore, syncLocalData } from '@/features/data/sync';
 import { useInboxRealtime } from '@/features/inbox/api';
 import { LocationProvider } from '@/features/location/location-provider';
 import { locationStore } from '@/features/location/location-store';
@@ -13,6 +15,18 @@ import { colors } from '@/lib/theme';
 function AppEffects() {
   useNotificationRouting();
   useInboxRealtime();
+
+  // Keep the offline copy of places and landmarks current: on start, then when
+  // the app returns to the foreground at most every 6 hours (a version check
+  // is one small request; data downloads only when the server's version moved).
+  useEffect(() => {
+    syncLocalData().catch(() => undefined);
+    const sub = AppState.addEventListener('change', (next) => {
+      const last = dataSyncStore.get().lastSyncAt ?? 0;
+      if (next === 'active' && Date.now() - last > 6 * 60 * 60 * 1000) syncLocalData().catch(() => undefined);
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     reconcileSharing().catch(() => undefined);

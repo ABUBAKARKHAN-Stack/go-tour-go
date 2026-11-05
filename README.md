@@ -46,7 +46,7 @@ Everything lives in `supabase/`:
 
 ```
 supabase/migrations/   schema, RLS, realtime, storage, AI quota (apply in order)
-supabase/seed.sql      Pakistan-wide demo data (43 landmarks, services, road alerts)
+supabase/seed.sql      Pakistan-wide demo data (43 curated landmarks, services, road alerts)
 supabase/functions/ai  Gemini proxy Edge Function (Deno)
 supabase/config.toml   CLI config (auth redirect, function JWT verification)
 ```
@@ -146,6 +146,25 @@ bunx expo lint
 ```bash
 bun test
 ```
+
+### Pakistan places and landmarks (data import)
+
+Search, the map and landmark alerts use thousands of places and famous landmarks from OpenStreetMap, enriched with
+Wikidata, Wikipedia summaries and Wikimedia Commons photos (`scripts/import_pakistan_data.py`). The phone keeps a local copy
+(`src/features/data/sync.ts`) so search and alerts work offline; it re-downloads a dataset only when its version on the
+server changes. Curated destinations are never overwritten: a matching landmark only adds its photo, Urdu name and links.
+
+One-time setup, the database connection for the import:
+
+1. In the Supabase dashboard, open your project and click **Connect** (top bar).
+2. Choose the **Session pooler** connection string (GitHub's machines need IPv4) and copy the URI. Replace
+   `[YOUR-PASSWORD]` with your database password (**Project Settings → Database → Reset database password** if you do not know it).
+3. On GitHub: **Settings → Secrets and variables → Actions → New repository secret**. Name: `SUPABASE_DB_URL`, value: the URI.
+
+Then run **Actions → Import Pakistan places and landmarks → Run workflow** (about 15 to 40 minutes). The run summary shows
+how many places and landmarks were loaded; phones pick them up on their next sync (or **Settings → Offline data → Update now**).
+Re-run it any time to refresh the data. Text from Wikipedia is CC BY-SA 4.0 and photos keep their Commons author and
+licence, both shown on the destination screen.
 
 ### Offline map of Pakistan (map file)
 

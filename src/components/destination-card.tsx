@@ -8,10 +8,10 @@ import { Text } from '@/components/text';
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
-import type { Destination } from '@/lib/types';
+import type { DestinationSummary } from '@/lib/types';
 
 type Props = {
-  destination: Destination;
+  destination: DestinationSummary;
   distance?: number | null;
   rating?: number | null;
   variant?: 'tile' | 'row';

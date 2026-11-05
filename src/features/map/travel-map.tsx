@@ -20,7 +20,7 @@ import { displayName } from '@/features/social/api';
 import { env } from '@/lib/env';
 import { boundsOf, circleRing } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
-import type { Destination, RoadAlert } from '@/lib/types';
+import type { DestinationSummary, RoadAlert } from '@/lib/types';
 
 export type TravelMapHandle = {
   flyTo: (lng: number, lat: number, zoom?: number) => void;
@@ -28,7 +28,7 @@ export type TravelMapHandle = {
 };
 
 type Props = {
-  destinations: Destination[];
+  destinations: DestinationSummary[];
   alerts: RoadAlert[];
   friends: FriendLocation[];
   route: Route | null;
