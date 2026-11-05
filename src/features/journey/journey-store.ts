@@ -2,14 +2,15 @@ import * as Speech from 'expo-speech';
 import { useSyncExternalStore } from 'react';
 
 import type { Landmark } from '@/features/destinations/api';
-import { fetchRoute, type Route, type TravelMode } from '@/features/routing/osrm';
+import { fetchRoute, fetchRoutes, type Route, type TravelMode } from '@/features/routing/osrm';
 import { distanceMeters, type LatLng } from '@/lib/geo';
 import { isUrdu, tx, txEn } from '@/lib/i18n';
 
 import { storage, StorageKeys } from '@/lib/storage';
 import type { RoadAlert } from '@/lib/types';
 
-import { hazardLookahead, hazardsAhead, journeyItems, type JourneyItem } from './journey-items';
+import { hazardLookahead, hazardsAhead, journeyItems, routeAvoiding, type JourneyItem } from './journey-items';
+import { hazardCard } from '@/features/alerts/hazard-card-store';
 import { CHANNELS, notifyNow } from '@/features/notifications/local-notifications';
 import { formatDistance } from '@/lib/geo';
 import { advance, crossedThreshold, spokenInstruction, stepStarts, voiceThresholds, type NavFix, type NavProgress } from './navigation';
@@ -298,7 +299,10 @@ export const journeyStore = {
     }
     const ahead = hazardsAhead(state.items, progress.along, hazardLookahead(state.mode), state.warned);
     set({ progress, warned: ahead.length ? [...state.warned, ...ahead.map((h) => h.id)] : state.warned });
-    for (const h of ahead.slice(0, 1)) announceHazard(h, Math.max(0, h.along - progress.along), speak).catch(() => undefined);
+    for (const h of ahead.slice(0, 1)) {
+      announceHazard(h, Math.max(0, h.along - progress.along), speak).catch(() => undefined);
+      hazardCard.show(h.id.replace(/^alert:/, ''), Math.max(0, h.along - progress.along));
+    }
     persist(ahead.length > 0);
     if (progress.offRoute && !prev?.offRoute) emit({ type: 'off-route' });
     if (progress.offRoute) journeyStore.reroute(fix).catch(() => undefined);
@@ -320,6 +324,27 @@ export const journeyStore = {
     } catch {
       // Offline or service busy: keep the old route and try again later.
       set({ rerouting: false });
+    }
+  },
+
+  /**
+   * Switches to the fastest alternative route that stays clear of a hazard.
+   * Returns false when no alternative avoids it (or routing is unavailable).
+   */
+  async avoid(hazard: LatLng & { radius: number }, from: LatLng): Promise<boolean> {
+    if (state.phase !== 'active' || !state.target) return false;
+    try {
+      const routes = await fetchRoutes(state.mode, from, state.target);
+      const route = routeAvoiding(routes, hazard);
+      if (!route || state.phase !== 'active') return false;
+      indexRoute(route);
+      set({ route, routes: { ...state.routes, [state.mode]: route }, items: itemsFor(route), progress: null });
+      persist(true);
+      speak('Taking a route around the hazard');
+      emit({ type: 'rerouted' });
+      return true;
+    } catch {
+      return false;
     }
   },
 

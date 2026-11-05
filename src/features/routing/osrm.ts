@@ -39,9 +39,9 @@ const BASE: Record<TravelMode, string> = {
   walking: 'https://routing.openstreetmap.de/routed-foot/route/v1/foot',
 };
 
-export function buildRouteUrl(mode: TravelMode, from: LatLng, to: LatLng) {
+export function buildRouteUrl(mode: TravelMode, from: LatLng, to: LatLng, alternatives = false) {
   const coords = `${from.longitude.toFixed(6)},${from.latitude.toFixed(6)};${to.longitude.toFixed(6)},${to.latitude.toFixed(6)}`;
-  return `${BASE[mode]}/${coords}?overview=full&geometries=geojson&steps=true`;
+  return `${BASE[mode]}/${coords}?overview=full&geometries=geojson&steps=true${alternatives ? '&alternatives=3' : ''}`;
 }
 
 type OsrmStep = {
@@ -113,19 +113,9 @@ export function describeStep(s: Pick<RouteStep, 'type' | 'modifier' | 'name' | '
   }
 }
 
-/** Pure parser (unit-tested). Throws a user-facing error on failure. */
-export function parseOsrmResponse(
-  json: OsrmResponse,
-  mode: TravelMode,
-  from: LatLng,
-  to: Route['to'],
-  now = Date.now(),
-): Route {
-  if (json.code !== 'Ok' || !json.routes?.length) {
-    if (json.code === 'NoRoute') throw new Error(tx('No road route found to this place.'));
-    throw new Error(tx('Unable to calculate route.'));
-  }
-  const r = json.routes[0];
+type OsrmRoute = NonNullable<OsrmResponse['routes']>[number];
+
+function toRoute(r: OsrmRoute, mode: TravelMode, from: LatLng, to: Route['to'], now: number): Route {
   const steps: RouteStep[] = (r.legs ?? [])
     .flatMap((l) => l.steps ?? [])
     .filter((s) => s.distance > 0 || s.maneuver?.type === 'arrive')
@@ -158,10 +148,35 @@ export function parseOsrmResponse(
   };
 }
 
-export async function fetchRoute(mode: TravelMode, from: LatLng, to: Route['to'], signal?: AbortSignal): Promise<Route> {
+function checkResponse(json: OsrmResponse) {
+  if (json.code !== 'Ok' || !json.routes?.length) {
+    if (json.code === 'NoRoute') throw new Error(tx('No road route found to this place.'));
+    throw new Error(tx('Unable to calculate route.'));
+  }
+}
+
+/** Pure parser (unit-tested). Throws a user-facing error on failure. */
+export function parseOsrmResponse(
+  json: OsrmResponse,
+  mode: TravelMode,
+  from: LatLng,
+  to: Route['to'],
+  now = Date.now(),
+): Route {
+  checkResponse(json);
+  return toRoute(json.routes![0], mode, from, to, now);
+}
+
+/** All routes in a response (the best first, then alternatives). */
+export function parseOsrmRoutes(json: OsrmResponse, mode: TravelMode, from: LatLng, to: Route['to'], now = Date.now()): Route[] {
+  checkResponse(json);
+  return json.routes!.map((r) => toRoute(r, mode, from, to, now));
+}
+
+async function requestOsrm(mode: TravelMode, from: LatLng, to: LatLng, alternatives: boolean, signal?: AbortSignal): Promise<OsrmResponse> {
   let res: Response;
   try {
-    res = await fetch(buildRouteUrl(mode, from, to), {
+    res = await fetch(buildRouteUrl(mode, from, to, alternatives), {
       signal,
       headers: { Accept: 'application/json', 'User-Agent': 'GoTourGo-FYP/1.0' },
     });
@@ -171,7 +186,16 @@ export async function fetchRoute(mode: TravelMode, from: LatLng, to: Route['to']
   }
   if (res.status === 429) throw new Error(tx('Routing service is busy. Try again shortly.'));
   if (!res.ok) throw new Error(tx('Unable to calculate route.'));
-  return parseOsrmResponse((await res.json()) as OsrmResponse, mode, from, to);
+  return (await res.json()) as OsrmResponse;
+}
+
+export async function fetchRoute(mode: TravelMode, from: LatLng, to: Route['to'], signal?: AbortSignal): Promise<Route> {
+  return parseOsrmResponse(await requestOsrm(mode, from, to, false, signal), mode, from, to);
+}
+
+/** The best route plus up to three alternatives (used to go around hazards). */
+export async function fetchRoutes(mode: TravelMode, from: LatLng, to: Route['to'], signal?: AbortSignal): Promise<Route[]> {
+  return parseOsrmRoutes(await requestOsrm(mode, from, to, true, signal), mode, from, to);
 }
 
 /** Hand-off for full turn-by-turn navigation. */

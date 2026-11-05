@@ -112,11 +112,17 @@ export type NearbyService = {
 
 export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
 
+export type HazardType = 'flood' | 'accident' | 'road_works' | 'landslide' | 'fog' | 'snow' | 'closure' | 'blockade' | 'other';
+
+/**
+ * A road alert: official/curated (road_alerts) or reported by a traveller
+ * (hazard_reports, source "traveller"). Both feed the map, journeys and alerts.
+ */
 export type RoadAlert = {
   id: string;
   title: string;
   description: string;
-  alert_type: 'closure' | 'rain' | 'flood' | 'fog' | 'smog' | 'snow' | 'landslide' | 'traffic' | 'other';
+  alert_type: 'closure' | 'rain' | 'flood' | 'fog' | 'smog' | 'snow' | 'landslide' | 'traffic' | 'other' | 'accident' | 'road_works' | 'blockade';
   severity: AlertSeverity;
   region: string;
   city: string | null;
@@ -126,6 +132,10 @@ export type RoadAlert = {
   starts_at: string;
   ends_at: string | null;
   source: string;
+  /** Traveller reports only. */
+  reporter_id?: string;
+  confirmations?: number;
+  dismissals?: number;
 };
 
 export type Profile = {

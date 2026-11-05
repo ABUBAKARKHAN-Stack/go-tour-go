@@ -123,11 +123,13 @@ def landmark_category(tags: dict) -> str | None:
 
 
 def is_famous(tags: dict, category: str) -> bool:
-    """Famous = has a Wikidata/Wikipedia entry. Named museums and viewpoints
-    are kept even without one: they are few and always worth an alert."""
+    """Famous = has a Wikidata/Wikipedia entry. Named museums are kept even
+    without one (there are few and they are always worth an alert). Viewpoints
+    need an entry: OpenStreetMap has hundreds of small named viewpoints that
+    would make alerts in the mountains too chatty."""
     if tags.get("wikidata") or tags.get("wikipedia"):
         return True
-    return category in ("museum", "viewpoint") and bool(tags.get("name"))
+    return category == "museum" and bool(tags.get("name"))
 
 
 def alert_radius(category: str, tags: dict, area_m2: float | None) -> int:

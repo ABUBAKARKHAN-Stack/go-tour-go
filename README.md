@@ -249,6 +249,19 @@ turn-by-turn with voice, landmark alerts and "hazard ahead" warnings → automat
   run while the app is open. The active journey survives an app restart.
 - **Demo:** Settings → Demo tools → **Drive the active journey** drives the planned route at 50 km/h.
 
+### Exploring without a journey, and hazard reports
+
+- **Background alerts follow you:** besides the nearest landmarks, a "refresh" geofence is registered around where they
+  were chosen; leaving it (even with the app closed) re-registers the nearest landmarks around the new position.
+- **Direction aware:** when several landmarks trigger at once, the ones ahead of the direction of travel are announced
+  first; hazards within about 2 km ahead in a 35° cone are warned about while moving (`features/proximity/heading.ts`).
+- **Hazard reports** (`hazard_reports`, `hazard_votes`): signed-up travellers report floods, accidents, road works,
+  closures, blockades, landslides, fog or snow at their position (max 10 a day). Reports expire by type (2 h for an
+  accident up to 7 days for road works); "Still there" extends them, two more "Gone" than "Still there" votes close them.
+  They appear on the map, in journeys, in Road & travel alerts and as alerts, next to official road alerts.
+- **Hazard card:** shows severity, time left and confirmations, lets travellers confirm or clear a report, and during a
+  journey "Find a way around" picks the fastest alternative route that keeps clear of the hazard.
+
 ### Seeded landmarks for geofence testing
 
 Radii vary per landmark, for example: Wazir Khan Mosque 300 m, Minar-e-Pakistan 500 m, Badshahi Mosque 1000 m

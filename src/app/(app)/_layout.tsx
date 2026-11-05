@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { dataSyncStore, syncLocalData } from '@/features/data/sync';
+import { HazardCardOverlay } from '@/features/alerts/hazard-card';
 import { useInboxRealtime } from '@/features/inbox/api';
 import { useJourneyEffects } from '@/features/journey/use-journey-effects';
 import { LocationProvider } from '@/features/location/location-provider';
@@ -64,6 +65,7 @@ export default function AppLayout() {
           <Stack.Screen name="review/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         </Stack>
         <ProximityCardOverlay />
+        <HazardCardOverlay />
       </ProximityProvider>
     </LocationProvider>
   );
