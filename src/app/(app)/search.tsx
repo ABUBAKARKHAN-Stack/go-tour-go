@@ -257,7 +257,7 @@ export default function SearchScreen() {
             browseList.length ? (
               <View className="gap-2.5">
                 {browseList.map((d) => (
-                  <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.get(d.id)?.average_rating} variant="row" />
+                  <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.[d.id]?.average_rating} variant="row" />
                 ))}
               </View>
             ) : isLoading ? (

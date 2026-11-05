@@ -25,7 +25,11 @@ export type Landmark = {
 const SUMMARY_COLUMNS =
   'id,slug,name,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,is_landmark,popularity,featured,source';
 
-/** Translations are few (curated landmarks only), so they are fetched whole and cached. */
+/**
+ * Translations are few (curated landmarks only), so they are fetched whole and
+ * cached. Query data is saved to the phone as JSON, so it must be plain
+ * objects and arrays: a Map would come back as {} after a restart.
+ */
 function useTranslations(locale: ContentLocale) {
   return useQuery({
     queryKey: ['destinations', 'translations', locale],
@@ -33,7 +37,7 @@ function useTranslations(locale: ContentLocale) {
     queryFn: async () => {
       const { data, error } = await supabase.from('destination_translations').select('*').eq('locale', locale);
       if (error) throw error;
-      return new Map((data as DestinationTranslation[]).map((t) => [t.destination_id, t]));
+      return Object.fromEntries((data as DestinationTranslation[]).map((t) => [t.destination_id, t])) as Record<string, DestinationTranslation>;
     },
     staleTime: 1000 * 60 * 60,
   });
@@ -91,7 +95,7 @@ export function useDestinations() {
     if (!query.data) return undefined;
     if (prefs.locale === 'en') return query.data;
     const map = translations.data;
-    return query.data.map((d) => localise(d, prefs.locale, map?.get(d.id)));
+    return query.data.map((d) => localise(d, prefs.locale, map?.[d.id]));
   }, [query.data, prefs.locale, translations.data]);
 
   // Mirror a compact landmark list for the background geofencing task, which
@@ -163,7 +167,7 @@ export function useDestinationDetail(id: string | undefined) {
 
   const fallback = useMemo<Destination | undefined>(() => {
     if (!summary) return undefined;
-    const t = translations.data?.get(summary.id);
+    const t = translations.data?.[summary.id];
     return {
       ...summary,
       description: t?.description || summary.short_description,
@@ -213,7 +217,8 @@ export function useRatings() {
     queryFn: async () => {
       const { data, error } = await supabase.from('destination_rating_summary').select('*');
       if (error) throw error;
-      return new Map((data as RatingSummary[]).map((r) => [r.destination_id, r]));
+      // Plain object, not a Map: the cache is saved as JSON (see useTranslations).
+      return Object.fromEntries((data as RatingSummary[]).map((r) => [r.destination_id, r])) as Record<string, RatingSummary>;
     },
     staleTime: 1000 * 60 * 5,
   });

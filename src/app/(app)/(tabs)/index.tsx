@@ -213,7 +213,7 @@ export default function Home() {
               <SectionHeader title={tx('Near you')} actionLabel={tx('See map')} onAction={() => router.navigate('/explore')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
                 {near.map((d) => (
-                  <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.get(d.id)?.average_rating} />
+                  <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.[d.id]?.average_rating} />
                 ))}
               </ScrollView>
               {near[0]?.distance != null && near[0].distance > 50_000 ? (
@@ -273,7 +273,7 @@ export default function Home() {
             <SectionHeader title={tx('Popular in Pakistan')} actionLabel={tx('See all')} onAction={() => router.push('/search')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerClassName="gap-4 px-5">
               {popular.map((d) => (
-                <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.get(d.id)?.average_rating} />
+                <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.[d.id]?.average_rating} />
               ))}
             </ScrollView>
           </View>
