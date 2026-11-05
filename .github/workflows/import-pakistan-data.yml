@@ -87,10 +87,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Load columns by the names in each CSV header, so the files and the
+          # staging tables can gain columns independently.
+          PLACE_COLS=$(head -1 import-out/places.csv | tr -d '\r')
+          LANDMARK_COLS=$(head -1 import-out/landmarks.csv | tr -d '\r')
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
             -c "truncate private.stage_places, private.stage_landmarks" \
-            -c "\copy private.stage_places from 'import-out/places.csv' with (format csv, header true)" \
-            -c "\copy private.stage_landmarks from 'import-out/landmarks.csv' with (format csv, header true)" \
+            -c "\copy private.stage_places (${PLACE_COLS}) from 'import-out/places.csv' with (format csv, header true)" \
+            -c "\copy private.stage_landmarks (${LANDMARK_COLS}) from 'import-out/landmarks.csv' with (format csv, header true)" \
             -c "select private.import_osm_dataset() as result" | tee import-result.txt
           {
             echo "### Pakistan data imported"
