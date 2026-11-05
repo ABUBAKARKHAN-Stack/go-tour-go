@@ -4,11 +4,13 @@ import { Alert, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton, IconButton } from '@/components/app-button';
-import { Card, TextField } from '@/components/form';
+import { Card } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/states';
 import { useContactActions, useTrustedContacts } from '@/features/safety/api';
-import { errorMessage } from '@/lib/errors';
+import { contactSchema } from '@/features/safety/schemas';
+import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
 import type { TrustedContact } from '@/lib/types';
 import { tx } from '@/lib/i18n';
@@ -17,38 +19,11 @@ export default function TrustedContactsScreen() {
   const contacts = useTrustedContacts();
   const actions = useContactActions();
   const [editing, setEditing] = useState<Partial<TrustedContact> | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const save = () => {
-    if (!editing) return;
-    setError(null);
-    actions.save.mutate(
-      { id: editing.id, name: editing.name ?? '', phone: editing.phone ?? '', relationship: editing.relationship ?? '' },
-      { onSuccess: () => setEditing(null), onError: (e) => setError(errorMessage(e)) },
-    );
-  };
 
   return (
     <Screen back title={tx('Trusted contacts')} subtitle={tx('They receive your SOS via WhatsApp')} keyboard>
       {editing ? (
-        <Card className="gap-3">
-          <Text className="text-base font-semibold text-foreground">{editing.id ? tx('Edit contact') : tx('New contact')}</Text>
-          {error ? <InlineError message={error} /> : null}
-          <TextField label={tx('Name')} value={editing.name ?? ''} onChangeText={(name) => setEditing({ ...editing, name })} placeholder={tx('Ammi')} />
-          <TextField
-            label={tx('WhatsApp number')}
-            value={editing.phone ?? ''}
-            onChangeText={(phone) => setEditing({ ...editing, phone })}
-            keyboardType="phone-pad"
-            placeholder="+92 300 1234567"
-            hint={tx('Include the country code. Local 03xx numbers are converted to +92.')}
-          />
-          <TextField label={tx('Relationship (optional)')} value={editing.relationship ?? ''} onChangeText={(relationship) => setEditing({ ...editing, relationship })} placeholder={tx('Mother, friend...')} />
-          <View className="flex-row gap-2">
-            <AppButton label={tx('Cancel')} variant="outline" onPress={() => setEditing(null)} className="flex-1" />
-            <AppButton label={tx('Save')} variant="accent" loading={actions.save.isPending} onPress={save} className="flex-1" />
-          </View>
-        </Card>
+        <ContactForm key={editing.id ?? 'new'} contact={editing} saving={actions.save.isPending} onSave={actions.save.mutate} onClose={() => setEditing(null)} />
       ) : (
         <AppButton label={tx('Add trusted contact')} icon={UserPlus} variant="accent" onPress={() => setEditing({})} />
       )}
@@ -87,5 +62,37 @@ export default function TrustedContactsScreen() {
         {tx('Contacts are private to your account and never shown to other users.')}
       </Text>
     </Screen>
+  );
+}
+
+type SaveContact = ReturnType<typeof useContactActions>['save']['mutate'];
+
+function ContactForm({ contact, saving, onSave, onClose }: { contact: Partial<TrustedContact>; saving: boolean; onSave: SaveContact; onClose: () => void }) {
+  const { control, handleSubmit, setError, setFocus, formState } = useZodForm(contactSchema, {
+    defaultValues: { name: contact.name ?? '', phone: contact.phone ?? '', relationship: contact.relationship ?? '' },
+  });
+
+  const save = handleSubmit((v) => onSave({ id: contact.id, ...v }, { onSuccess: onClose, onError: (e) => setError('root', serverError(e)) }));
+
+  return (
+    <Card className="gap-3">
+      <Text className="text-base font-semibold text-foreground">{contact.id ? tx('Edit contact') : tx('New contact')}</Text>
+      {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
+      <FormTextField control={control} name="name" label={tx('Name')} placeholder={tx('Ammi')} returnKeyType="next" onSubmitEditing={() => setFocus('phone')} />
+      <FormTextField
+        control={control}
+        name="phone"
+        label={tx('WhatsApp number')}
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        placeholder="+92 300 1234567"
+        hint={tx('Include the country code. Local 03xx numbers are converted to +92.')}
+      />
+      <FormTextField control={control} name="relationship" label={tx('Relationship (optional)')} placeholder={tx('Mother, friend...')} />
+      <View className="flex-row gap-2">
+        <AppButton label={tx('Cancel')} variant="outline" onPress={onClose} className="flex-1" />
+        <AppButton label={tx('Save')} variant="accent" loading={saving} onPress={save} className="flex-1" />
+      </View>
+    </Card>
   );
 }

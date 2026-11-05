@@ -4,7 +4,7 @@ import { Text, TextInput } from '@/components/text';
 
 import { colors } from '@/lib/theme';
 
-type FieldProps = TextInputProps & {
+export type FieldProps = TextInputProps & {
   label: string;
   left?: ReactNode;
   error?: string | null;
@@ -13,7 +13,7 @@ type FieldProps = TextInputProps & {
 };
 
 /** Labelled text input with error/hint text, sized for touch. */
-export function TextField({ label, error, hint, left, right, multiline, ...props }: FieldProps) {
+export function TextField({ label, error, hint, left, right, multiline, onFocus, onBlur, ...props }: FieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className="gap-1.5">
@@ -30,15 +30,15 @@ export function TextField({ label, error, hint, left, right, multiline, ...props
           className="flex-1 text-base text-foreground"
           style={multiline ? { textAlignVertical: 'top', minHeight: 88 } : undefined}
           multiline={multiline}
+          {...props}
           onFocus={(e) => {
             setFocused(true);
-            props.onFocus?.(e);
+            onFocus?.(e);
           }}
           onBlur={(e) => {
             setFocused(false);
-            props.onBlur?.(e);
+            onBlur?.(e);
           }}
-          {...props}
         />
         {right}
       </View>

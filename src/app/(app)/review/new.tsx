@@ -2,20 +2,23 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ImagePlus, Send, Trash2, X } from 'lucide-react-native';
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { Alert, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
-import { TextField } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { RatingStars } from '@/components/rating-stars';
 import { Screen } from '@/components/screen';
-import { InlineError } from '@/components/states';
+import { ErrorState, InlineError, LoadingState } from '@/components/states';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useDestination } from '@/features/destinations/api';
 import { useDeleteReview, useReviews, useSaveReview } from '@/features/reviews/api';
-import { errorMessage } from '@/lib/errors';
+import { reviewSchema } from '@/features/reviews/schemas';
+import { serverError, useZodForm } from '@/lib/forms';
 import { chooseImageSource } from '@/lib/pick-image';
 import { tx } from '@/lib/i18n';
+import type { Review } from '@/lib/types';
 
 /** Write or edit your single review for a destination (duplicates are prevented by the DB). */
 export default function ReviewEditor() {
@@ -24,47 +27,60 @@ export default function ReviewEditor() {
   const { destination } = useDestination(destinationId);
   const reviews = useReviews(destinationId);
   const existing = reviews.data?.find((r) => r.user_id === userId);
-  const save = useSaveReview();
-  const del = useDeleteReview();
+  const title = existing ? tx('Edit review') : tx('Write a review');
 
-  const [initialized, setInitialized] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [body, setBody] = useState('');
-  const [image, setImage] = useState<string | null>(null);
-  const [existingImage, setExistingImage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  if (!initialized && reviews.isSuccess) {
-    setInitialized(true);
-    if (existing) {
-      setRating(existing.rating);
-      setBody(existing.body);
-      setExistingImage(existing.image_url);
-    }
+  if (reviews.isPending || reviews.isError) {
+    return (
+      <Screen back title={title} subtitle={destination?.name}>
+        {reviews.isError ? <ErrorState error={reviews.error} onRetry={reviews.refetch} /> : <LoadingState />}
+      </Screen>
+    );
   }
 
-  const submit = () => {
-    if (rating < 1) {
-      setError('Choose a star rating.');
-      return;
-    }
-    setError(null);
+  return (
+    <Screen back title={title} subtitle={destination?.name} keyboard>
+      <ReviewForm destinationId={destinationId} existing={existing} />
+    </Screen>
+  );
+}
+
+function ReviewForm({ destinationId, existing }: { destinationId: string; existing?: Review }) {
+  const save = useSaveReview();
+  const del = useDeleteReview();
+  const [image, setImage] = useState<string | null>(null);
+  const [existingImage, setExistingImage] = useState<string | null>(existing?.image_url ?? null);
+  const { control, handleSubmit, setError, formState } = useZodForm(reviewSchema, {
+    defaultValues: { rating: existing?.rating ?? 0, body: existing?.body ?? '' },
+  });
+
+  const submit = handleSubmit(({ rating, body }) =>
     save.mutate(
       { destinationId, rating, body, imageLocalUri: image, existingImage },
-      { onSuccess: () => router.back(), onError: (e) => setError(errorMessage(e)) },
-    );
-  };
+      { onSuccess: () => router.back(), onError: (e) => setError('root', serverError(e)) },
+    ),
+  );
 
   const preview = image ?? existingImage;
 
   return (
-    <Screen back title={existing ? tx('Edit review') : tx('Write a review')} subtitle={destination?.name} keyboard>
-      {error ? <InlineError message={error} /> : null}
-      <View className="items-center gap-2 py-2">
-        <Text className="text-sm text-muted-foreground">{tx('Your rating')}</Text>
-        <RatingStars value={rating} size={34} onChange={setRating} />
-      </View>
-      <TextField label={tx('Your experience')} value={body} onChangeText={setBody} multiline maxLength={2000} placeholder={tx('What did you love? Any tips for other travellers?')} />
+    <>
+      {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
+      <Controller
+        control={control}
+        name="rating"
+        render={({ field, fieldState }) => (
+          <View className="items-center gap-2 py-2">
+            <Text className="text-sm text-muted-foreground">{tx('Your rating')}</Text>
+            <RatingStars value={field.value} size={34} onChange={field.onChange} />
+            {fieldState.error?.message ? (
+              <Text className="text-xs text-destructive" accessibilityLiveRegion="polite">
+                {fieldState.error.message}
+              </Text>
+            ) : null}
+          </View>
+        )}
+      />
+      <FormTextField control={control} name="body" label={tx('Your experience')} multiline maxLength={2000} placeholder={tx('What did you love? Any tips for other travellers?')} />
       {preview ? (
         <View>
           <Image source={{ uri: preview }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" />
@@ -96,6 +112,6 @@ export default function ReviewEditor() {
           }
         />
       ) : null}
-    </Screen>
+    </>
   );
 }

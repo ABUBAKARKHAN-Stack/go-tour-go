@@ -62,20 +62,3 @@ export async function updatePassword(password: string) {
 export async function signOut() {
   await supabase.auth.signOut();
 }
-
-export function validateEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-}
-
-export function validatePassword(password: string): string | null {
-  if (password.length < 8) return 'Use at least 8 characters.';
-  if (!/[0-9]/.test(password) || !/[a-zA-Z]/.test(password)) return 'Use letters and numbers.';
-  return null;
-}
-
-export function validateUsername(username: string): string | null {
-  if (!/^[a-z0-9_]{3,24}$/.test(username.trim().toLowerCase())) {
-    return '3-24 characters: lowercase letters, numbers or _.';
-  }
-  return null;
-}

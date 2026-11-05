@@ -4,46 +4,39 @@ import { useEffect, useState } from 'react';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
-import { TextField } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { Screen } from '@/components/screen';
 import { InlineError, LoadingState } from '@/components/states';
-import { exchangeRecoveryCode, updatePassword, validatePassword } from '@/features/auth/api';
+import { exchangeRecoveryCode, updatePassword } from '@/features/auth/api';
+import { resetPasswordSchema } from '@/features/auth/schemas';
 import { errorMessage } from '@/lib/errors';
+import { serverError, useZodForm } from '@/lib/forms';
 import { tx } from '@/lib/i18n';
 
 /** Opened from the password-reset email (gotourgodevelopment://reset-password?code=...). */
 export default function ResetPassword() {
   const { code, error_description } = useLocalSearchParams<{ code?: string; error_description?: string }>();
   const [ready, setReady] = useState(!code);
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(error_description ?? null);
+  const [linkError, setLinkError] = useState<string | null>(error_description ?? null);
   const [done, setDone] = useState(false);
+  const { control, handleSubmit, setError, formState } = useZodForm(resetPasswordSchema, { defaultValues: { password: '' } });
 
   useEffect(() => {
     if (!code) return;
     exchangeRecoveryCode(code)
-      .catch((e) => setError(errorMessage(e, 'This reset link is invalid or has expired.')))
+      .catch((e) => setLinkError(errorMessage(e, tx('This reset link is invalid or has expired.'))))
       .finally(() => setReady(true));
   }, [code]);
 
-  const submit = async () => {
-    const invalid = validatePassword(password);
-    if (invalid) {
-      setError(invalid);
-      return;
-    }
-    setLoading(true);
-    setError(null);
+  const submit = handleSubmit(async ({ password }) => {
     try {
       await updatePassword(password);
       setDone(true);
     } catch (e) {
-      setError(errorMessage(e, 'Open the reset link from your email again.'));
-    } finally {
-      setLoading(false);
+      setError('root', serverError(e, tx('Open the reset link from your email again.')));
     }
-  };
+  });
+  const error = formState.errors.root?.message ?? linkError;
 
   if (!ready) {
     return (
@@ -63,8 +56,17 @@ export default function ResetPassword() {
       ) : (
         <>
           {error ? <InlineError message={error} /> : null}
-          <TextField label={tx('New password')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" placeholder={tx('At least 8 characters')} />
-          <AppButton label={tx('Update password')} icon={KeyRound} onPress={submit} loading={loading} variant="accent" />
+          <FormTextField
+            control={control}
+            name="password"
+            label={tx('New password')}
+            secureTextEntry
+            autoComplete="new-password"
+            placeholder={tx('At least 8 characters')}
+            returnKeyType="go"
+            onSubmitEditing={() => submit()}
+          />
+          <AppButton label={tx('Update password')} icon={KeyRound} onPress={submit} loading={formState.isSubmitting} variant="accent" />
         </>
       )}
     </Screen>

@@ -3,37 +3,28 @@ import { Mail, MailCheck } from 'lucide-react-native';
 import { useState } from 'react';
 
 import { AppButton } from '@/components/app-button';
-import { TextField } from '@/components/form';
+import { FormTextField } from '@/components/form-field';
 import { Screen } from '@/components/screen';
 import { EmptyState, InlineError } from '@/components/states';
-import { sendPasswordReset, validateEmail } from '@/features/auth/api';
+import { sendPasswordReset } from '@/features/auth/api';
 import { AuthShell } from '@/features/auth/auth-shell';
+import { forgotPasswordSchema } from '@/features/auth/schemas';
+import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
-import { errorMessage } from '@/lib/errors';
 import { tx } from '@/lib/i18n';
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { control, handleSubmit, setError, formState } = useZodForm(forgotPasswordSchema, { defaultValues: { email: '' } });
 
-  const submit = async () => {
-    if (!validateEmail(email)) {
-      setError('Enter a valid email.');
-      return;
-    }
-    setLoading(true);
-    setError(null);
+  const submit = handleSubmit(async ({ email }) => {
     try {
       await sendPasswordReset(email);
       setSent(true);
     } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoading(false);
+      setError('root', serverError(e));
     }
-  };
+  });
 
   if (sent) {
     return (
@@ -51,19 +42,19 @@ export default function ForgotPassword() {
 
   return (
     <AuthShell back compact title={tx('Reset password')} subtitle={tx('Enter your email and we will send you a link to choose a new password.')}>
-      {error ? <InlineError message={error} /> : null}
-      <TextField
+      {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
+      <FormTextField
+        control={control}
+        name="email"
         label={tx('Email')}
-        value={email}
-        onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"
         placeholder="you@example.com"
-        onSubmitEditing={submit}
+        onSubmitEditing={() => submit()}
         left={<Mail color={colors.faint} size={20} />}
       />
-      <AppButton label={tx('Send reset link')} onPress={submit} loading={loading} />
+      <AppButton label={tx('Send reset link')} onPress={submit} loading={formState.isSubmitting} />
     </AuthShell>
   );
 }
