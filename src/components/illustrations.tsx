@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 /**
@@ -14,8 +15,6 @@ const MARBLE = '#F4EEE6';
 const MARBLE_EDGE = '#E0D5C4';
 const TEAL = '#0F4C4A';
 const TERRACOTTA = '#C8643B';
-const LEAF = '#2F7D5B';
-const LEAF_DARK = '#276B4E';
 
 function Minaret({ cx, top, base = 246 }: { cx: number; top: number; base?: number }) {
   const h = base - top;
@@ -41,57 +40,6 @@ function Dome({ cx, base, w, h }: { cx: number; base: number; w: number; h: numb
       />
       <Path d={`M${cx} ${base - h} L${cx} ${base - h - 9}`} stroke={TERRACOTTA} strokeWidth={2} />
     </G>
-  );
-}
-
-/** Red-sandstone Mughal mosque under the mountains, with a map pin and a dashed route. */
-export function LandmarkScene({ size = 360 }: Props) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 360 360">
-      <Defs>
-        <LinearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#F6E3D9" />
-          <Stop offset="1" stopColor="#FBF8F3" />
-        </LinearGradient>
-      </Defs>
-      <Rect width={360} height={360} fill="url(#sky)" />
-      <Circle cx={268} cy={96} r={34} fill="#F2C48D" opacity={0.85} />
-      <Path d="M0 214 L58 146 L98 178 L150 104 L204 170 L250 120 L300 166 L360 116 L360 236 L0 236 Z" fill="#C7D8D4" />
-      <Path d="M150 104 L137 123 L146 119 L151 126 L159 118 L163 121 Z" fill="#FFFFFF" />
-      <Path d="M250 120 L240 134 L247 131 L252 137 L258 131 L261 133 Z" fill="#FFFFFF" />
-      <Path d="M58 146 L50 156 L56 154 L60 158 L64 154 L67 156 Z" fill="#FFFFFF" />
-      <Path d="M0 244 Q90 208 180 234 T360 230 L360 276 L0 276 Z" fill="#A8C3BC" />
-      <Rect y={254} width={360} height={106} fill="#EFE3D0" />
-      <Path d="M168 360 C186 326 132 304 168 282 C188 270 196 266 192 256" stroke="#E3D2B8" strokeWidth={24} strokeLinecap="round" fill="none" />
-
-      {/* Mosque */}
-      <Rect x={66} y={244} width={228} height={12} fill={SAND_DARK} />
-      <Rect x={108} y={200} width={144} height={46} fill={SAND} />
-      {[116, 129, 142, 205, 218, 231].map((x) => (
-        <Path key={x} d={`M${x} 238 L${x} 222 Q${x + 4.5} 214 ${x + 9} 222 L${x + 9} 238 Z`} fill={SAND_DEEP} opacity={0.85} />
-      ))}
-      <Rect x={158} y={192} width={44} height={54} fill="#C46A48" />
-      <Path d="M167 246 L167 216 Q180 200 193 216 L193 246 Z" fill={SAND_DEEP} />
-      <Dome cx={180} base={194} w={52} h={36} />
-      <Dome cx={130} base={201} w={30} h={22} />
-      <Dome cx={230} base={201} w={30} h={22} />
-      <Minaret cx={80} top={148} />
-      <Minaret cx={280} top={148} />
-      <Minaret cx={106} top={176} base={244} />
-      <Minaret cx={254} top={176} base={244} />
-
-      {/* Trees */}
-      <Circle cx={44} cy={258} r={11} fill={LEAF_DARK} />
-      <Circle cx={58} cy={250} r={15} fill={LEAF} />
-      <Circle cx={304} cy={251} r={14} fill={LEAF} />
-      <Circle cx={320} cy={259} r={10} fill={LEAF_DARK} />
-
-      {/* Route and pin */}
-      <Path d="M54 118 C86 72 150 58 188 80" stroke={TERRACOTTA} strokeWidth={2.2} strokeDasharray="4 7" strokeLinecap="round" fill="none" />
-      <Circle cx={54} cy={118} r={4} fill={TERRACOTTA} />
-      <Path d="M200 112 C200 112 176 88 176 72 A24 24 0 1 1 224 72 C224 88 200 112 200 112 Z" fill={TERRACOTTA} />
-      <Circle cx={200} cy={72} r={9} fill="#FFFFFF" />
-    </Svg>
   );
 }
 
@@ -191,5 +139,18 @@ export function HeroScene({ width = 412, height = 300 }: Props) {
       <Minaret cx={106} top={176} base={244} />
       <Minaret cx={254} top={176} base={244} />
     </Svg>
+  );
+}
+
+/** Figma onboarding art: a traveller walking towards the Badshahi Mosque. Square source, cropped to the frame. */
+export function TravellerScene({ size = 360 }: Props) {
+  return (
+    <Image
+      source={require('../../assets/illustrations/onboarding-traveller.webp')}
+      style={{ width: size, height: size * 0.94 }}
+      contentFit="cover"
+      contentPosition="bottom"
+      accessible={false}
+    />
   );
 }
