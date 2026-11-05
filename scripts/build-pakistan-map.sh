@@ -2,9 +2,12 @@
 # Builds the offline map files for GoTourGo from OpenStreetMap (OpenMapTiles schema,
 # the same schema as the OpenFreeMap style the app uses online).
 #
-#   pakistan.pmtiles      all of Pakistan, street level (zoom 0-14)
-#   karachi-test.pmtiles  a small Karachi extract used by the in-app map engine test
-#   manifest.json         sizes and checksums the app reads before downloading
+#   pakistan.pmtiles               all of Pakistan, street level (zoom 0-14)
+#   pakistan-overview.pmtiles      all of Pakistan, overview only (zoom 0-8)
+#   region-<name>.pmtiles          street-level packs for Karachi, Lahore,
+#                                  Islamabad/Rawalpindi and the Northern Areas
+#   karachi-test.pmtiles           a small Karachi extract used by the in-app map engine test
+#   manifest.json                  sizes and checksums the app reads before downloading
 #
 # Needs Java 21+ and about 12 GB of free disk. Output lands in map-build/out/.
 # Runs in GitHub Actions
@@ -90,15 +93,46 @@ java -Xmx4g -jar planetiler.jar "${SOURCES[@]}" \
   --output="$OUT/karachi-test.pmtiles" --force \
   --maxzoom="$MAXZOOM" --render_maxzoom="$MAXZOOM"
 
+# Overview and region packs are cut from the full map with the pmtiles CLI, so
+# they match it exactly. Region bounds are west,south,east,north and must match
+# src/features/offline/catalog.ts in the app.
+if [ ! -x tools/pmtiles ]; then
+  mkdir -p tools
+  PMTILES_TGZ_URL=$(curl -fsSL https://api.github.com/repos/protomaps/go-pmtiles/releases/latest \
+    | python3 -c 'import json,sys; print(next(a["browser_download_url"] for a in json.load(sys.stdin)["assets"] if a["name"].endswith("_Linux_x86_64.tar.gz")))')
+  curl -fsSL "$PMTILES_TGZ_URL" | tar -xz -C tools pmtiles
+fi
+tools/pmtiles version || true
+tools/pmtiles extract "$OUT/pakistan.pmtiles" "$OUT/pakistan-overview.pmtiles" --maxzoom=8
+declare -A REGIONS=(
+  [karachi]="66.65,24.70,67.60,25.20"
+  [lahore]="74.05,31.25,74.60,31.75"
+  [islamabad]="72.75,33.40,73.50,34.00"
+  [northern]="71.20,34.50,77.90,37.10"
+)
+for name in "${!REGIONS[@]}"; do
+  tools/pmtiles extract "$OUT/pakistan.pmtiles" "$OUT/region-$name.pmtiles" --bbox="${REGIONS[$name]}"
+done
+# Label glyphs for the offline style (Noto Sans: Latin and Arabic script,
+# including the presentation forms used for Urdu). About 1 MB in total.
+fetch "https://github.com/openmaptiles/fonts/releases/download/v2.0/v2.0.zip" "$SRC/openmaptiles-fonts-v2.0.zip"
+GLYPH_RANGES="0-255 256-511 512-767 768-1023 1536-1791 1792-2047 2048-2303 8192-8447 64256-64511 64512-64767 64768-65023 65024-65279"
+for range in $GLYPH_RANGES; do
+  unzip -p "$SRC/openmaptiles-fonts-v2.0.zip" "Noto Sans Regular/$range.pbf" > "$OUT/glyphs-noto-sans-$range.pbf"
+  [ -s "$OUT/glyphs-noto-sans-$range.pbf" ] || { echo "Missing glyph range $range"; exit 1; }
+done
+ls -lh "$OUT"
+
 # Check the finished tiles (coast cities must be land, open water must be sea)
 # before anything is published.
-.venv-tools/bin/python "$SCRIPT_DIR/check-pakistan-map.py" "$OUT/pakistan.pmtiles" "$OUT/karachi-test.pmtiles"
+.venv-tools/bin/python "$SCRIPT_DIR/check-pakistan-map.py" "$OUT/pakistan.pmtiles" "$OUT/karachi-test.pmtiles" "$OUT/region-karachi.pmtiles"
 
 python3 - "$OUT" <<'PY'
 import hashlib, json, os, sys, datetime
 out = sys.argv[1]
 files = {}
-for name in ("pakistan.pmtiles", "karachi-test.pmtiles"):
+names = sorted(n for n in os.listdir(out) if n.endswith(".pmtiles") or n.endswith(".pbf"))
+for name in names:
     path = os.path.join(out, name)
     h = hashlib.sha256()
     with open(path, "rb") as f:
