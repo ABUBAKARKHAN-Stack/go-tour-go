@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Bell, CheckCheck, MapPin, MessageCircle, ShieldAlert, UserPlus } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { FlatList, Linking, Pressable, RefreshControl, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { IconButton } from '@/components/app-button';
@@ -12,6 +12,8 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { colors } from '@/lib/theme';
 import type { AppNotification } from '@/lib/types';
 import { tx } from '@/lib/i18n';
+import { navigateTo } from '@/features/routing/navigate';
+import { isShareToken } from '@/features/safety/share-links';
 
 const ICONS = { friend_request: UserPlus, friend_accepted: UserPlus, message: MessageCircle, sos: ShieldAlert } as const;
 
@@ -19,7 +21,10 @@ function open(n: AppNotification) {
   const d = n.data ?? {};
   if (n.type === 'message' && d.conversation_id) router.push({ pathname: '/messages/[id]', params: { id: String(d.conversation_id) } });
   else if (n.type === 'friend_request' || n.type === 'friend_accepted') router.push('/friends');
-  else if (n.type === 'sos' && d.latitude != null) Linking.openURL(`https://maps.google.com/?q=${d.latitude},${d.longitude}`);
+  else if (n.type === 'sos' && isShareToken(d.token)) router.push({ pathname: '/sos', params: { t: d.token } });
+  // Alerts from before SOS links: plan a journey to where it was sent, never an external map.
+  else if (n.type === 'sos' && d.latitude != null)
+    navigateTo({ id: `sos:${n.id}`, name: n.title, latitude: Number(d.latitude), longitude: Number(d.longitude), subtitle: tx('SOS location') });
 }
 
 export default function NotificationsScreen() {

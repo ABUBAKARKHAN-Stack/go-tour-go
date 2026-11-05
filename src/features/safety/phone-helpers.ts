@@ -12,12 +12,22 @@ export function isValidPhone(phone: string) {
   return /^\+?[0-9]{7,15}$/.test(phone);
 }
 
-export function mapsLink(lat: number, lng: number) {
-  return `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+/** OpenStreetMap link, used only when a GoTourGo link could not be created (no internet). */
+export function osmLink(lat: number, lng: number) {
+  return `https://www.openstreetmap.org/?mlat=${lat.toFixed(6)}&mlon=${lng.toFixed(6)}#map=17/${lat.toFixed(6)}/${lng.toFixed(6)}`;
 }
 
-export function sosMessage(name: string, lat: number | null, lng: number | null) {
-  const where = lat != null && lng != null ? `My location: ${mapsLink(lat, lng)}` : 'I could not get my exact location.';
+/**
+ * The SOS text sent over WhatsApp. `link` is the GoTourGo SOS link, which opens
+ * the in-app SOS screen (or a web page without the app) and follows the live
+ * location for 24 hours.
+ */
+export function sosMessage(name: string, link: string | null, lat: number | null, lng: number | null) {
+  const where = link
+    ? `See where I am (live for 24 hours): ${link}`
+    : lat != null && lng != null
+      ? `My location: ${lat.toFixed(5)}, ${lng.toFixed(5)} ${osmLink(lat, lng)}`
+      : 'I could not get my exact location.';
   return `SOS from ${name} via GoTourGo. I may need help. ${where} (Sent ${new Date().toLocaleString()})`;
 }
 

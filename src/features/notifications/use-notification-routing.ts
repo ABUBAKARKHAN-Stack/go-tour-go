@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import type { Landmark } from '@/features/destinations/api';
 import { ACTION_NAVIGATE } from '@/features/notifications/local-notifications';
 import { navigateTo } from '@/features/routing/navigate';
+import { isShareToken } from '@/features/safety/share-links';
 import { storage, StorageKeys } from '@/lib/storage';
 
 /** Routes notification taps (and action buttons) to the right screen. */
@@ -37,7 +38,8 @@ function handleResponse(response: Notifications.NotificationResponse) {
       router.push('/friends');
       return;
     case 'sos':
-      router.push('/notifications');
+      if (isShareToken(data.token)) router.push({ pathname: '/sos', params: { t: data.token } });
+      else router.push('/notifications');
       return;
     case 'sharing':
       router.push('/safety');

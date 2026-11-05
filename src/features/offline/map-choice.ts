@@ -6,19 +6,23 @@ const SEGMENT_M = 25_000;
 const PAD_DEG = 0.012;
 
 /**
- * Picks the style for the app's maps: the downloaded maps when the phone is
- * offline (or the traveller prefers them, to save data) and they cover where
- * they are, otherwise the online style. The online style still shows
- * MapLibre's cached tiles and saved route packs when there's no signal.
+ * Picks the style for the app's maps.
+ * - Offline: always the downloaded maps when there are any, wherever the
+ *   traveller is or looks (areas not downloaded show the overview, which is
+ *   fetched with every city pack).
+ * - Online with "use downloaded maps" on: the downloads when they cover the
+ *   traveller, otherwise the online style.
+ * - Otherwise the online style (which also shows MapLibre's cached tiles and
+ *   saved route packs).
  */
 export function chooseMapStyle(installed: OfflineMapId[], opts: { online: boolean; prefer: boolean; focus: { latitude: number; longitude: number } | null; glyphsReady: boolean }) {
   if (installed.length === 0 || (opts.online && !opts.prefer)) return null;
   // All of Pakistan contains every other file.
   const ids: OfflineMapId[] = installed.includes('pakistan') ? ['pakistan'] : OFFLINE_MAPS.map((m) => m.id).filter((id) => installed.includes(id));
+  if (!opts.online) return ids;
   const covered =
     ids.includes('pakistan') || ids.includes('overview') || !opts.focus || ids.some((id) => boundsContain(offlineMap(id).bounds, opts.focus!));
-  if (!covered) return null;
-  return ids;
+  return covered ? ids : null;
 }
 
 /** Splits the route into ~25 km pieces and returns a padded box for each. */

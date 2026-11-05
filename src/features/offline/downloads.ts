@@ -335,6 +335,12 @@ export const offlineDownloads = {
     const manifest = state.manifest ?? (await refreshManifest());
     const total = manifest?.files[offlineMap(id).file]?.bytes ?? state.items[id].total;
     update(id, { status: 'queued', total, allowMobile: opts.allowMobile, error: null, bytes: sizeOf(partFile(id)) });
+    // City packs bring the small overview along, so the rest of the country is
+    // not blank on the offline map.
+    const overview = state.items.overview;
+    if (offlineMap(id).kind === 'region' && !overview.installed && overview.status === 'idle' && !state.items.pakistan.installed) {
+      update('overview', { status: 'queued', total: manifest?.files[offlineMap('overview').file]?.bytes ?? overview.total, allowMobile: true, error: null });
+    }
     void pump();
   },
 

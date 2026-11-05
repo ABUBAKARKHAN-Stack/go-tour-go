@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0F4C4A" />
+    <title>GoTourGo</title>
+    <link rel="icon" href="/assets/favicon.png" />
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <img src="/assets/logo.svg" alt="" width="28" height="38" />
+      <span class="brand">GoTourGo</span>
+    </header>
+    <main>
+      <h1>Your travel companion for Pakistan</h1>
+      <p class="muted">
+        Landmarks that speak up as you travel, journeys with turn-by-turn directions, offline maps of all of Pakistan,
+        and safety tools for you and the people you travel with.
+      </p>
+      <a class="btn" id="install" href="#" hidden>Get the GoTourGo app</a>
+    </main>
+    <script src="/config.js"></script>
+    <script>
+      var url = (window.GOTOURGO || {}).installUrl;
+      if (url) {
+        var a = document.getElementById('install');
+        a.href = url;
+        a.hidden = false;
+      }
+    </script>
+  </body>
+</html>

@@ -27,11 +27,16 @@ describe('chooseMapStyle', () => {
     expect(chooseMapStyle(['karachi'], opts({ online: true }))).toBeNull();
     expect(chooseMapStyle(['karachi'], opts({ online: true, prefer: true }))).toEqual(['karachi']);
   });
-  test('offline: uses downloads that cover the traveller', () => {
+  test('offline: always the downloads, wherever the traveller is', () => {
     expect(chooseMapStyle([], opts({}))).toBeNull();
     expect(chooseMapStyle(['karachi'], opts({}))).toEqual(['karachi']);
-    expect(chooseMapStyle(['karachi'], opts({ focus: LAHORE }))).toBeNull();
+    // Seen on a phone: Lahore downloaded, traveller in Karachi, map moved to Lahore offline.
+    expect(chooseMapStyle(['lahore'], opts({ focus: KARACHI }))).toEqual(['lahore']);
     expect(chooseMapStyle(['overview', 'karachi'], opts({ focus: LAHORE }))).toEqual(['overview', 'karachi']);
+  });
+  test('online + prefer downloads: only where they cover the traveller', () => {
+    expect(chooseMapStyle(['lahore'], opts({ online: true, prefer: true, focus: KARACHI }))).toBeNull();
+    expect(chooseMapStyle(['lahore'], opts({ online: true, prefer: true, focus: LAHORE }))).toEqual(['lahore']);
   });
   test('all of Pakistan replaces the other files', () => {
     expect(chooseMapStyle(['karachi', 'pakistan', 'overview'], opts({ focus: LAHORE }))).toEqual(['pakistan']);
