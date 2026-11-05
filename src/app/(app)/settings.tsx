@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, FlaskConical, Play, RotateCcw, Square, X } from 'lucide-react-native';
+import { Bell, Database, FlaskConical, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, FlatList, Linking, Modal, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton, IconButton } from '@/components/app-button';
 import { Card, Chip, Segmented, ToggleRow } from '@/components/form';
 import { Screen } from '@/components/screen';
+import { syncLocalData, useDataSync } from '@/features/data/sync';
 import { useDestinations } from '@/features/destinations/api';
 import { requestBackgroundPermission } from '@/features/location/location-provider';
 import { locationStore, useLocationState } from '@/features/location/location-store';
@@ -23,6 +24,7 @@ export default function SettingsScreen() {
   const location = useLocationState();
   const sim = useSimulator();
   const destinations = useDestinations();
+  const dataSync = useDataSync();
   const insets = useSafeAreaInsets();
   const [picking, setPicking] = useState(false);
 
@@ -122,6 +124,33 @@ export default function SettingsScreen() {
             { value: 'driving', label: 'Driving' },
             { value: 'walking', label: 'Walking' },
           ]}
+        />
+      </Card>
+
+      <Card className="gap-3">
+        <View className="flex-row items-center gap-2">
+          <Database color={colors.primary} size={18} />
+          <Text className="flex-1 text-base font-semibold text-foreground">Offline data</Text>
+        </View>
+        <Text className="text-xs text-muted-foreground">
+          {dataSync.counts.destinations.toLocaleString()} landmarks and {dataSync.counts.places.toLocaleString()} places are saved on this
+          phone for offline search, the map and landmark alerts.
+          {dataSync.lastSyncAt ? ` Checked ${new Date(dataSync.lastSyncAt).toLocaleString()}.` : ''}
+        </Text>
+        {dataSync.status === 'syncing' ? (
+          <Text className="text-sm text-foreground">
+            Updating {dataSync.dataset === 'places' ? 'places' : 'landmarks'}: {dataSync.loaded.toLocaleString()}
+            {dataSync.total ? ` of ${dataSync.total.toLocaleString()}` : ''}
+          </Text>
+        ) : dataSync.status === 'error' ? (
+          <Text className="text-sm text-destructive">Last update failed: {dataSync.error}</Text>
+        ) : null}
+        <AppButton
+          label="Update now"
+          icon={RefreshCw}
+          variant="secondary"
+          loading={dataSync.status === 'syncing'}
+          onPress={() => syncLocalData({ force: true })}
         />
       </Card>
 

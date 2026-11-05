@@ -8,13 +8,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
 import { DestinationImage } from '@/components/destination-image';
-import { useDestinations } from '@/features/destinations/api';
+import { useDestinationDetail, useDestinations } from '@/features/destinations/api';
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { proximityCard, useProximityCard } from '@/features/proximity/proximity-store';
 import { navigateTo } from '@/features/routing/navigate';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
-import type { Destination } from '@/lib/types';
+import type { DestinationSummary } from '@/lib/types';
 
 /**
  * Contextual landmark card shown over any screen when the user enters a
@@ -32,7 +32,7 @@ export function ProximityCardOverlay() {
     const byId = new Map((data ?? []).map((d) => [d.id, d]));
     return card.hits
       .map((h) => ({ hit: h, destination: byId.get(h.id) }))
-      .filter((x): x is { hit: typeof x.hit; destination: Destination } => Boolean(x.destination));
+      .filter((x): x is { hit: typeof x.hit; destination: DestinationSummary } => Boolean(x.destination));
   }, [card.hits, data]);
 
   if (!card.visible || items.length === 0) return null;
@@ -77,13 +77,15 @@ function LandmarkCard({
   distance,
   others,
 }: {
-  destination: Destination;
+  destination: DestinationSummary;
   distance: number;
   width: number;
-  others: { destination: Destination }[];
+  others: { destination: DestinationSummary }[];
 }) {
   const meta = DESTINATION_CATEGORIES[d.category];
   const { data } = useDestinations();
+  // "Why it matters" comes from the full record (cached once viewed or fetched online).
+  const significance = useDestinationDetail(d.id).destination?.significance;
   const nearbyAttractions = useMemo(
     () =>
       (data ?? [])
@@ -105,7 +107,7 @@ function LandmarkCard({
   };
 
   return (
-    <View className="overflow-hidden rounded-3xl border border-accent/40 bg-card shadow-lg">
+    <View className="overflow-hidden rounded-3xl border border-border bg-card shadow-lg">
       <View className="flex-row">
         <DestinationImage uri={d.image_url} category={d.category} className="h-28 w-28" recyclingKey={d.id} />
         <View className="flex-1 gap-1 p-3">
@@ -136,10 +138,10 @@ function LandmarkCard({
         </View>
       </View>
       <View className="gap-3 px-3 pb-3">
-        {d.significance ? (
+        {significance ? (
           <Text numberOfLines={2} className="text-xs text-muted-foreground">
             <Text className="font-semibold text-foreground">Why it matters: </Text>
-            {d.significance}
+            {significance}
           </Text>
         ) : null}
         {nearbyAttractions.length ? (

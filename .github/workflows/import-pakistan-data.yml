@@ -1,0 +1,93 @@
+name: Import Pakistan places and landmarks
+
+# Run from the Actions tab ("Run workflow"). Reads the OpenStreetMap extract of
+# Pakistan, picks places and famous landmarks, adds Wikipedia/Wikidata details
+# and Commons photos, then loads everything into Supabase. Curated destinations
+# are never overwritten; phones pick up the new data on their next sync.
+#
+# Needs the repository secret SUPABASE_DB_URL: the Supabase "Session pooler"
+# connection string (Settings > Secrets and variables > Actions).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: import-pakistan-data
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the database secret
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Add the SUPABASE_DB_URL repository secret first (see README, 'Pakistan places and landmarks')."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Shares the OpenStreetMap download with the offline map build.
+      - name: Week number
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: map-build/data/sources
+          key: map-sources-${{ steps.week.outputs.week }}
+          restore-keys: map-sources-
+
+      - name: Download the Pakistan extract
+        run: |
+          mkdir -p map-build/data/sources
+          PBF=map-build/data/sources/pakistan.osm.pbf
+          if [ ! -s "$PBF" ]; then
+            curl -fL --retry 8 --retry-delay 20 --retry-all-errors --connect-timeout 60 \
+              -o "$PBF.part" https://download.geofabrik.de/asia/pakistan-latest.osm.pbf
+            mv "$PBF.part" "$PBF"
+          fi
+          ls -lh "$PBF"
+
+      - name: Install tools
+        run: |
+          pip install --quiet osmium shapely requests
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null
+
+      - name: Run tests
+        run: python -m unittest discover scripts/tests
+
+      - name: Extract and enrich
+        run: python scripts/import_pakistan_data.py map-build/data/sources/pakistan.osm.pbf import-out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pakistan-data-csv
+          path: import-out/*.csv
+          retention-days: 14
+
+      - name: Load into Supabase
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
+            -c "truncate private.stage_places, private.stage_landmarks" \
+            -c "\copy private.stage_places from 'import-out/places.csv' with (format csv, header true)" \
+            -c "\copy private.stage_landmarks from 'import-out/landmarks.csv' with (format csv, header true)" \
+            -c "select private.import_osm_dataset() as result" | tee import-result.txt
+          {
+            echo "### Pakistan data imported"
+            echo '```'
+            cat import-result.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
