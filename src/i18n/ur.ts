@@ -973,4 +973,14 @@ export const ur: Record<string, string> = {
   "Taken": "پہلے سے لیا گیا",
   "That username is taken. Try another.": "یہ یوزرنیم پہلے سے لیا جا چکا ہے۔ کوئی اور آزمائیں۔",
   "Use at least 8 characters with letters and numbers.": "کم از کم 8 حروف، جن میں حروف اور اعداد دونوں ہوں، استعمال کریں۔",
+  // Home and destination details (Figma pass)
+  "Best time to visit": "آنے کا بہترین وقت",
+  "ENTRY": "داخلہ",
+  "HOURS": "اوقات",
+  "Overview": "جائزہ",
+  "Remove {0} from saved": "{0} کو محفوظ فہرست سے ہٹائیں",
+  "Save {0}": "{0} محفوظ کریں",
+  "Share": "شیئر کریں",
+  "Tips": "مشورے",
+  "{0} in {1}, on GoTourGo: {2}": "{1} میں {0}، GoTourGo پر: {2}",
 };

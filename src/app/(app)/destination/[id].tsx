@@ -11,14 +11,17 @@ import {
   MessageSquarePlus,
   Navigation,
   QrCode,
+  Share2,
   Sparkles,
   Square,
+  Star,
   Ticket,
   Volume2,
   X,
+  type LucideIcon,
 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Share, useWindowDimensions, View } from 'react-native';
 import { Text } from '@/components/text';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +30,7 @@ import { AppButton, IconButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
 import { DestinationCard } from '@/components/destination-card';
 import { DestinationImage } from '@/components/destination-image';
-import { Card, Chip, SectionHeader } from '@/components/form';
+import { Card, Chip, SectionHeader, Segmented } from '@/components/form';
 import { RatingStars } from '@/components/rating-stars';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { WeatherCard } from '@/components/weather-card';
@@ -46,9 +49,61 @@ import { errorMessage } from '@/lib/errors';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
-import { tx } from '@/lib/i18n';
+import { flipX, tx } from '@/lib/i18n';
 
 const SPEECH_LANG: Record<string, string> = { en: 'en-US', ur: 'ur-PK', ar: 'ar-SA', zh: 'zh-CN' };
+
+type Tab = 'overview' | 'history' | 'tips';
+
+/** White round button on the hero photo (Figma 05). */
+function HeroButton({ icon: Icon, label, onPress, active, flip }: { icon: LucideIcon; label: string; onPress: () => void; active?: boolean; flip?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={active != null ? { selected: active } : undefined}
+      hitSlop={6}
+      onPress={onPress}
+      className="h-11 w-11 items-center justify-center rounded-full bg-card"
+      style={{ boxShadow: '0 2px 8px rgba(28,26,23,0.15)' }}
+    >
+      <Icon color={active ? colors.accent : colors.foreground} size={20} style={flip ? flipX : undefined} />
+    </Pressable>
+  );
+}
+
+/** 56 pt square action next to Navigate (listen, add to trip). */
+function SquareButton({ icon: Icon, label, onPress, active, busy }: { icon: LucideIcon; label: string; onPress: () => void; active?: boolean; busy?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(active), busy: Boolean(busy) }}
+      onPress={onPress}
+      disabled={busy}
+      className={`h-14 w-14 items-center justify-center rounded-2xl border ${active ? 'border-primary bg-primary-soft' : 'border-border bg-card'}`}
+    >
+      {busy ? <ActivityIndicator color={colors.primary} /> : <Icon color={colors.primary} size={22} />}
+    </Pressable>
+  );
+}
+
+/** HOURS / ENTRY cards (Figma 05). */
+function InfoCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return (
+    <View className="flex-1 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3">
+      <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary-soft">
+        <Icon color={colors.primary} size={18} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-[10px] font-bold tracking-[1.2px] text-faint">{label}</Text>
+        <Text numberOfLines={2} className="text-xs font-semibold text-foreground">
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export default function DestinationDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -66,6 +121,10 @@ export default function DestinationDetails() {
   const location = useLastLocation();
   const [speaking, setSpeaking] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>('overview');
+  const { height: windowHeight } = useWindowDimensions();
+  // Figma: a 420 pt photo on a 915 pt screen.
+  const heroHeight = Math.round(Math.min(440, Math.max(260, windowHeight * 0.44)));
 
   useEffect(() => () => void Speech.stop(), []);
 
@@ -139,72 +198,129 @@ export default function DestinationDetails() {
     );
   };
 
-  const sections: { title: string; body: string | null }[] = [
-    { title: tx('About'), body: d.description },
-    { title: tx('History'), body: d.history },
-    { title: tx('Culture'), body: d.culture },
-    { title: tx('Why it matters'), body: d.significance },
-    { title: tx('Local customs'), body: d.local_customs },
-    { title: tx('Food & cuisine'), body: d.food },
-    { title: tx('Shopping & souvenirs'), body: d.shopping },
-    { title: tx('Travel tips'), body: d.tips },
-  ];
+  // Figma 05: content split into Overview / History / Tips (tabs without content are hidden).
+  const tabs = (
+    [
+      {
+        key: 'overview',
+        label: tx('Overview'),
+        sections: [
+          { title: null, body: d.description || d.short_description },
+          { title: tx('Culture'), body: d.culture },
+          { title: tx('Food & cuisine'), body: d.food },
+          { title: tx('Shopping & souvenirs'), body: d.shopping },
+        ],
+      },
+      {
+        key: 'history',
+        label: tx('History'),
+        sections: [
+          { title: null, body: d.history },
+          { title: tx('Why it matters'), body: d.significance },
+        ],
+      },
+      {
+        key: 'tips',
+        label: tx('Tips'),
+        sections: [
+          { title: null, body: d.tips },
+          { title: tx('Local customs'), body: d.local_customs },
+          { title: tx('Best time to visit'), body: d.best_time },
+        ],
+      },
+    ] as { key: Tab; label: string; sections: { title: string | null; body: string | null | undefined }[] }[]
+  ).filter((t) => t.sections.some((x) => x.body));
+  const activeTab = tabs.find((t) => t.key === tab) ?? tabs[0];
+
+  const share = () =>
+    Share.share({ message: tx('{0} in {1}, on GoTourGo: {2}', { 0: d.name, 1: d.city, 2: d.short_description }) }).catch(() => undefined);
 
   return (
     <View className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
         <View>
-          <DestinationImage uri={d.image_url} category={d.category} className="h-72 w-full" iconSize={72} recyclingKey={d.id} />
-          <View className="absolute left-0 right-0 flex-row justify-between px-4" style={{ top: insets.top + 8 }}>
-            <IconButton icon={ArrowLeft} flip label={tx('Go back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
-            <IconButton
-              icon={isSaved ? BookmarkCheck : Bookmark}
-              label={isSaved ? tx('Remove from saved') : tx('Save place')}
-              active={isSaved}
-              onPress={() => toggleSaved.mutate({ destinationId: d.id, save: !isSaved })}
-            />
+          <DestinationImage uri={d.image_url} category={d.category} className="w-full" iconSize={72} recyclingKey={d.id} style={{ height: heroHeight }} />
+          <View className="absolute left-0 right-0 flex-row items-center justify-between px-5" style={{ top: insets.top + 8 }}>
+            <HeroButton icon={ArrowLeft} flip label={tx('Go back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+            <View className="flex-row gap-2">
+              <HeroButton icon={Share2} label={tx('Share')} onPress={share} />
+              <HeroButton
+                icon={isSaved ? BookmarkCheck : Bookmark}
+                label={isSaved ? tx('Remove from saved') : tx('Save place')}
+                active={isSaved}
+                onPress={() => toggleSaved.mutate({ destinationId: d.id, save: !isSaved })}
+              />
+            </View>
           </View>
         </View>
 
-        <View className="-mt-6 gap-4 rounded-t-3xl bg-background px-4 pt-5">
-          <View className="gap-1">
-            <Text className="text-xs font-bold uppercase tracking-widest" style={{ color: meta.color }}>
-              {meta.label}
+        <View className="-mt-10 gap-4 rounded-t-[28px] bg-background px-6 pt-6">
+          <View className="gap-1.5">
+            <Text className="text-[11px] font-bold uppercase tracking-[1.6px] text-accent">
+              {meta.label} · {d.city}
             </Text>
-            <Text className="text-3xl font-extrabold text-foreground">{d.name}</Text>
+            <Text className="font-display text-[32px] leading-[38px] text-foreground">{d.name}</Text>
             <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
-              <View className="flex-row items-center gap-1">
-                <MapPin color={colors.primary} size={14} />
-                <Text className="text-sm text-muted-foreground">
-                  {d.city}, {d.region}
-                </Text>
-              </View>
-              {distance != null ? <Text className="text-sm font-semibold text-primary">{tx('{0} away', { 0: formatDistance(distance) })}</Text> : null}
               {rating ? (
                 <View className="flex-row items-center gap-1">
-                  <RatingStars value={rating.average_rating} size={12} />
-                  <Text className="text-sm text-muted-foreground">
-                    {rating.average_rating.toFixed(1)} ({rating.review_count})
+                  <Star color={colors.rating} fill={colors.rating} size={14} />
+                  <Text className="text-xs font-semibold text-foreground">
+                    {rating.average_rating.toFixed(1)} <Text className="text-xs font-normal text-muted-foreground">({rating.review_count})</Text>
+                  </Text>
+                </View>
+              ) : null}
+              <View className="flex-row items-center gap-1">
+                <MapPin color={colors.mutedForeground} size={14} />
+                <Text className="text-xs text-muted-foreground">{distance != null ? tx('{0} away', { 0: formatDistance(distance) }) : `${d.city}, ${d.region}`}</Text>
+              </View>
+              {d.opening_hours ? (
+                <View className="flex-row items-center gap-1">
+                  <Clock color={colors.success} size={14} />
+                  <Text numberOfLines={1} className="max-w-48 text-xs text-success">
+                    {d.opening_hours}
                   </Text>
                 </View>
               ) : null}
             </View>
-            <Text className="pt-1 text-base text-foreground">{d.short_description}</Text>
           </View>
 
           <View className="flex-row gap-2">
-            <AppButton label={tx('Navigate')} icon={Navigation} variant="accent" onPress={() => navigateTo(d)} className="flex-1" />
-            <AppButton
-              label={tripItem ? tx('In your trip') : tx('Add to trip')}
+            <AppButton label={tx('Navigate')} icon={Navigation} onPress={() => navigateTo(d)} className="flex-1" />
+            <SquareButton icon={speaking ? Square : Volume2} label={speaking ? tx('Stop audio') : tx('Audio guide')} active={speaking} onPress={toggleSpeech} />
+            <SquareButton
               icon={tripItem ? Check : CalendarPlus}
-              variant="secondary"
-              loading={tripActions.add.isPending}
+              label={tripItem ? tx('In your trip') : tx('Add to trip')}
+              active={Boolean(tripItem)}
+              busy={tripActions.add.isPending}
               onPress={addToTrip}
-              className="flex-1"
             />
           </View>
+
+          {tabs.length > 1 ? <Segmented value={activeTab.key} onChange={setTab} options={tabs.map((t) => ({ value: t.key, label: t.label }))} /> : null}
+          {activeTab ? (
+            <View className="gap-4">
+              {activeTab.sections
+                .filter((x) => x.body)
+                .map((x) => (
+                  <View key={x.title ?? activeTab.key} className="gap-1.5">
+                    {x.title ? <Text className="font-display text-xl text-foreground">{x.title}</Text> : null}
+                    <Text className="text-[15px] leading-6 text-muted-foreground">{x.body}</Text>
+                  </View>
+                ))}
+            </View>
+          ) : null}
+
+          {d.opening_hours || d.entry_fee ? (
+            <View className="flex-row gap-3">
+              {d.opening_hours ? <InfoCard icon={Clock} label={tx('HOURS')} value={d.opening_hours} /> : null}
+              {d.entry_fee ? <InfoCard icon={Ticket} label={tx('ENTRY')} value={d.entry_fee} /> : null}
+            </View>
+          ) : null}
+          {d.opening_hours || d.entry_fee ? (
+            <Text className="-mt-2 text-xs text-faint">{tx('Hours and fees can change; check locally before visiting.')}</Text>
+          ) : null}
+
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
-            <Chip label={speaking ? tx('Stop audio') : tx('Audio guide')} icon={speaking ? <Square size={14} color={colors.accentForeground} /> : <Volume2 size={14} color={colors.foreground} />} selected={speaking} onPress={toggleSpeech} />
             <Chip
               label={tx('Ask AI')}
               icon={<Sparkles size={14} color={colors.foreground} />}
@@ -213,34 +329,6 @@ export default function DestinationDetails() {
             <Chip label={tx('View on map')} icon={<MapPin size={14} color={colors.foreground} />} onPress={() => router.navigate({ pathname: '/explore', params: { focus: d.id } })} />
             <Chip label={tx('QR code')} icon={<QrCode size={14} color={colors.foreground} />} onPress={() => setQrOpen(true)} />
           </ScrollView>
-
-          {(d.opening_hours || d.entry_fee || d.best_time) && (
-            <Card className="gap-2">
-              {d.opening_hours ? (
-                <View className="flex-row gap-2">
-                  <Clock color={colors.primary} size={16} />
-                  <Text className="flex-1 text-sm text-foreground">{d.opening_hours}</Text>
-                </View>
-              ) : null}
-              {d.entry_fee ? (
-                <View className="flex-row gap-2">
-                  <Ticket color={colors.primary} size={16} />
-                  <Text className="flex-1 text-sm text-foreground">{d.entry_fee}</Text>
-                </View>
-              ) : null}
-              {d.best_time ? <Text className="text-sm text-muted-foreground">{tx('Best time to visit: {0}', { 0: d.best_time })}</Text> : null}
-              <Text className="text-xs text-muted-foreground">{tx('Hours and fees can change; check locally before visiting.')}</Text>
-            </Card>
-          )}
-
-          {sections
-            .filter((s) => s.body)
-            .map((s) => (
-              <View key={s.title} className="gap-1.5">
-                <Text className="font-display text-xl text-foreground">{s.title}</Text>
-                <Text className="text-base leading-6 text-muted-foreground">{s.body}</Text>
-              </View>
-            ))}
 
           {d.machine_translated ? (
             <Text className="text-xs text-faint">{tx('Parts of this guide were translated into Urdu by AI and may contain mistakes.')}</Text>

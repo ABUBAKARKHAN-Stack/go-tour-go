@@ -56,8 +56,8 @@ const SHORTCUTS: { label: string; icon: LucideIcon; href: string }[] = [
 const WEEKDAYS = [tx('SUNDAY'), tx('MONDAY'), tx('TUESDAY'), tx('WEDNESDAY'), tx('THURSDAY'), tx('FRIDAY'), tx('SATURDAY')];
 /** Within this distance the nearest landmark's city names "where you are". */
 const CITY_RADIUS_M = 40_000;
-/** The highlighted card shows the closest landmark within this distance. */
-const SPOTLIGHT_RADIUS_M = 5_000;
+/** Within this distance the highlighted card says "You're near" instead of "Closest landmark". */
+const NEAR_RADIUS_M = 5_000;
 
 function greeting() {
   const h = new Date().getHours();
@@ -86,7 +86,7 @@ export default function Home() {
   const insideId = proximity.inside[0]?.id;
   const spotlight =
     (insideId ? sorted.find((d) => d.id === insideId) : undefined) ??
-    (near[0]?.distance != null && near[0].distance <= SPOTLIGHT_RADIUS_M ? near[0] : undefined);
+    (near[0]?.distance != null && near[0].distance <= CITY_RADIUS_M ? near[0] : undefined);
   const city = near[0]?.distance != null && near[0].distance <= CITY_RADIUS_M ? near[0].city : null;
   const context = [WEEKDAYS[new Date().getDay()], weather.data ? `${Math.round(weather.data.temperature)}°` : null, city?.toUpperCase()]
     .filter(Boolean)
@@ -143,14 +143,14 @@ export default function Home() {
       {spotlight ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${insideId ? "You're near" : 'Closest landmark'}: ${spotlight.name}`}
+          accessibilityLabel={`${insideId || (spotlight.distance != null && spotlight.distance <= NEAR_RADIUS_M) ? tx("You're near") : tx('Closest landmark')}: ${spotlight.name}`}
           onPress={() => router.push({ pathname: '/destination/[id]', params: { id: spotlight.id } })}
           className="flex-row items-center gap-3 rounded-3xl bg-accent-soft p-3"
         >
           <DestinationImage uri={spotlight.image_url} category={spotlight.category} className="h-16 w-16 rounded-2xl" iconSize={24} recyclingKey={spotlight.id} />
           <View className="flex-1 gap-0.5">
             <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-accent">
-              {insideId ? tx('You\'re near') : tx('Closest landmark')}
+              {insideId || (spotlight.distance != null && spotlight.distance <= NEAR_RADIUS_M) ? tx('You\'re near') : tx('Closest landmark')}
               {spotlight.distance != null ? ` · ${formatDistance(spotlight.distance)}` : ''}
             </Text>
             <Text numberOfLines={1} className="text-base font-semibold text-foreground">
@@ -181,27 +181,6 @@ export default function Home() {
         ))}
       </ScrollView>
 
-      {urgent.length ? (
-        <View className="gap-2">
-          <SectionHeader title={tx('Travel alerts')} actionLabel={tx('See all')} onAction={() => router.push('/alerts')} />
-          {urgent.map((a) => (
-            <Pressable key={a.id} onPress={() => router.push('/alerts')} className="flex-row items-center gap-3 rounded-2xl bg-destructive-soft p-3">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-card">
-                <TriangleAlert color={severityColors[a.severity]} size={18} />
-              </View>
-              <View className="flex-1">
-                <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
-                  {a.title}
-                </Text>
-                <Text className="text-xs text-muted-foreground">
-                  {ALERT_LABELS[a.alert_type]} · {a.city ?? a.region}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-
       {isLoading && sorted.length === 0 ? (
         <LoadingState label={tx('Loading destinations...')} />
       ) : isError && sorted.length === 0 ? (
@@ -219,6 +198,27 @@ export default function Home() {
               {near[0]?.distance != null && near[0].distance > 50_000 ? (
                 <Text className="text-xs text-muted-foreground">{tx('The closest GoTourGo destination is {0} away.', { 0: formatDistance(near[0].distance) })}</Text>
               ) : null}
+            </View>
+          ) : null}
+
+          {urgent.length ? (
+            <View className="gap-2">
+              <SectionHeader title={tx('Travel alerts')} actionLabel={tx('See all')} onAction={() => router.push('/alerts')} />
+              {urgent.map((a) => (
+                <Pressable key={a.id} onPress={() => router.push('/alerts')} className="flex-row items-center gap-3 rounded-2xl bg-destructive-soft p-3">
+                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-card">
+                    <TriangleAlert color={severityColors[a.severity]} size={18} />
+                  </View>
+                  <View className="flex-1">
+                    <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
+                      {a.title}
+                    </Text>
+                    <Text className="text-xs text-muted-foreground">
+                      {ALERT_LABELS[a.alert_type]} · {a.city ?? a.region}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
             </View>
           ) : null}
 
