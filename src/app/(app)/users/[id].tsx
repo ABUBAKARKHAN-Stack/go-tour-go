@@ -50,7 +50,7 @@ export default function UserProfileScreen() {
   return (
     <Screen back title={tx('Traveler')}>
       {profile.isLoading ? (
-        <LoadingState />
+        <LoadingState variant="profile" />
       ) : profile.isError ? (
         <ErrorState error={profile.error} onRetry={profile.refetch} />
       ) : !profile.data ? (
@@ -125,7 +125,7 @@ export default function UserProfileScreen() {
 
           <Text className="text-lg font-bold text-foreground">{tx('Posts')}</Text>
           {feed.isLoading ? (
-            <LoadingState />
+            <LoadingState variant="feed" />
           ) : posts.length === 0 ? (
             <Text className="text-sm text-muted-foreground">{tx('No posts yet.')}</Text>
           ) : (

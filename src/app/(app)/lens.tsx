@@ -88,7 +88,7 @@ export default function LensScreen() {
         </>
       ) : null}
 
-      {loading ? <LoadingState label={tx('Looking closely...')} /> : null}
+      {loading ? <LoadingState variant="spinner" label={tx('Looking closely...')} /> : null}
       {error ? <InlineError message={error} /> : null}
 
       {result ? (

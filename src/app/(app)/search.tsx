@@ -296,7 +296,7 @@ export default function SearchScreen() {
           )}
         </ScrollView>
       ) : searching ? (
-        <LoadingState label={tx('Searching...')} />
+        <LoadingState variant="spinner" label={tx('Searching...')} />
       ) : sections.length === 0 ? (
         <EmptyState
           icon={SearchX}

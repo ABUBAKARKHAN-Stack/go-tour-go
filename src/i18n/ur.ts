@@ -502,6 +502,7 @@ export const ur: Record<string, string> = {
   "No posts yet": "ابھی کوئی پوسٹ نہیں",
   "No posts yet.": "ابھی کوئی پوسٹ نہیں۔",
   "Be the first to share a travel moment.": "سفر کا لمحہ شیئر کرنے والے پہلے فرد بنیں۔",
+  "Loading...": "لوڈ ہو رہا ہے...",
   "Loading posts...": "پوسٹس لوڈ ہو رہی ہیں...",
   "Create post": "پوسٹ بنائیں",
   "New post": "نئی پوسٹ",

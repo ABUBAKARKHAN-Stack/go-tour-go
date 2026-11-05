@@ -59,7 +59,7 @@ export default function SharedLocationScreen() {
     return (
       <View className="flex-1 bg-background">
         {header(tx('Shared location'))}
-        <LoadingState label={tx('Finding them…')} />
+        <LoadingState variant="spinner" label={tx('Finding them…')} />
       </View>
     );
   }

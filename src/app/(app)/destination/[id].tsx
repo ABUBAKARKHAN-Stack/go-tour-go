@@ -22,6 +22,7 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Share, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { Text } from '@/components/text';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +48,7 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { useTripActions, useTrips } from '@/features/trips/api';
 import { errorMessage } from '@/lib/errors';
 import { distanceMeters, formatDistance } from '@/lib/geo';
+import { EASE_OUT, usePressScale } from '@/lib/motion';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
 import { flipX, tx } from '@/lib/i18n';
@@ -55,36 +57,48 @@ const SPEECH_LANG: Record<string, string> = { en: 'en-US', ur: 'ur-PK', ar: 'ar-
 
 type Tab = 'overview' | 'history' | 'tips';
 
+const TAB_FADE = FadeIn.duration(180).easing(EASE_OUT).reduceMotion(ReduceMotion.Never);
+
 /** White round button on the hero photo (Figma 05). */
 function HeroButton({ icon: Icon, label, onPress, active, flip }: { icon: LucideIcon; label: string; onPress: () => void; active?: boolean; flip?: boolean }) {
+  const press = usePressScale(0.94);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={active != null ? { selected: active } : undefined}
-      hitSlop={6}
-      onPress={onPress}
-      className="h-11 w-11 items-center justify-center rounded-full bg-card"
-      style={{ boxShadow: '0 2px 8px rgba(28,26,23,0.15)' }}
-    >
-      <Icon color={active ? colors.accent : colors.foreground} size={20} style={flip ? flipX : undefined} />
-    </Pressable>
+    <Animated.View style={press.style}>
+      <Pressable
+        {...press.handlers}
+        pressRetentionOffset={16}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={active != null ? { selected: active } : undefined}
+        hitSlop={6}
+        onPress={onPress}
+        className="h-11 w-11 items-center justify-center rounded-full bg-card"
+        style={{ boxShadow: '0 2px 8px rgba(28,26,23,0.15)' }}
+      >
+        <Icon color={active ? colors.accent : colors.foreground} size={20} style={flip ? flipX : undefined} />
+      </Pressable>
+    </Animated.View>
   );
 }
 
 /** 56 pt square action next to Navigate (listen, add to trip). */
 function SquareButton({ icon: Icon, label, onPress, active, busy }: { icon: LucideIcon; label: string; onPress: () => void; active?: boolean; busy?: boolean }) {
+  const press = usePressScale(0.94);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: Boolean(active), busy: Boolean(busy) }}
-      onPress={onPress}
-      disabled={busy}
-      className={`h-14 w-14 items-center justify-center rounded-2xl border ${active ? 'border-primary bg-primary-soft' : 'border-border bg-card'}`}
-    >
-      {busy ? <ActivityIndicator color={colors.primary} /> : <Icon color={colors.primary} size={22} />}
-    </Pressable>
+    <Animated.View style={press.style}>
+      <Pressable
+        {...press.handlers}
+        pressRetentionOffset={16}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: Boolean(active), busy: Boolean(busy) }}
+        onPress={onPress}
+        disabled={busy}
+        className={`h-14 w-14 items-center justify-center rounded-2xl border ${active ? 'border-primary bg-primary-soft' : 'border-border bg-card'}`}
+      >
+        {busy ? <ActivityIndicator color={colors.primary} /> : <Icon color={colors.primary} size={22} />}
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -140,8 +154,8 @@ export default function DestinationDetails() {
 
   if (isLoading && !d) {
     return (
-      <View className="flex-1 justify-center bg-background">
-        <LoadingState label={tx('Loading destination...')} />
+      <View className="flex-1 bg-background">
+        <LoadingState variant="detail" label={tx('Loading destination...')} />
       </View>
     );
   }
@@ -298,7 +312,8 @@ export default function DestinationDetails() {
 
           {tabs.length > 1 ? <Segmented value={activeTab.key} onChange={setTab} options={tabs.map((t) => ({ value: t.key, label: t.label }))} /> : null}
           {activeTab ? (
-            <View className="gap-4">
+            // Switching Overview / History / Tips crossfades the text so the change reads as a change.
+            <Animated.View key={activeTab.key} entering={TAB_FADE} className="gap-4">
               {activeTab.sections
                 .filter((x) => x.body)
                 .map((x) => (
@@ -307,7 +322,7 @@ export default function DestinationDetails() {
                     <Text className="text-[15px] leading-6 text-muted-foreground">{x.body}</Text>
                   </View>
                 ))}
-            </View>
+            </Animated.View>
           ) : null}
 
           {d.opening_hours || d.entry_fee ? (
