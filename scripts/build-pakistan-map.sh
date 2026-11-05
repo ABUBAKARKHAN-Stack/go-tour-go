@@ -43,18 +43,27 @@ fetch "https://download.geofabrik.de/asia/pakistan-latest.osm.pbf" "$SRC/pakista
 
 # Ocean polygons: the official file lives on osmdata.openstreetmap.de, which
 # refuses connections from GitHub Actions runners. Try it briefly, then build an
-# equivalent file for Pakistan's coast from the coastline in the extract.
-WATER="$SRC/water-polygons-split-3857.zip"
-if [ ! -s "$WATER" ]; then
-  if ! curl -4 -fL --retry 1 --connect-timeout 20 --max-time 1800 -o "$WATER.part" \
-      "https://osmdata.openstreetmap.de/download/water-polygons-split-3857.zip"; then
-    rm -f "$WATER.part"
-    echo "osmdata.openstreetmap.de unreachable; building water polygons from the OSM coastline"
-    python3 -m venv .venv-water
-    .venv-water/bin/pip install --quiet osmium shapely pyshp numpy
-    .venv-water/bin/python "$SCRIPT_DIR/make-water-polygons.py" "$SRC/pakistan.osm.pbf" "$WATER.part"
+# equivalent lon/lat file for Pakistan's coast from the coastline in the
+# extract. The two files have different names so a cached one is never mistaken
+# for the other.
+python3 -m venv .venv-tools
+.venv-tools/bin/pip install --quiet osmium shapely pyshp pmtiles mapbox-vector-tile
+OFFICIAL_WATER="$SRC/water-polygons-split-3857.official.zip"
+COAST_WATER="$SRC/water-polygons-pakistan-4326.zip"
+if [ -s "$OFFICIAL_WATER" ]; then
+  WATER="$OFFICIAL_WATER"
+elif curl -4 -fL --retry 1 --connect-timeout 20 --max-time 1800 -o "$OFFICIAL_WATER.part" \
+    "https://osmdata.openstreetmap.de/download/water-polygons-split-3857.zip"; then
+  mv "$OFFICIAL_WATER.part" "$OFFICIAL_WATER"
+  WATER="$OFFICIAL_WATER"
+else
+  rm -f "$OFFICIAL_WATER.part"
+  echo "osmdata.openstreetmap.de unreachable; building water polygons from the OSM coastline"
+  if [ ! -s "$COAST_WATER" ]; then
+    .venv-tools/bin/python "$SCRIPT_DIR/make-water-polygons.py" "$SRC/pakistan.osm.pbf" "$COAST_WATER.part"
+    mv "$COAST_WATER.part" "$COAST_WATER"
   fi
-  mv "$WATER.part" "$WATER"
+  WATER="$COAST_WATER"
 fi
 fetch "https://naciscdn.org/naturalearth/packages/natural_earth_vector.sqlite.zip" "$SRC/natural_earth_vector.sqlite.zip"
 fetch "https://github.com/acalcutt/osm-lakelines/releases/download/v12/lake_centerline.shp.zip" "$SRC/lake_centerline.shp.zip"
@@ -64,7 +73,7 @@ java -jar planetiler.jar --version || true
 
 SOURCES=(
   --osm_path="$SRC/pakistan.osm.pbf"
-  --water_polygons_path="$SRC/water-polygons-split-3857.zip"
+  --water_polygons_path="$WATER"
   --natural_earth_path="$SRC/natural_earth_vector.sqlite.zip"
   --lake_centerlines_path="$SRC/lake_centerline.shp.zip"
 )
@@ -80,6 +89,10 @@ java -Xmx4g -jar planetiler.jar "${SOURCES[@]}" \
   --bounds=66.95,24.80,67.15,24.97 \
   --output="$OUT/karachi-test.pmtiles" --force \
   --maxzoom="$MAXZOOM" --render_maxzoom="$MAXZOOM"
+
+# Check the finished tiles (coast cities must be land, open water must be sea)
+# before anything is published.
+.venv-tools/bin/python "$SCRIPT_DIR/check-pakistan-map.py" "$OUT/pakistan.pmtiles" "$OUT/karachi-test.pmtiles"
 
 python3 - "$OUT" <<'PY'
 import hashlib, json, os, sys, datetime

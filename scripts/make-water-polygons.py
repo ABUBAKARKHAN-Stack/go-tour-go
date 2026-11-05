@@ -9,22 +9,23 @@ Pakistan from the natural=coastline ways already inside the Pakistan extract.
 How: the coastline lines are clipped to a box over Pakistan's sea, noded
 together with the box outline and polygonised. The faces touching the box's
 southern edge are open sea. Closed coastline rings (islands) are cut out.
-The result is written as an EPSG:3857 polygon shapefile, zipped in the same
-layout as the official file, so Planetiler reads it unchanged.
+The result is written as a polygon shapefile in plain longitude/latitude
+(EPSG:4326) with a matching .prj, zipped in the same layout as the official
+file. Planetiler reprojects any shapefile from its .prj, so lon/lat leaves
+nothing ambiguous. (An earlier version wrote spherical Web Mercator
+coordinates with a .prj that described ellipsoidal Mercator; Planetiler then
+placed the sea 12-15 km too far north, over Karachi.)
 
 Usage: python make-water-polygons.py <pakistan.osm.pbf> <output.zip>
 """
 
-import math
 import os
 import sys
 import tempfile
 import zipfile
 
-import numpy as np
 import osmium
 import shapefile
-import shapely
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.geometry.polygon import orient
 from shapely.ops import linemerge, polygonize, unary_union
@@ -37,10 +38,9 @@ SEA_BOX = (61.55, 21.5, 68.3, 26.2)  # min lon, min lat, max lon, max lat
 # boxes are tried in turn; the first that passes the land/sea checks is used.
 WEST_EDGES = (61.55, 61.7, 61.85)
 EAST_EDGES = (68.3, 68.15, 68.0, 67.85)
-EARTH_RADIUS = 6378137.0
 # Inland points that must stay land. If the coastline has a gap, the whole box
 # would become one "sea" face; these catch that instead of flooding the map.
-LAND_CHECKS = [(65.0, 26.0), (63.0, 25.9), (67.1, 25.6), (66.0, 25.9)]
+LAND_CHECKS = [(65.0, 26.0), (63.0, 25.9), (67.1, 25.6), (66.0, 25.9), (67.03, 24.86), (67.09, 24.92), (62.33, 25.23)]
 # Points well out at sea that must be water.
 SEA_CHECKS = [(64.0, 22.5), (66.5, 23.0)]
 
@@ -59,12 +59,6 @@ class CoastlineHandler(osmium.SimpleHandler):
             return
         if len(coords) >= 2:
             self.lines.append(LineString(coords))
-
-
-def to_mercator(coords):
-    lon = np.radians(coords[:, 0])
-    lat = np.radians(coords[:, 1])
-    return np.column_stack([lon * EARTH_RADIUS, np.log(np.tan(math.pi / 4 + lat / 2)) * EARTH_RADIUS])
 
 
 def build_water(lines, sea_box=SEA_BOX):
@@ -99,9 +93,15 @@ def build_water(lines, sea_box=SEA_BOX):
     return water
 
 
+WGS84_PRJ = (
+    'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],'
+    'PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]'
+)
+
+
 def write_zip(water, out_zip):
-    water_3857 = shapely.transform(water, to_mercator)
-    polygons = list(getattr(water_3857, "geoms", [water_3857]))
+    """Writes the polygons as a lon/lat (EPSG:4326) shapefile inside a zip."""
+    polygons = list(getattr(water, "geoms", [water]))
     with tempfile.TemporaryDirectory() as tmp:
         folder = os.path.join(tmp, "water-polygons-split-3857")
         os.makedirs(folder)
@@ -118,11 +118,7 @@ def write_zip(water, out_zip):
             w.record(0, 0)
         w.close()
         with open(base + ".prj", "w") as prj:
-            prj.write(
-                'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],'
-                'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],'
-                'PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1]]'
-            )
+            prj.write(WGS84_PRJ)
         with zipfile.ZipFile(out_zip, "w", zipfile.ZIP_DEFLATED) as z:
             for name in os.listdir(folder):
                 z.write(os.path.join(folder, name), f"water-polygons-split-3857/{name}")

@@ -39,7 +39,8 @@ jobs:
           df -h .
 
       # Source downloads (about 1.2 GB) are cached between runs, so a retry
-      # does not depend on the slow mirrors again. Refreshed weekly.
+      # does not depend on the slow mirrors again. Refreshed weekly. "v2" drops
+      # caches from before the water polygons were fixed.
       - name: Week number
         id: week
         run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
@@ -47,8 +48,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: map-build/data/sources
-          key: map-sources-${{ steps.week.outputs.week }}
-          restore-keys: map-sources-
+          key: map-sources-v2-${{ steps.week.outputs.week }}
+          restore-keys: map-sources-v2-
 
       - name: Build map files
         run: bash scripts/build-pakistan-map.sh
