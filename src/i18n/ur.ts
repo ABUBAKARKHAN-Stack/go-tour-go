@@ -916,4 +916,8 @@ export const ur: Record<string, string> = {
   "{0} · saved {1}": "{0} · محفوظ {1}",
   "{0} · {1}% downloaded. Open GoTourGo to continue.": "{0} · {1}% ڈاؤن لوڈ ہو گیا۔ جاری رکھنے کے لیے GoTourGo کھولیں۔",
   "{0}% · {1} of {2}": "{0}% · {2} میں سے {1}",
+  // Error log
+  "Last error · {0}": "آخری خرابی · {0}",
+  "No errors recorded on this phone.": "اس فون پر کوئی خرابی ریکارڈ نہیں ہوئی۔",
+  "Share details": "تفصیلات شیئر کریں",
 };

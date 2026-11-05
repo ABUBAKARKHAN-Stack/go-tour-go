@@ -5,9 +5,10 @@ import '@/features/journey/journey-task';
 
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
-import { SplashScreen, Stack } from 'expo-router';
+import { SplashScreen, Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaListener } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import { Uniwind } from 'uniwind';
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
 import { configureNotifications } from '@/features/notifications/local-notifications';
 import { SetupRequired } from '@/features/auth/setup-required';
+import { crashReport, installGlobalErrorHandler, recordError } from '@/lib/crash-log';
 import { isBackendConfigured } from '@/lib/env';
 import { fontAssets } from '@/lib/fonts';
 import { persistOptions, queryClient } from '@/lib/query-client';
@@ -24,6 +26,38 @@ import { colors } from '@/lib/theme';
 import '@/global.css';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+installGlobalErrorHandler();
+
+/**
+ * Shown instead of closing the app when a screen throws while rendering. The
+ * error is saved (Settings → Demo tools → Last error) and can be shared.
+ * Kept free of app providers and fonts, since those may be what failed.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const [at] = useState(() => Date.now());
+  useEffect(() => {
+    recordError(error, 'screen', true);
+    SplashScreen.hideAsync().catch(() => undefined);
+  }, [error]);
+  const report = crashReport({ message: error.message, stack: error.stack ?? null, at, fatal: true, where: 'screen' });
+  return (
+    <View style={{ flex: 1, backgroundColor: '#FBF8F3', padding: 24, paddingTop: 72, gap: 16 }}>
+      <Text style={{ fontSize: 26, fontWeight: '700', color: '#1C1A17' }}>Something went wrong</Text>
+      <Text style={{ fontSize: 15, color: '#6B6459' }}>GoTourGo hit an error. Please share the details below with the developer, then try again.</Text>
+      <ScrollView style={{ maxHeight: 260, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8E1D6' }} contentContainerStyle={{ padding: 12 }}>
+        <Text selectable style={{ fontSize: 12, color: '#1C1A17' }}>
+          {report}
+        </Text>
+      </ScrollView>
+      <Pressable accessibilityRole="button" onPress={() => Share.share({ message: report })} style={{ minHeight: 52, borderRadius: 999, backgroundColor: '#DCEBE8', alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F4C4A' }}>Share error details</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={retry} style={{ minHeight: 52, borderRadius: 999, backgroundColor: '#0F4C4A', alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFFFFF' }}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function RootLayout() {
   // A font that fails to load falls back to the system font rather than blocking the app.
