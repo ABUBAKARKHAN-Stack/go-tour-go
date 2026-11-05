@@ -65,8 +65,9 @@ jobs:
               --notes "Offline map files for GoTourGo. Map data (c) OpenStreetMap contributors, ODbL. Built with Planetiler." \
               --latest=false
           fi
-          gh release upload "$RELEASE_TAG" \
-            "$OUT_DIR/pakistan.pmtiles" "$OUT_DIR/karachi-test.pmtiles" "$OUT_DIR/manifest.json" --clobber
+          # The manifest goes last, so the app never sees sizes for files not yet uploaded.
+          gh release upload "$RELEASE_TAG" "$OUT_DIR"/*.pmtiles "$OUT_DIR"/*.pbf --clobber
+          gh release upload "$RELEASE_TAG" "$OUT_DIR/manifest.json" --clobber
 
       - name: Summary
         run: |
