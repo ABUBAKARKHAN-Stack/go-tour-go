@@ -55,6 +55,8 @@ export function Text(props: TextProps) {
   return <RNText className={className} style={[{ fontFamily: fontFamilyFor(className), fontWeight: 'normal' }, style]} {...rest} />;
 }
 
-export function TextInput({ className, style, ...rest }: TextInputProps) {
-  return <RNTextInput className={className} style={[{ fontFamily: fontFamilyFor(className), fontWeight: 'normal' }, style]} {...rest} />;
+export type TextInputRef = React.ComponentRef<typeof RNTextInput>;
+
+export function TextInput({ className, style, ref, ...rest }: TextInputProps & { ref?: React.Ref<TextInputRef> }) {
+  return <RNTextInput ref={ref} className={className} style={[{ fontFamily: fontFamilyFor(className), fontWeight: 'normal' }, style]} {...rest} />;
 }

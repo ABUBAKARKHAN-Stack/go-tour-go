@@ -84,4 +84,5 @@ export const StorageKeys = {
   sharingSession: 'gtg.sharing.session',
   recentSearches: 'gtg.search.recent',
   activeJourney: 'gtg.journey.active',
+  storiesSeen: 'gtg.stories.seen',
 } as const;
