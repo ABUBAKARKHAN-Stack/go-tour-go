@@ -18,7 +18,7 @@ after PR #29. Each requirement counts equally.
 | 3.2 | AI cultural guide: culture, clothing, traditions, etiquette | `assistant.tsx` "Culture & etiquette" guide | Done | 100 |
 | 3.3 | AI shopping and souvenirs guide | `assistant.tsx` "Shopping & souvenirs" guide | Done | 100 |
 | 3.4 | AI culinary guide: dishes, famous food places | `assistant.tsx` "Food guide" + Nearby restaurants | Done | 100 |
-| 4.1 | Multilingual text + audio guide; overcome language barriers | English/Urdu UI (RTL), audio guide (`expo-speech`), AI + Lens in en/ur/zh/ar | Urdu text for 345 of 836 landmarks only | 85 |
+| 4.1 | Multilingual text + audio guide; overcome language barriers | English/Urdu UI (RTL), audio guide (`expo-speech`), AI + Lens in en/ur/zh/ar | Urdu text for 332 of 545 landmarks only | 85 |
 | 4 | Visual search | `lens.tsx` (Gemini vision) | Done | 100 |
 | 5.1 | 24/7 AI chatbot, instant answers, any language | `assistant.tsx`, `supabase/functions/ai` | Done (daily per-user quota) | 100 |
 | 6.1 | Instagram-style profile, followers/following, public or private | `(tabs)/profile.tsx`, `users/[id].tsx`, `follows/[id].tsx`, `profile/edit.tsx` (Public / Private (friends only)) | Done; profile grid of posts is a list, not a photo grid | 95 |
@@ -32,15 +32,21 @@ after PR #29. Each requirement counts equally.
 
 ## Data (landmark content), 6 Nov 2026
 
+Counts are for **active** landmarks, the ones the app shows (`destinations.active`). The table also holds
+291 inactive low-quality OpenStreetMap rows that the app never shows (836 rows in total; earlier documents
+wrongly reported 836 as the landmark count).
+
 | Content | Count | Share |
 |---|---|---|
-| Landmarks | 836 in 253 cities/towns | — |
-| Full paragraph description (200+ chars) | 274 | 33% |
-| One-line description only ("Viewpoint in Multan") | 490 | 59% |
-| Full guide fields (history, significance, culture, food, shopping, tips) | 43 | 5% |
-| Photo | 310 | 37% |
-| Urdu text (`destination_translations`, locale `ur`) | 345 | 41% |
+| Landmarks shown in the app | 545 in 169 cities/towns (43 hand-written, 502 from OpenStreetMap) | — |
+| Full paragraph description (200+ chars) | 231 | 42% |
+| Short description only (under 80 chars, e.g. "Viewpoint in Multan") | 199 | 37% |
+| Full guide fields (history, significance, culture, food, shopping, tips) | 43 | 8% |
+| Photo | 310 | 57% |
+| Urdu text (`destination_translations`, locale `ur`) | 332 | 61% |
 | Offline search places | 37,111 | done |
+
+New landmarks can be added by hand with a CSV import: see [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md).
 
 ## Remaining work to reach 100% (in priority order)
 
