@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
-import { RotateCcw, Send, Sparkles } from 'lucide-react-native';
+import { Landmark, RotateCcw, Send, ShoppingBag, Sparkles, UtensilsCrossed, type LucideIcon } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, View } from 'react-native';
 import { Text, TextInput } from '@/components/text';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Markdown from 'react-native-markdown-display';
@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/screen';
 import { IconButton } from '@/components/app-button';
+import { Chip } from '@/components/form';
 import { InlineError } from '@/components/states';
 import { askAssistant, type ChatContext, type ChatTurn } from '@/features/ai/api';
 import { useDestinationsByDistance } from '@/features/destinations/api';
@@ -19,6 +20,35 @@ import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 type Msg = ChatTurn & { id: string };
+
+/**
+ * One-tap guides from the client brief (3.2 culture, 3.3 shopping and
+ * souvenirs, 3.4 food). Each asks the AI about the place in focus or the
+ * traveller's area; the answer comes in the chosen AI language.
+ */
+const GUIDES: { key: string; label: string; icon: LucideIcon; prompt: (area: string) => string }[] = [
+  {
+    key: 'culture',
+    label: tx('Culture & etiquette'),
+    icon: Landmark,
+    prompt: (area) =>
+      `Be my cultural guide for ${area}: local culture and traditions, traditional clothing, what to wear, etiquette and customs visitors should respect, and any local practices I should understand.`,
+  },
+  {
+    key: 'shopping',
+    label: tx('Shopping & souvenirs'),
+    icon: ShoppingBag,
+    prompt: (area) =>
+      `Be my shopping guide for ${area}: famous local products and specialities, traditional items and souvenirs worth buying, where to buy them, rough prices and how to bargain politely.`,
+  },
+  {
+    key: 'food',
+    label: tx('Food guide'),
+    icon: UtensilsCrossed,
+    prompt: (area) =>
+      `Be my food guide for ${area}: the famous foods and traditional dishes, what each one is, famous food streets and restaurants to try, and what this area is best known for.`,
+  },
+];
 
 const markdownStyles = {
   body: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
@@ -60,6 +90,8 @@ export default function AssistantScreen() {
         : undefined,
     };
   }, [prefs.aiLanguage, params.destination, location, nearest, sorted, qc]);
+
+  const area = focused ? `${focused.name}, ${focused.city}` : nearest?.city ?? context.locationLabel ?? 'Pakistan';
 
   const suggestions = useMemo(() => {
     const place = focused?.name ?? nearest?.name ?? 'Badshahi Mosque';
@@ -123,6 +155,25 @@ export default function AssistantScreen() {
                   {tx('Answers use your approximate location and GoTourGo destination data. AI can make mistakes; verify important details.')}
                 </Text>
               </View>
+              <View className="flex-row gap-2">
+                {GUIDES.map((g) => (
+                  <Pressable
+                    key={g.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={tx('{0} for {1}', { 0: g.label, 1: area })}
+                    onPress={() => send(g.prompt(area))}
+                    className="flex-1 items-center gap-2 rounded-2xl border border-border bg-card px-2 py-3 active:bg-muted"
+                  >
+                    <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
+                      <g.icon color={colors.primary} size={19} />
+                    </View>
+                    <Text numberOfLines={2} className="text-center text-xs font-semibold text-foreground">
+                      {g.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text className="text-center text-xs text-faint">{tx('Guides for {0}', { 0: area })}</Text>
               <View className="gap-2">
                 {suggestions.map((s) => (
                   <Pressable key={s} onPress={() => send(s)} className="min-h-11 justify-center rounded-2xl border border-border bg-card px-4 py-2">
@@ -155,6 +206,13 @@ export default function AssistantScreen() {
             </View>
           }
         />
+        {messages.length ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" className="max-h-12 grow-0" contentContainerClassName="gap-2 px-3 py-1.5">
+            {GUIDES.map((g) => (
+              <Chip key={g.key} label={g.label} icon={<g.icon size={14} color={colors.foreground} />} onPress={() => (loading ? undefined : send(g.prompt(area)))} />
+            ))}
+          </ScrollView>
+        ) : null}
         <View className="flex-row items-end gap-2 border-t border-border px-3 pt-2" style={{ paddingBottom: insets.bottom + 8 }}>
           <TextInput
             value={input}

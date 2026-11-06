@@ -30,6 +30,8 @@ export type TravelMapHandle = {
 
 type Props = {
   destinations: DestinationSummary[];
+  /** Places the traveller saved: drawn with a terracotta ring. */
+  savedIds?: ReadonlySet<string>;
   alerts: RoadAlert[];
   friends: FriendLocation[];
   route: Route | null;
@@ -79,10 +81,10 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
         type: 'Feature',
         id: d.id,
         geometry: { type: 'Point', coordinates: [d.longitude, d.latitude] },
-        properties: { id: d.id, name: d.name, category: d.category, selected: d.id === props.selectedId },
+        properties: { id: d.id, name: d.name, category: d.category, selected: d.id === props.selectedId, saved: props.savedIds?.has(d.id) ?? false },
       })),
     }),
-    [props.destinations, props.selectedId],
+    [props.destinations, props.selectedId, props.savedIds],
   );
 
   // Radius rings are computed once per destination list, not per render/fix.
@@ -216,8 +218,8 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
           paint={{
             'circle-radius': ['case', ['get', 'selected'], 11, 7] as never,
             'circle-color': categoryColorExpression as never,
-            'circle-stroke-color': ['case', ['get', 'selected'], colors.foreground, colors.background] as never,
-            'circle-stroke-width': ['case', ['get', 'selected'], 3, 2] as never,
+            'circle-stroke-color': ['case', ['get', 'selected'], colors.foreground, ['get', 'saved'], colors.accent, colors.background] as never,
+            'circle-stroke-width': ['case', ['get', 'selected'], 3, ['get', 'saved'], 3.5, 2] as never,
           }}
         />
         <Layer

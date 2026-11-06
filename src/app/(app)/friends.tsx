@@ -1,42 +1,19 @@
-import { router } from 'expo-router';
 import { Check, Search, UserPlus, Users, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { Text, TextInput } from '@/components/text';
 
 import { AppButton, IconButton } from '@/components/app-button';
-import { Avatar } from '@/components/avatar';
 import { Segmented } from '@/components/form';
+import { PersonRow } from '@/components/person-row';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
-import { displayName, useFriendships, useSocialActions, useUserSearch } from '@/features/social/api';
+import { useFriendships, useSocialActions, useUserSearch } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
-import type { ProfileSummary } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 
 type Tab = 'friends' | 'requests' | 'find';
-
-function PersonRow({ profile, right, subtitle }: { profile: ProfileSummary | null; right?: React.ReactNode; subtitle?: string }) {
-  if (!profile) return null;
-  return (
-    <Pressable
-      onPress={() => router.push({ pathname: '/users/[id]', params: { id: profile.id } })}
-      className="min-h-16 flex-row items-center gap-3 rounded-2xl bg-card p-3"
-    >
-      <Avatar profile={profile} size={44} />
-      <View className="flex-1">
-        <Text numberOfLines={1} className="text-base font-semibold text-foreground">
-          {displayName(profile)}
-        </Text>
-        <Text numberOfLines={1} className="text-xs text-muted-foreground">
-          {subtitle ?? `@${profile.username}`}
-        </Text>
-      </View>
-      {right}
-    </Pressable>
-  );
-}
 
 export default function FriendsScreen() {
   const [tab, setTab] = useState<Tab>('friends');

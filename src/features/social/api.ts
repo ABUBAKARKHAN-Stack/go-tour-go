@@ -100,6 +100,50 @@ export function useFollowCounts(id: string | undefined) {
   });
 }
 
+export type FollowListKind = 'followers' | 'following';
+
+/**
+ * People who follow `id` (followers) or whom `id` follows (following), newest
+ * first. Profiles the viewer may not see (friends-only) come back as null and
+ * are counted as hidden instead of listed.
+ */
+export function useFollowList(id: string | undefined, kind: FollowListKind) {
+  return useQuery({
+    queryKey: ['follow-list', id, kind],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const select =
+        kind === 'followers'
+          ? 'created_at, person:profiles!follows_follower_id_fkey(id, username, full_name, avatar_url)'
+          : 'created_at, person:profiles!follows_following_id_fkey(id, username, full_name, avatar_url)';
+      const { data, error } = await supabase
+        .from('follows')
+        .select(select)
+        .eq(kind === 'followers' ? 'following_id' : 'follower_id', id!)
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as { person: ProfileSummary | null }[];
+      const people = rows.map((r) => r.person).filter((p): p is ProfileSummary => Boolean(p));
+      return { people, hidden: rows.length - people.length };
+    },
+  });
+}
+
+/** Ids the signed-in traveller follows (for Follow / Following buttons in lists). */
+export function useMyFollowingIds() {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ['follow-list', userId, 'following-ids'],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('follows').select('following_id').eq('follower_id', userId!);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.following_id as string);
+    },
+  });
+}
+
 export function useSocialActions() {
   const qc = useQueryClient();
   const { userId } = useAuth();
@@ -134,7 +178,11 @@ export function useSocialActions() {
           : await supabase.from('follows').delete().eq('follower_id', userId!).eq('following_id', target);
         if (error) throw error;
       },
-      onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['follows', v.target] }),
+      onSuccess: (_d, v) => {
+        qc.invalidateQueries({ queryKey: ['follows', v.target] });
+        qc.invalidateQueries({ queryKey: ['follows', userId] });
+        qc.invalidateQueries({ queryKey: ['follow-list'] });
+      },
     }),
   };
 }

@@ -1,7 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Check, Lock, MapPin, MessageCircle, UserMinus, UserPlus } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
@@ -69,12 +69,24 @@ export default function UserProfileScreen() {
             ) : null}
             {profile.data.bio ? <Text className="text-center text-sm text-foreground">{profile.data.bio}</Text> : null}
             <View className="flex-row gap-6 pt-2">
-              <Text className="text-sm text-muted-foreground">
-                <Text className="font-bold text-foreground">{follows.data?.followers ?? 0}</Text>{' '}{tx('followers')}
-              </Text>
-              <Text className="text-sm text-muted-foreground">
-                <Text className="font-bold text-foreground">{follows.data?.following ?? 0}</Text>{' '}{tx('following')}
-              </Text>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => router.push({ pathname: '/follows/[id]', params: { id, tab: 'followers' } })}
+              >
+                <Text className="text-sm text-muted-foreground">
+                  <Text className="font-bold text-foreground">{follows.data?.followers ?? 0}</Text>{' '}{tx('followers')}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => router.push({ pathname: '/follows/[id]', params: { id, tab: 'following' } })}
+              >
+                <Text className="text-sm text-muted-foreground">
+                  <Text className="font-bold text-foreground">{follows.data?.following ?? 0}</Text>{' '}{tx('following')}
+                </Text>
+              </Pressable>
             </View>
           </View>
 
