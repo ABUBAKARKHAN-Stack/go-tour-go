@@ -7,6 +7,59 @@ Claude Code to the owner's next agent (Antigravity); everything needed to contin
 left) and [ui-figma-gaps.md](ui-figma-gaps.md). The non-technical walkthroughs for the client are
 separate documents shared with the owner.
 
+## 0. Status board (read this first)
+
+**Where things stand on 6 Nov 2026:** everything below is merged into `main` (PR #29 is the last). The
+working tree is clean, there are no open PRs, and `claude/great-gates-0mn6vd` equals `main`. Client brief
+coverage is about **95%** of features; landmark **content** is the main gap (about 33% detailed).
+
+### Applied (merged)
+
+| Area | What exists | PRs |
+|---|---|---|
+| Core MVP | Auth, onboarding, Home, Explore map, geofenced landmark alerts, details, search, trips, saved, AI guide, Lens, Scan, community, messaging, safety | #1–#3 |
+| Redesign + Figma | Theme, fonts, floating tab bar; auth, Home and details close to Figma | #4, #22–#24 |
+| Data | 836 landmarks, 37,111 places, offline search, Urdu guides | #7, #9–#11 |
+| Journey mode | Route preview, turn-by-turn with voice, landmarks/hazards on the way, re-routing | #8 |
+| Hazards | Traveller hazard reports, road alerts | #12 |
+| Forms | React Hook Form + Zod everywhere | #13 |
+| Brand | Logo set, icon, splash | #14, #18 |
+| Offline Pakistan | Map downloads (country, overview, 4 regions), offline style, saved routes | #5, #6, #15–#17 |
+| Safety | SOS + live links, web page, App Links | #18 |
+| Stability | Offline sign-in, error screen + Last error, JSON-safe cache | #19, #20 |
+| Motion | Tab pill, press feedback, skeletons, entrances | #25 |
+| Client brief gaps | Map card rating + travel time, saved places on map, followers lists, AI culture/shopping/food guides | #28 |
+| Cleanup | gluestack packages, template images and skill removed | #28 |
+| Community | Posts at a place, All / Following feed, double-tap like, comments (instant, reply, confirm delete), stories (progress, pause, seen rings, next author) | #29 |
+
+### Tested on the owner's phone (Pixel 3, Android 12)
+
+- Offline map engine, Karachi land fix, Lahore offline, offline sign-in, Home crash fix (PRs #17–#20).
+- APK `4df88d41` installs; the #28 OTA update (map card, saved filter, followers, AI guides): **all working**
+  (owner, 6 Nov).
+
+### Built but NOT yet tested on a device
+
+- **#29 community update** (posts at a place, Following feed, double-tap like, comments, stories): the owner
+  has not published/tested it yet. First job: ask the owner to run
+  `bunx eas-cli update --channel preview --message "Community"` and walk through section 16 step 1.
+- PR 6 details on the new APK: SOS WhatsApp link opening in the app (App Links), web page on desktop,
+  "I'm safe", live link.
+- Motion pass (#25) and auth redesign (#22) feel on the device (the owner said the app works; no detailed check).
+
+### Remaining work, in priority order
+
+1. Device test of #29 and PR 6 (above); fix what the owner reports.
+2. **Selected buddies for live sharing** (client 7.3): see CLIENT-REQUIREMENTS.md "Remaining work" 2.
+3. **Video posts** (client 6.2): native (`expo-video`), so it goes into the next APK build.
+4. **Landmark content**: history/significance/food/shopping/tips for the most visited landmarks, then Urdu
+   for the remaining 491.
+5. **Figma fidelity**: Explore screen first ([ui-figma-gaps.md](ui-figma-gaps.md)).
+6. **Next APK build (one native PR)**: add `expo-haptics` (+ `expo-video`), remove `expo-device` and
+   `expo-web-browser`. Owner builds from their own login.
+7. **Duplicate landmarks** (Attabad Lake ×3 and any others).
+8. **PR 7 guest mode**: plan in section 17. Not in the client brief, so last unless the owner asks.
+
 ## 1. What the project is
 
 GoTourGo is an Android travel companion for Pakistan and the owner's final-year project (FYP). It is a
@@ -82,7 +135,7 @@ differ from plan numbers.
 
 ## 4. Current status and phase
 
-**Phase:** device testing and bug fixing after plan PR 5, plus getting the PR 6 APK built.
+**Phase:** device testing of the new APK and OTA updates; closing the last client-brief gaps.
 
 | Plan PR | State |
 |---|---|
@@ -106,8 +159,7 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
 - UI does not yet fully match Figma: auth, Home and details are done; **Explore** (icon markers, two map
   buttons, "Around you" sheet), the no-photo placeholder and the rest are still open. See
   [ui-figma-gaps.md](ui-figma-gaps.md).
-- Not yet tested on a device: everything in PR 6 (SOS/live links, App Links, new icon), the motion pass (#25),
-  the auth redesign (#22) and Home/details (#23).
+- Not yet tested on a device: see section 0 ("Built but NOT yet tested").
 - Haptics are deferred: `expo-haptics` is a native module, so add it with the next APK build.
 - Unused **native** packages to remove with the next APK build: `expo-device`, `expo-web-browser`.
   Keep `expo-glass-effect` and `expo-symbols` (expo-router needs them) and `react-native-url-polyfill`
@@ -236,22 +288,67 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 | OTA publish + offline tests of PR 5 | Done (Lahore offline, Karachi land, offline sign-in passed) |
 | EAS Hosting deploy of the share site | Done: go-tour-go-development.expo.app (assetlinks confirmed) |
 | APK build for PR 6 | Done by the owner: build `4df88d41` (5 Nov) |
-| Publish an OTA update with #28 to that APK | Pending (owner: `bunx eas-cli update --channel preview`) |
-| Test the new APK (SOS links, App Links, icon, motion, #28 features) | Pending |
+| OTA update with #28 + tests | Done, all working (6 Nov) |
+| OTA update with #29 (community) + tests | **Pending** (owner: `bunx eas-cli update --channel preview`) |
+| Test PR 6 on the new APK (SOS links, App Links) | Pending |
 | Supabase anonymous sign-ins | **Not enabled**, on purpose, until PR 7 |
 
 ## 16. Next steps
 
-1. Owner publishes an OTA update of main to the new APK, installs/tests: new icon, splash and light theme;
-   SOS from Safety (the WhatsApp message carries `https://go-tour-go-development.expo.app/sos?t=…`,
+1. Owner publishes the #29 update and tests:
+   - a landmark page shows "Traveller posts"; "Post from here" opens New post with the place tagged, and
+     the post appears in that section and in "See all";
+   - Community: All travellers / Following switch; double-tap a photo likes it (heart burst);
+   - comments: appear instantly, Reply prefills @username, Delete asks first, counts stay right;
+   - stories: progress bar fills, hold pauses, seen authors turn grey and move last, the viewer continues
+     to the next person, own story is the first bubble with +.
+   Also PR 6: SOS from Safety (WhatsApp message carries `https://go-tour-go-development.expo.app/sos?t=…`,
    which opens the in-app SOS screen on the phone and the web page on a desktop); "I'm safe" ends it;
-   Share live link; offline Lahore with Airplane mode; motion (#25); Explore card rating/travel time,
-   "Saved" filter, followers lists, AI guides (#28). Add the passing checks to `docs/TESTING.md`.
-2. Client gaps, in the order of [CLIENT-REQUIREMENTS.md](CLIENT-REQUIREMENTS.md): selected buddies for
-   live sharing (migration + JS), video posts (native, next APK), content.
-3. Figma fidelity pass: Explore first, then the remaining gaps in `ui-figma-gaps.md`.
-4. Next APK build: add `expo-haptics`, `expo-video` (if video posts), remove `expo-device` and
-   `expo-web-browser`, in one native PR.
-5. Plan PR 7, guest mode (anonymous sign-ins; then the owner enables the Supabase setting). Not in the
-   client brief, so after the items above.
-6. Clean duplicate landmarks (Attabad Lake ×3 and any others), keeping the row with photo and Urdu text.
+   Share live link. Add the passing checks to `docs/TESTING.md`.
+2. Then section 0 "Remaining work" in order.
+
+## 17. PR 7: guest mode (plan, not started)
+
+**Status:** not started. Not in the client brief (it says users log in), so do it after the client gaps
+unless the owner asks. JavaScript + SQL only (OTA-safe); no native change.
+
+**Owner step (tell them first, do not do it for them):** Supabase dashboard → Authentication → Sign In /
+Providers → enable **Allow anonymous sign-ins**. It is **off on purpose** until this PR is ready. Turning it
+on early lets anyone create anonymous users that pass the current `to authenticated` policies.
+
+**What already exists**
+- `private.handle_new_user` already gives an anonymous user a profile (`traveler_<id>`), so sign-in works.
+- Hazard report policies already refuse anonymous users:
+  `coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false) = false`
+  (`supabase/migrations/20261105075033_hazard_reports.sql`). Reuse that check.
+
+**Plan**
+1. **Auth:** "Explore as guest" on onboarding and sign-in → `supabase.auth.signInAnonymously()`.
+   `AuthProvider` exposes `isGuest` from `session.user.is_anonymous`; the route guard lets guests into `(app)`.
+   Guests stay signed in offline like everyone else.
+2. **What guests can do:** Home, Explore, landmark alerts, search, details, nearby, weather, offline maps,
+   journey mode, AI guide (lower daily limit), Lens, Scan, saved places and trips (tied to their anonymous id),
+   SOS with WhatsApp to contacts.
+3. **What guests cannot do** (enforce in **RLS**, not only the UI): post, comment, like, story, review,
+   follow, friend, message, share live location / links, report hazards. Add a migration with
+   **restrictive** policies (`as restrictive for insert/update/delete`) on `community_posts`,
+   `post_comments`, `post_likes`, `stories`, `reviews`, `follows`, `friendships`, `messages`,
+   `conversations` and `location_shares` (share links live on `location_shares` and `sos_events`; check
+   the share-link RPCs too), using the `is_anonymous` check above. `hazard_reports` / `hazard_votes`
+   already refuse guests.
+   Verify with SQL as an anonymous JWT, then `get_advisors`.
+4. **Hide guests from people search:** filter profiles of anonymous users out of `useUserSearch` (add a
+   `is_guest` column filled by the trigger from `new.is_anonymous`, or a view). Guests never appear in
+   friends/follow lists because they cannot follow or befriend.
+5. **UI gate:** a `GuestGate` helper/sheet: tapping a blocked action shows "Create a free account to …"
+   with Create account / Sign in / Not now. Profile tab for guests: a guest card instead of stats.
+6. **Upgrade path:** "Create account" from guest converts the same user with
+   `supabase.auth.updateUser({ email, password, data: { username, full_name } })` so saved places and
+   trips are kept (email confirmation applies). Update the profile's username/full name after confirmation.
+   Signing in to an existing account from guest mode drops the guest data (warn first).
+7. **AI quota:** in `supabase/functions/ai`, read the `is_anonymous` claim and apply a smaller limit
+   (e.g. a new optional secret `AI_DAILY_LIMIT_GUEST`, default 10).
+8. **Housekeeping (optional):** anonymous users pile up; a scheduled SQL job (pg_cron) can delete those
+   older than 30 days with no activity. Ask the owner before enabling pg_cron.
+9. **Translations, tests, checks** as in section 7; the welcome/guest screens are not in Figma (designed in
+   code, see ui-figma-gaps.md).
