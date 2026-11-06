@@ -1,8 +1,11 @@
 # GoTourGo: agent and developer handoff
 
 Read this first if you are picking up the project, whether you are another AI agent or a developer.
-It describes the state on **5 Nov 2026** (latest main: PR #25). The non-technical client walkthrough is
-a separate document shared with the owner.
+It describes the state on **6 Nov 2026** (latest main: PR #28). The project is being handed from
+Claude Code to the owner's next agent (Antigravity); everything needed to continue is in this file,
+[CLIENT-REQUIREMENTS.md](CLIENT-REQUIREMENTS.md) (the client's brief mapped to the app, with what is
+left) and [ui-figma-gaps.md](ui-figma-gaps.md). The non-technical walkthroughs for the client are
+separate documents shared with the owner.
 
 ## 1. What the project is
 
@@ -12,7 +15,7 @@ working MVP, not a mock-up.
 | Part | Technology |
 |---|---|
 | App | Expo SDK 58, React Native 0.88, Expo Router (`src/app`), TypeScript, React Compiler |
-| Styling | Uniwind (Tailwind v4) with semantic tokens in `global.css`, partly gluestack-ui v5 |
+| Styling | Uniwind (Tailwind v4) with semantic tokens in `global.css`; own components in `src/components` |
 | Data | Supabase (Postgres + RLS, Auth, Storage, Realtime Broadcast), project id `bovepoelpxsstguclftl` |
 | Server code | One Supabase Edge Function, `ai`, which calls Gemini (chat + Visual Lens) and enforces a per-user daily quota |
 | Maps | MapLibre RN v11 with a self-built PMTiles map of Pakistan, published as a GitHub release; online fallback is OpenFreeMap |
@@ -73,6 +76,8 @@ differ from plan numbers.
 | #22 | Auth screens: Figma photo hero, auto username with live availability check, one shell |
 | #23, #24 | Home and destination details closer to Figma; record Figma progress |
 | #25 | Motion: tab pill, press feedback, skeleton loaders, entrances (JS only) |
+| #26, #27 | Docs: this handoff; `.gitignore` is part of the fingerprint |
+| #28 | Client brief gaps (map card rating + travel time, saved places on map, followers/following lists, AI culture/shopping/food guides) + removal of unused gluestack packages, template images and skill; `docs/CLIENT-REQUIREMENTS.md` |
 
 ## 4. Current status and phase
 
@@ -85,13 +90,14 @@ differ from plan numbers.
 | 3 Journey mode | Done |
 | 4 Exploring + hazards | Done |
 | 5 Offline maps | Done; tested on a Pixel 3 (Android 12): engine test, Karachi land fix, Lahore offline |
-| 6 SOS links + App Links + icon | Merged to main (#18). Site deployed. **APK build not done:** see below |
-| 7 Guest mode | Not started; Supabase "Allow anonymous sign-ins" must stay **off** until this PR |
+| 6 SOS links + App Links + icon | Merged (#18). Site deployed. **APK built** 5 Nov (build `4df88d41`, from #25); owner device test of SOS links / App Links pending |
+| 7 Guest mode | Not started; Supabase "Allow anonymous sign-ins" must stay **off** until this PR. Not in the client brief (it says users log in), so it ranks below the client gaps in CLIENT-REQUIREMENTS.md |
 
-**APK build blocker (5 Nov):** EAS build `fbb72c6e-2744-40c6-afb2-61c2de844b21` (commit 3af82a4) ERRORED
-in `EAS_BUILD_INTERNAL`. The token used by the Expo MCP connector has scopes `VIEW,RUN` and cannot READ the
-Android credentials (keystore). Retrying through MCP fails the same way. The owner must run
-`bunx eas-cli build -p android --profile preview` from their own login, on latest main.
+**APK build (5 Nov):** the build started through the Expo MCP connector (`fbb72c6e`) failed: that token
+has scopes `VIEW,RUN` and cannot read the Android keystore. The owner then built from their own login:
+build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime version
+`3fe76e5cf118d6dab2ca927c48939d3ffb301edf`. **Always start builds from the owner's login**
+(`bunx eas-cli build -p android --profile preview`), never through MCP.
 
 **Known issues / open items**
 
@@ -102,13 +108,19 @@ Android credentials (keystore). Retrying through MCP fails the same way. The own
 - Not yet tested on a device: everything in PR 6 (SOS/live links, App Links, new icon), the motion pass (#25),
   the auth redesign (#22) and Home/details (#23).
 - Haptics are deferred: `expo-haptics` is a native module, so add it with the next APK build.
+- Unused **native** packages to remove with the next APK build: `expo-device`, `expo-web-browser`.
+  Keep `expo-glass-effect` and `expo-symbols` (expo-router needs them) and `react-native-url-polyfill`
+  (side-effect import in `src/lib/supabase.ts`).
+- The UI is built from `src/components` only; gluestack-ui was removed in #28. Do not reintroduce it.
 
 ## 5. OTA and fingerprint rule
 
 - `runtimeVersion` uses the **fingerprint** policy. An EAS Update only reaches builds with the same fingerprint.
 - Check: `node node_modules/@expo/fingerprint/bin/cli.js fingerprint:generate --platform android` → `.hash`.
-- Main's Android fingerprint is `50642d95dbd0ddbe8d392f9d5ac17a55a6931fe7` (PR 6 native config). The APK
-  currently on the owner's phone is older, so **OTA updates from main reach only the new APK**, once it is built.
+- In this container main's Android fingerprint computes as `50642d95dbd0ddbe8d392f9d5ac17a55a6931fe7`, while
+  EAS recorded runtime `3fe76e5c…` for the same code (computed on the owner's machine). Hashes differ
+  between machines, so compare **before vs after on the same machine**: unchanged = OTA-safe. OTA updates
+  published by the owner reach APK `4df88d41` (and later builds with the same native config), not older APKs.
 - JS-only PRs must keep the fingerprint unchanged. Anything that changes it (new native module, app.json
   plugins/icons, Android config) must go into a PR that is merged together with an APK build. Say so in the PR.
 - PR #18 was handled this way (draft until the owner approved the build). Do the same for future native changes.
@@ -222,18 +234,23 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 |---|---|
 | OTA publish + offline tests of PR 5 | Done (Lahore offline, Karachi land, offline sign-in passed) |
 | EAS Hosting deploy of the share site | Done: go-tour-go-development.expo.app (assetlinks confirmed) |
-| APK build for PR 6 | **Pending:** failed via MCP (credentials permission); owner runs it from their login |
-| Test the new APK (SOS links, App Links, icon, motion) | Pending, after the build |
+| APK build for PR 6 | Done by the owner: build `4df88d41` (5 Nov) |
+| Publish an OTA update with #28 to that APK | Pending (owner: `bunx eas-cli update --channel preview`) |
+| Test the new APK (SOS links, App Links, icon, motion, #28 features) | Pending |
 | Supabase anonymous sign-ins | **Not enabled**, on purpose, until PR 7 |
 
 ## 16. Next steps
 
-1. Owner builds the APK from main, installs it over the old app, then tests: new icon, splash and light
-   theme; SOS from Safety (the WhatsApp message carries `https://go-tour-go-development.expo.app/sos?t=…`,
+1. Owner publishes an OTA update of main to the new APK, installs/tests: new icon, splash and light theme;
+   SOS from Safety (the WhatsApp message carries `https://go-tour-go-development.expo.app/sos?t=…`,
    which opens the in-app SOS screen on the phone and the web page on a desktop); "I'm safe" ends it;
-   Share live link; offline Lahore with Airplane mode; the motion checks from PR #25. Add these to
-   `docs/TESTING.md` once they pass.
-2. Figma fidelity pass: Explore first, then the remaining gaps in `ui-figma-gaps.md`.
-3. Add `expo-haptics` with the next native build (selection on segmented/tab, light impact on save/SOS).
-4. Plan PR 7: guest mode (anonymous sign-ins, then enable the setting with the owner).
-5. Clean duplicate landmarks (Attabad Lake ×3 and any others), keeping the row with photo and Urdu text.
+   Share live link; offline Lahore with Airplane mode; motion (#25); Explore card rating/travel time,
+   "Saved" filter, followers lists, AI guides (#28). Add the passing checks to `docs/TESTING.md`.
+2. Client gaps, in the order of [CLIENT-REQUIREMENTS.md](CLIENT-REQUIREMENTS.md): posts at a place
+   (JS), selected buddies for live sharing (migration + JS), video posts (native, next APK), content.
+3. Figma fidelity pass: Explore first, then the remaining gaps in `ui-figma-gaps.md`.
+4. Next APK build: add `expo-haptics`, `expo-video` (if video posts), remove `expo-device` and
+   `expo-web-browser`, in one native PR.
+5. Plan PR 7, guest mode (anonymous sign-ins; then the owner enables the Supabase setting). Not in the
+   client brief, so after the items above.
+6. Clean duplicate landmarks (Attabad Lake ×3 and any others), keeping the row with photo and Urdu text.

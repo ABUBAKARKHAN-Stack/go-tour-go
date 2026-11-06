@@ -5,7 +5,7 @@
 | Check | Command | Status |
 |---|---|---|
 | TypeScript | `bunx tsc --noEmit` (with generated typed routes) | Pass |
-| Lint | `bunx expo lint` | Pass (0 errors; 40 warnings, all in the vendored gluestack kit) |
+| Lint | `bunx expo lint` | Pass (0 errors, 0 warnings) |
 | Unit tests | `bun test` | Pass (22 tests): proximity engine, OSRM parsing, QR parsing, phone/WhatsApp helpers |
 | Android JS bundle | `bunx expo export --platform android` | Pass |
 | Native config | `bunx expo prebuild --platform android --no-install` | Pass (permissions, foreground service, plugins verified, then folder removed) |

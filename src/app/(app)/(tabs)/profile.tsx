@@ -83,18 +83,27 @@ export default function ProfileScreen() {
           {profile?.bio ? <Text className="text-center text-sm text-foreground">{profile.bio}</Text> : null}
           <View className="w-full flex-row justify-around pt-3">
             {[
-              { label: tx('Visited'), value: visited },
-              { label: tx('Saved'), value: saved.data?.length ?? 0 },
-              { label: tx('Friends'), value: friends.friends.length },
-              { label: tx('Followers'), value: follows.data?.followers ?? 0 },
+              { label: tx('Visited'), value: visited, onPress: () => router.navigate('/trips') },
+              { label: tx('Saved'), value: saved.data?.length ?? 0, onPress: () => router.push('/saved') },
+              { label: tx('Friends'), value: friends.friends.length, onPress: () => router.push('/friends') },
+              {
+                label: tx('Followers'),
+                value: follows.data?.followers ?? 0,
+                onPress: () => userId && router.push({ pathname: '/follows/[id]', params: { id: userId, tab: 'followers' } }),
+              },
+              {
+                label: tx('Following'),
+                value: follows.data?.following ?? 0,
+                onPress: () => userId && router.push({ pathname: '/follows/[id]', params: { id: userId, tab: 'following' } }),
+              },
             ].map((s) => (
-              <View key={s.label} className="items-center">
+              <Pressable key={s.label} accessibilityRole="button" accessibilityLabel={`${s.value} ${s.label}`} onPress={s.onPress} hitSlop={6} className="items-center rounded-xl px-1 active:bg-muted">
                 <Text className="text-lg font-bold text-foreground">{s.value}</Text>
                 <Text className="text-xs text-muted-foreground">{s.label}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
-          <Text className="pt-1 text-xs text-muted-foreground">{tx('Profile visibility: {0}', { 0: profile?.visibility === 'friends' ? tx('Friends only') : tx('Public') })}</Text>
+          <Text className="pt-1 text-xs text-muted-foreground">{tx('Profile visibility: {0}', { 0: profile?.visibility === 'friends' ? tx('Private (friends only)') : tx('Public') })}</Text>
         </Card>
       )}
 

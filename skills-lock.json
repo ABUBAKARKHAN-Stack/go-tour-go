@@ -151,12 +151,6 @@
       "skillPath": "plugins/expo/skills/expo-web-to-native/SKILL.md",
       "computedHash": "8764d1d81207ba12eb339db2a64c87b9c5ca289c6e257f43860150361f0a3798"
     },
-    "gluestack-ui-v5": {
-      "source": "gluestack/agent-skills",
-      "sourceType": "github",
-      "skillPath": ".agents/skills/gluestack-ui-v5/SKILL.md",
-      "computedHash": "b19717e992153a421da7423f0609a39c4864f947c7f50fca67cf5e5b7d4878e4"
-    },
     "vercel-react-native-skills": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",

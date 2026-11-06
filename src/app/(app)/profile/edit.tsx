@@ -84,7 +84,7 @@ function EditForm({ profile }: { profile: Profile }) {
               onChange={field.onChange}
               options={[
                 { value: 'public', label: tx('Everyone') },
-                { value: 'friends', label: tx('Friends only') },
+                { value: 'friends', label: tx('Private (friends only)') },
               ]}
             />
           )}

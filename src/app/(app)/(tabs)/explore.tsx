@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import {
+  Bookmark,
   CircleDashed,
   Crosshair,
   Download,
@@ -15,7 +16,6 @@ import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
-import { DestinationImage } from '@/components/destination-image';
 import { Chip } from '@/components/form';
 import { OfflineBanner } from '@/components/offline-banner';
 import { ErrorState } from '@/components/states';
@@ -29,9 +29,10 @@ import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/
 import { getCurrentFix, requestLocationPermission } from '@/features/location/location-provider';
 import { useLastLocation, useLocationState } from '@/features/location/location-store';
 import { LocationStatusCard } from '@/features/location/location-status-card';
+import { PlacePreview } from '@/features/map/place-preview';
 import { TravelMap, type TravelMapHandle } from '@/features/map/travel-map';
-import { navigateTo } from '@/features/routing/navigate';
 import { useJourney } from '@/features/journey/journey-store';
+import { useSavedIds } from '@/features/saved/api';
 import { useFriendLocations } from '@/features/safety/friend-locations';
 import { useSharingSession, isSessionLive } from '@/features/safety/sharing';
 import { useSimulator } from '@/features/proximity/simulator';
@@ -59,6 +60,9 @@ export default function ExploreScreen() {
   const journey = useJourney();
   const journeyActive = journey.phase === 'active';
 
+  const saved = useSavedIds();
+  const savedSet = useMemo(() => new Set(saved.data ?? []), [saved.data]);
+  const [savedOnly, setSavedOnly] = useState(false);
   const [category, setCategory] = useState<DestinationCategory | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
@@ -74,8 +78,8 @@ export default function ExploreScreen() {
   );
 
   const visible = useMemo(
-    () => (destinations.data ?? []).filter((d) => !category || d.category === category),
-    [destinations.data, category],
+    () => (destinations.data ?? []).filter((d) => (!category || d.category === category) && (!savedOnly || savedSet.has(d.id))),
+    [destinations.data, category, savedOnly, savedSet],
   );
   const selected = useMemo(() => destinations.data?.find((d) => d.id === selectedId) ?? null, [destinations.data, selectedId]);
 
@@ -120,6 +124,7 @@ export default function ExploreScreen() {
       <TravelMap
         ref={map}
         destinations={visible}
+        savedIds={savedSet}
         alerts={alerts.data ?? []}
         friends={showFriendMarkers ? friends.locations : []}
         route={journeyActive ? journey.route : null}
@@ -158,7 +163,15 @@ export default function ExploreScreen() {
           <IconButton icon={Download} label={tx('Offline maps')} onPress={() => router.push('/offline-maps')} />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-3">
-          <Chip label={tx('All')} selected={!category} onPress={() => setCategory(null)} />
+          <Chip label={tx('All')} selected={!category && !savedOnly} onPress={() => { setCategory(null); setSavedOnly(false); }} />
+          {userId ? (
+            <Chip
+              label={savedSet.size ? tx('Saved ({0})', { 0: savedSet.size }) : tx('Saved')}
+              icon={<Bookmark size={14} color={savedOnly ? colors.primaryForeground : colors.accent} fill={savedOnly ? colors.primaryForeground : colors.accent} />}
+              selected={savedOnly}
+              onPress={() => setSavedOnly((v) => !v)}
+            />
+          ) : null}
           {CATEGORY_ORDER.map((c) => (
             <Chip key={c} label={DESTINATION_CATEGORIES[c].label} selected={category === c} onPress={() => setCategory(category === c ? null : c)} />
           ))}
@@ -210,25 +223,7 @@ export default function ExploreScreen() {
             <AppButton label={tx('Resume')} size="sm" variant="secondary" onPress={() => router.push('/journey/navigate')} />
           </View>
         ) : selected ? (
-          <View className="flex-row gap-3 rounded-3xl border border-border bg-card p-3">
-            <DestinationImage uri={selected.image_url} category={selected.category} className="h-24 w-24 rounded-2xl" recyclingKey={selected.id} />
-            <View className="flex-1 gap-1">
-              <Text numberOfLines={1} className="text-base font-bold text-foreground">
-                {selected.name}
-              </Text>
-              <Text numberOfLines={1} className="text-xs text-muted-foreground">
-                {DESTINATION_CATEGORIES[selected.category].label} · {selected.city}
-                {location ? ` · ${formatDistance(distanceMeters(location, selected))}` : ''}
-              </Text>
-              <Text numberOfLines={2} className="text-xs text-foreground">
-                {selected.short_description}
-              </Text>
-              <View className="mt-1 flex-row gap-2">
-                <AppButton label={tx('Details')} size="sm" variant="secondary" onPress={() => router.push({ pathname: '/destination/[id]', params: { id: selected.id } })} className="flex-1" />
-                <AppButton label={tx('Directions')} size="sm" icon={Navigation} onPress={() => navigateTo(selected)} className="flex-1" />
-              </View>
-            </View>
-          </View>
+          <PlacePreview place={selected} location={location} saved={savedSet.has(selected.id)} />
         ) : null}
       </View>
       <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />
