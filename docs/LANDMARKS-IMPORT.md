@@ -1,93 +1,102 @@
-# Adding landmarks by hand (CSV import)
+# Adding and editing landmarks (bilingual CSV import)
 
-The client fills a spreadsheet; the owner imports it in the Supabase dashboard. New landmarks reach every
-phone automatically: each insert bumps the landmarks data version (trigger `destinations_bump_version`), and
-the app re-downloads its offline copy on the next start or pull-to-refresh. No app update is needed.
+The client fills **one sheet with English and Urdu side by side**; the owner imports it in the Supabase
+dashboard. Each row creates a landmark, or **updates** the landmark with the same `slug`. Changes reach every
+phone automatically (the landmarks data version goes up on every change and the app re-downloads its offline
+copy on the next start or pull-to-refresh). No app update is needed.
 
 Files in [landmarks-import/](landmarks-import/):
 
 | File | Use |
 |---|---|
-| `landmarks-template.csv` | Empty sheet with the right headers. Give this to the client. |
-| `landmarks-example.csv` | One filled row to copy from. **Do not import it**: that shrine is already in the app (`shrine-complex-of-shah-shams-sabzwari-w900538787`). |
-| `landmarks-urdu-template.csv` | Optional Urdu text, one row per landmark, matched by `slug`. |
-| `landmarks-urdu-example.csv` | One filled Urdu row. |
+| `landmarks-template.csv` | Empty sheet with the right headers for **new** landmarks. |
+| `landmarks-example.csv` | One filled row showing every column. It improves an existing landmark (same slug), so importing it **would overwrite** that shrine's text: use it as a model only. |
 
-Tip: open the template in Google Sheets (File → Import), let the client fill it, then File → Download →
-CSV. Keep the header row exactly as it is.
+To **edit existing landmarks**, start from an export of the current data (section 4), not the empty template.
 
-## 1. Columns (main file)
+Tip: open the CSV in Google Sheets (File → Import), fill it, then File → Download → CSV. Keep the header row
+exactly as it is; Google Sheets keeps Urdu text intact.
 
-| Column | Required | Rule |
-|---|---|---|
-| `slug` | yes | Unique short id: lowercase letters, digits and `-` only, 2–80 characters, e.g. `faisal-mosque`. Never reuse one. |
-| `name` | yes | Name in English. |
-| `category` | yes | Exactly one of: `historical`, `religious`, `attraction`, `viewpoint`, `cultural`, `museum`, `food`, `shopping`, `park`, `nature`. |
-| `city` | yes | Town or city, e.g. `Lahore`. |
-| `region` | yes | Province / area: `Punjab`, `Sindh`, `Khyber Pakhtunkhwa`, `Balochistan`, `Gilgit-Baltistan`, `Azad Kashmir`, `Islamabad`. |
-| `latitude`, `longitude` | yes | Decimal degrees. In Google Maps, right-click the exact spot and click the numbers at the top of the menu to copy them; the first is latitude (23.5–37.2 in Pakistan), the second longitude (60.8–77.9). Anything outside Pakistan is rejected. |
-| `radius_m` | yes | Alert circle in metres, 50–5000. A shrine or building in a city: 200–500. A fort, park or large mosque: 500–1000. A lake, valley or viewpoint area: 1500–3000. |
-| `short_description` | yes | One line shown on cards and in the landmark alert (about 60–120 characters). |
-| `description` | yes | A paragraph for the Overview tab. Two to five sentences. |
-| `history`, `significance` | recommended | History tab and "why it matters" in the landmark alert. These are what the client brief asks for most. |
-| `culture`, `local_customs` | optional | Culture and etiquette (dress, shoes, photography). |
-| `food`, `shopping` | optional | Local food and things to buy nearby (also feed the AI guide). |
-| `tips` | optional | Tips tab: best time of day, crowds, parking. |
-| `opening_hours`, `entry_fee`, `best_time` | optional | Free text, e.g. `9am–5pm, closed Mondays`, `Rs 50 locals / Rs 500 foreigners`, `October to March`. |
-| `image_url` | optional | A public photo link (see section 3). Without one the app shows a category illustration. |
-| `image_credit` | optional | Who took the photo, e.g. `Photo: Ali Khan`. |
-| `wikipedia_url` | optional | Shown as "Read more" on the landmark page. |
+## 1. The rule: both languages, always
 
-Leave optional cells empty rather than writing `-` or `N/A`. Do not add other columns; leave out `id`,
-`active`, `popularity`, `featured` and the timestamps (the database fills them in).
+| Columns | Rule |
+|---|---|
+| `name` + `name_ur`, `short_description` + `short_description_ur`, `description` + `description_ur` | **Required in both languages.** |
+| `history`, `significance`, `culture`, `local_customs`, `food`, `shopping`, `tips` (each with its `_ur` column) | **Both or neither.** If History is written in English, History in Urdu must be filled too (and the other way round), so a page never shows a section in only one language. |
+| `category`, `city`, `region`, `latitude`, `longitude`, `radius_m` | Required (no Urdu needed). |
+| `opening_hours`, `entry_fee`, `best_time`, `image_url`, `image_credit`, `wikipedia_url` | Optional; one value shown in both languages. |
 
-## 2. Importing (owner)
+A row that breaks the rule is refused with a message naming the slug and the column, for example
+*"Row faisal-mosque: history is filled in one language only. Fill both history and history_ur, or leave both
+empty."* Nothing from that row is saved.
 
-1. **Check for duplicates first.** Search the app, or run in Supabase → SQL editor (replace the name):
+## 2. Columns
+
+| Column | Rule |
+|---|---|
+| `slug` | Unique short id: lowercase letters, digits and `-`, 2–80 characters, e.g. `faisal-mosque`. A slug that already exists **updates** that landmark. |
+| `name`, `name_ur` | Name in English and in Urdu script. |
+| `category` | One of: `historical`, `religious`, `attraction`, `viewpoint`, `cultural`, `museum`, `food`, `shopping`, `park`, `nature`. |
+| `city` | Town or city, e.g. `Lahore`. |
+| `region` | `Punjab`, `Sindh`, `Khyber Pakhtunkhwa`, `Balochistan`, `Gilgit-Baltistan`, `Azad Kashmir`, `Islamabad Capital Territory`. |
+| `latitude`, `longitude` | Decimal degrees. In Google Maps right-click the exact spot and click the numbers at the top of the menu to copy them; the first is latitude (23.5–37.2), the second longitude (60.8–77.9). Swapped or mistyped numbers are refused. |
+| `radius_m` | Alert circle in metres, 50–5000. Shrine or building in a city: 200–500. Fort, park or large mosque: 500–1000. Lake, valley or viewpoint area: 1500–3000. |
+| `short_description` (+`_ur`) | One line for cards and the landmark alert (about 60–120 characters). |
+| `description` (+`_ur`) | A paragraph for the Overview tab, two to five sentences. |
+| `history`, `significance` (+`_ur`) | History tab and "why it matters" in the alert: what the client brief asks for most. |
+| `culture`, `local_customs` (+`_ur`) | Culture and etiquette (dress, shoes, photography). |
+| `food`, `shopping` (+`_ur`) | Local food and things to buy nearby (they also feed the AI guide). |
+| `tips` (+`_ur`) | Best time of day, crowds, parking. |
+| `opening_hours`, `entry_fee`, `best_time` | Free text, e.g. `9am–5pm, closed Mondays`, `Rs 50 locals / Rs 500 foreigners`. |
+| `image_url`, `image_credit` | Photo link and credit (section 5). |
+| `wikipedia_url` | Shown as "Read more". |
+
+Leave unused cells empty (not `-` or `N/A`). Do not add or rename columns.
+
+## 3. Importing (owner)
+
+1. **New landmark? Check it isn't already there:** Supabase → SQL editor:
    `select slug, name, city from destinations where name ilike '%shah shams%';`
-2. Supabase dashboard → **Table Editor** → `destinations` → **Insert** → **Import data from CSV** → choose the file.
-3. Check the preview: every column should map to a column of the same name. Then **Import data**.
-4. If a row breaks a rule, the import stops and shows the error. Common ones:
-   - `destinations_in_pakistan`: latitude/longitude swapped or mistyped;
-   - `destinations_slug_key` / duplicate key: that slug already exists;
-   - `slug` check: capital letters, spaces or other characters in the slug;
-   - `radius_m` check: radius outside 50–5000;
-   - invalid input value for enum `destination_category`: category spelled differently from the list.
-   Fix the row in the sheet and import again (rows already imported stay; remove them from the sheet first).
-5. Phones pick the new landmarks up the next time the app opens or the user pulls to refresh. Landmark
-   alerts start working for them straight away.
+   If it exists, edit that row instead (section 4) so you don't create a duplicate.
+2. Supabase dashboard → **Table Editor** → **`landmark_import`** → **Insert** → **Import data from CSV** → choose the file.
+3. Check the preview maps each column to the same name, then **Import data**.
+4. If a row is refused, the import stops and shows why (section 1 and the list below). Rows before it are
+   already saved. Fix the row in the sheet, delete the rows that went in from the file, and import again.
+   Re-importing a row that went in is harmless: the same slug just updates it again.
+   - *slug must be …*: capital letters, spaces or other characters in the slug;
+   - *… is not in Pakistan*: latitude and longitude swapped or mistyped;
+   - *radius_m must be …*: radius outside 50–5000;
+   - *category "…" is not one of …*: category spelled differently from the list.
+5. Each imported row in `landmark_import` gets `result` = `created` or `updated`, as a log.
 
-## 3. Photos
+Every landmark created or edited this way is **locked**: the automatic OpenStreetMap data refresh never
+changes or re-shows it again.
+
+## 4. Editing existing landmarks
+
+1. Supabase → SQL editor → run `select * from landmark_sheet;` → **Download CSV**. It has every shown
+   landmark in the import columns, English and Urdu side by side (plus `urdu_machine_translated`, which is
+   ignored on import).
+2. In the sheet, delete the rows you are not changing, then edit the rest. Urdu drafted by AI is marked
+   `urdu_machine_translated = true`; correcting it removes the "machine-translated" note in the app.
+3. Import the file into `landmark_import` as in section 3. Same slug = update.
+
+Quick single fixes can also be made directly in the Table Editor (`destinations` for English,
+`destination_translations` with `locale = ur` for Urdu). Editing a landmark there also locks it.
+
+**Hide** a landmark without deleting it: Table Editor → `destinations` → set `active` to `false` (it keeps
+its reviews and posts, and stays hidden through data refreshes). **Delete** only rows added by mistake:
+deleting also removes its reviews, posts and trip entries.
+
+## 5. Photos
 
 - **Best:** Supabase → **Storage** → bucket **`landmark-photos`** → Upload (JPEG, PNG or WebP, up to 5 MB;
-  landscape about 1600 px wide is ideal). Name the file after the slug, e.g. `faisal-mosque.jpg`. Click the
-  file → **Get URL** and paste it into `image_url`.
-- **Or:** a public link from Wikimedia Commons or the place's official site (it may break if they remove it).
-- Only use photos the client owns or that are free to use, and fill `image_credit`.
+  landscape about 1600 px wide). Name the file after the slug, e.g. `faisal-mosque.jpg`. Click the file →
+  **Get URL** and paste it into `image_url`.
+- **Or:** a public link from Wikimedia Commons or the place's official site (it may break later).
+- Only photos the client owns or that are free to use; fill `image_credit`.
 
-## 4. Urdu text (optional, after the main import)
-
-1. Fill `landmarks-urdu-template.csv`: `slug` must match an imported landmark; `name` (Urdu) is required,
-   the other columns are optional.
-2. Table Editor → **`landmark_urdu_import`** → Import data from CSV.
-3. A trigger copies each row into the app's Urdu content (`destination_translations`, locale `ur`) and
-   sets the Urdu name. Importing a slug again updates its Urdu text. An unknown slug stops the import with
-   "No landmark with slug …".
-
-The rows stay in `landmark_urdu_import` as a log. That table is closed to the app (no access for app
-users); only the dashboard can read or write it.
-
-## 5. Editing or hiding later
-
-- **Edit:** Table Editor → `destinations` → find the row (filter by `slug`) → edit the cell. Saving also
-  updates phones.
-- **Hide without deleting:** set `active` to `false`. Hidden landmarks disappear from the app but keep
-  their reviews and posts.
-- **Delete** only if it was added by mistake: deleting removes its reviews, posts and trip entries too.
-
-## 6. Checking for near-duplicates (owner, any time)
-
-Pairs of active landmarks less than about 300 m apart:
+## 6. Near-duplicates (owner, any time)
 
 ```sql
 select a.slug, a.name, b.slug as other_slug, b.name as other_name,
@@ -99,14 +108,23 @@ where abs(a.latitude - b.latitude) < 0.004 and abs(a.longitude - b.longitude) < 
 order by metres;
 ```
 
-Hide the weaker one of a real duplicate (`active = false`), keeping the row with the photo, the longer
-text and the Urdu content. Two different places close together (a fort and a mosque inside it) are fine.
+Hide the weaker of a real duplicate (`active = false`), keeping the row with the photo, the longer text and
+the Urdu. Two different places close together (a fort and a mosque inside it) are fine.
 
 ## 7. For agents
 
-- Migration `supabase/migrations/20261106221257_landmark_manual_import.sql` added the Pakistan bounds
-  check, the `landmark-photos` bucket and `landmark_urdu_import` + trigger `private.apply_landmark_urdu`.
-- Hand-imported rows get `source = 'curated'` (the default). OpenStreetMap rows are `source = 'osm'`. The
-  OSM import (`private.import_osm_dataset()`, run by the GitHub workflow) never overwrites curated text: for a
-  curated row that matches an OSM landmark (same Wikidata item, or close by with a similar name) it only
-  fills an empty photo, Wikipedia link or Urdu name, and does not add the OSM duplicate.
+- Migrations: `20261106221257_landmark_manual_import` (Pakistan bounds check, `landmark-photos` bucket),
+  `…_landmark_bilingual_import` (`destinations.locked` + trigger `private.lock_hand_edits`, OSM import skips
+  locked rows, `landmark_import` + trigger `private.apply_landmark_import`, view `landmark_sheet`),
+  `…_drop_landmark_urdu_import`, and the machine-Urdu job migrations (`machine_urdu_job*`).
+- **Locking:** any write to `destinations` locks the row unless it runs with
+  `set_config('gotourgo.system_write', 'on', true)` (only `private.import_osm_dataset()` and
+  `public.apply_machine_urdu()` do). The OSM import never updates, deactivates or rewrites the Urdu of a
+  locked row; for curated rows it only fills an empty photo, Wikipedia link or Urdu name.
+- **Machine Urdu:** edge function `supabase/functions/translate-urdu` (Gemini, `verify_jwt = false`,
+  authenticated by single-use tokens in `private.job_tokens`). Start or resume with
+  `select private.start_urdu_chain(6, 80);` (batch size, max runs); it fills only empty Urdu fields for
+  shown landmarks, labels them `machine_translated`, and continues by itself. Progress:
+  `select * from private.urdu_job_log order by id desc;`. The queue is `public.urdu_translation_queue()`.
+  Gemini can answer 503 (busy); the job waits and retries.
+- New imports cannot create one-language content; the job is only for older data or a future language.

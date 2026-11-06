@@ -236,6 +236,13 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
   `username_available` (anon-callable, sign-up).
 - Run `get_advisors` (security + performance) after schema changes.
 - Edge function `ai`: secrets `GEMINI_API_KEY` (required), `GEMINI_MODEL`, `AI_DAILY_LIMIT`.
+- Edge function `translate-urdu` (owner-run machine-Urdu job, `verify_jwt = false`, single-use tokens),
+  driven by `pg_cron` job `urdu-translation`; it unschedules itself when done. See
+  [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md) section 7.
+- **Landmark content rules (6 Nov):** `destinations.locked` is set on every hand edit; the OSM import skips
+  locked rows. New or edited landmarks go through `landmark_import` (English + Urdu side by side, strict pair
+  rule); export current data from the `landmark_sheet` view. Never write landmark text straight into
+  `destinations` from code without also writing the Urdu row.
 
 ## 10. Map and data workflows (GitHub Actions)
 
