@@ -1,5 +1,8 @@
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
+**Start here:** read `docs/HANDOFF.md` (project state, owner's rules, how to verify, next steps) and
+`docs/CLIENT-REQUIREMENTS.md` (the client's brief mapped to the app, with what is left) before changing anything.
+
 ## Expo has changed — do not trust your training data
 
 Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
