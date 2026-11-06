@@ -11,7 +11,7 @@ separate documents shared with the owner.
 
 **Where things stand on 6 Nov 2026:** everything below is merged into `main` (PR #31 is the last). The
 working tree is clean, there are no open PRs, and `claude/great-gates-0mn6vd` equals `main`. Client brief
-coverage is about **95%** of features; landmark **content** is the main gap (about 42% of the 545 shown landmarks have a full paragraph; 8% have the full guide). Landmarks can now be added by hand: [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md).
+coverage is about **95%** of features; landmark **content** is the main gap: 531 landmarks shown, 357 fully bilingual (all visible ones; 140 with AI-drafted Urdu to review), 174 English-only, 43 with the full guide. Landmarks are added and edited through the bilingual sheet: [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md).
 
 ### Applied (merged)
 
@@ -52,12 +52,13 @@ coverage is about **95%** of features; landmark **content** is the main gap (abo
 1. Device test of #29 and PR 6 (above); fix what the owner reports.
 2. **Selected buddies for live sharing** (client 7.3): see CLIENT-REQUIREMENTS.md "Remaining work" 2.
 3. **Video posts** (client 6.2): native (`expo-video`), so it goes into the next APK build.
-4. **Landmark content**: history/significance/food/shopping/tips for the most visited landmarks, then Urdu
-   for the remaining 213. The client can now add or fill landmarks via CSV import (LANDMARKS-IMPORT.md).
+4. **Landmark content**: the client fills the 174 English-only landmarks and richer sections through the
+   bilingual sheet (LANDMARKS-IMPORT.md). Don't restart the Gemini Urdu job on the free key: it exhausts the
+   daily quota the app's AI guide needs (see LANDMARKS-IMPORT.md section 7).
 5. **Figma fidelity**: Explore screen first ([ui-figma-gaps.md](ui-figma-gaps.md)).
 6. **Next APK build (one native PR)**: add `expo-haptics` (+ `expo-video`), remove `expo-device` and
    `expo-web-browser`. Owner builds from their own login.
-7. **Duplicate landmarks** (Attabad Lake ×3 and any others).
+7. **Duplicates:** cleaned on 6 Nov (14 hidden); re-run the near-duplicate query in LANDMARKS-IMPORT.md after big imports.
 8. **PR 7 guest mode**: plan in section 17. Not in the client brief, so last unless the owner asks.
 
 ## 1. What the project is
@@ -236,6 +237,13 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
   `username_available` (anon-callable, sign-up).
 - Run `get_advisors` (security + performance) after schema changes.
 - Edge function `ai`: secrets `GEMINI_API_KEY` (required), `GEMINI_MODEL`, `AI_DAILY_LIMIT`.
+- Edge function `translate-urdu` (owner-run machine-Urdu job, `verify_jwt = false`, single-use tokens),
+  driven by `pg_cron` job `urdu-translation`; it unschedules itself when done. See
+  [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md) section 7.
+- **Landmark content rules (6 Nov):** `destinations.locked` is set on every hand edit; the OSM import skips
+  locked rows. New or edited landmarks go through `landmark_import` (English + Urdu side by side, strict pair
+  rule); export current data from the `landmark_sheet` view. Never write landmark text straight into
+  `destinations` from code without also writing the Urdu row.
 
 ## 10. Map and data workflows (GitHub Actions)
 
