@@ -1,7 +1,7 @@
 # GoTourGo: agent and developer handoff
 
 Read this first if you are picking up the project, whether you are another AI agent or a developer.
-It describes the state on **6 Nov 2026** (latest main: PR #29). The project is being handed from
+It describes the state on **6 Nov 2026** (latest main: PR #31). The project is being handed from
 Claude Code to the owner's next agent (Antigravity); everything needed to continue is in this file,
 [CLIENT-REQUIREMENTS.md](CLIENT-REQUIREMENTS.md) (the client's brief mapped to the app, with what is
 left) and [ui-figma-gaps.md](ui-figma-gaps.md). The non-technical walkthroughs for the client are
@@ -9,9 +9,9 @@ separate documents shared with the owner.
 
 ## 0. Status board (read this first)
 
-**Where things stand on 6 Nov 2026:** everything below is merged into `main` (PR #29 is the last). The
+**Where things stand on 6 Nov 2026:** everything below is merged into `main` (PR #31 is the last). The
 working tree is clean, there are no open PRs, and `claude/great-gates-0mn6vd` equals `main`. Client brief
-coverage is about **95%** of features; landmark **content** is the main gap (about 33% detailed).
+coverage is about **95%** of features; landmark **content** is the main gap (about 42% of the 545 shown landmarks have a full paragraph; 8% have the full guide). Landmarks can now be added by hand: [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md).
 
 ### Applied (merged)
 
@@ -19,7 +19,7 @@ coverage is about **95%** of features; landmark **content** is the main gap (abo
 |---|---|---|
 | Core MVP | Auth, onboarding, Home, Explore map, geofenced landmark alerts, details, search, trips, saved, AI guide, Lens, Scan, community, messaging, safety | #1–#3 |
 | Redesign + Figma | Theme, fonts, floating tab bar; auth, Home and details close to Figma | #4, #22–#24 |
-| Data | 836 landmarks, 37,111 places, offline search, Urdu guides | #7, #9–#11 |
+| Data | 545 landmarks shown (836 rows; 291 inactive), 37,111 places, offline search, Urdu guides | #7, #9–#11 |
 | Journey mode | Route preview, turn-by-turn with voice, landmarks/hazards on the way, re-routing | #8 |
 | Hazards | Traveller hazard reports, road alerts | #12 |
 | Forms | React Hook Form + Zod everywhere | #13 |
@@ -53,7 +53,7 @@ coverage is about **95%** of features; landmark **content** is the main gap (abo
 2. **Selected buddies for live sharing** (client 7.3): see CLIENT-REQUIREMENTS.md "Remaining work" 2.
 3. **Video posts** (client 6.2): native (`expo-video`), so it goes into the next APK build.
 4. **Landmark content**: history/significance/food/shopping/tips for the most visited landmarks, then Urdu
-   for the remaining 491.
+   for the remaining 213. The client can now add or fill landmarks via CSV import (LANDMARKS-IMPORT.md).
 5. **Figma fidelity**: Explore screen first ([ui-figma-gaps.md](ui-figma-gaps.md)).
 6. **Next APK build (one native PR)**: add `expo-haptics` (+ `expo-video`), remove `expo-device` and
    `expo-web-browser`. Owner builds from their own login.
@@ -77,8 +77,8 @@ working MVP, not a mock-up.
 | Animation | Reanimated 4 (CSS transitions + layout animations), see `src/lib/motion.ts` |
 | Builds | EAS Build (`preview` profile, APK), EAS Update (OTA, `runtimeVersion: fingerprint`), EAS Hosting for the share site |
 
-Live data (checked 5 Nov 2026): 836 landmarks (`destinations`) in 253 cities and towns, 310 with photos,
-345 with Urdu text, 37,111 `places` for offline search, 54 `nearby_services` and 10 `road_alerts`.
+Live data (checked 6 Nov 2026): 545 active landmarks (`destinations.active`; 836 rows incl. 291 inactive OSM rows) in 169 cities and towns, 310 with photos,
+332 with Urdu text, 37,111 `places` for offline search, 54 `nearby_services` and 10 `road_alerts`.
 
 ## 2. Repository layout
 
@@ -132,6 +132,8 @@ differ from plan numbers.
 | #26, #27 | Docs: this handoff; `.gitignore` is part of the fingerprint |
 | #28 | Client brief gaps (map card rating + travel time, saved places on map, followers/following lists, AI culture/shopping/food guides) + removal of unused gluestack packages, template images and skill; `docs/CLIENT-REQUIREMENTS.md` |
 | #29 | Community: posts at a place (destination section, `place-posts/[id]`, Post from here), All / Following feed, double-tap like, comments (instant, reply, confirm delete, counts), stories (progress bar, hold to pause, seen rings, next author, own bubble) |
+| #30 | Docs: final handoff, status board, PR 7 plan |
+| #31 | Hand-fed landmarks: CSV templates + guide (`docs/LANDMARKS-IMPORT.md`), Pakistan bounds check, `landmark-photos` bucket, Urdu import by slug; landmark counts corrected to 545 shown |
 
 ## 4. Current status and phase
 
