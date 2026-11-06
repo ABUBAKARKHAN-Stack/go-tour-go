@@ -40,6 +40,7 @@ import { useDestinationDetail, useDestinations, useRatings } from '@/features/de
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { destinationQrValue } from '@/features/destinations/qr';
 import { useLastLocation } from '@/features/location/location-store';
+import { PlacePostsSection } from '@/features/community/place-posts';
 import { useReviews } from '@/features/reviews/api';
 import { navigateTo } from '@/features/routing/navigate';
 import { useSavedIds, useToggleSaved } from '@/features/saved/api';
@@ -398,6 +399,8 @@ export default function DestinationDetails() {
               </ScrollView>
             </View>
           ) : null}
+
+          <PlacePostsSection destinationId={d.id} name={d.name} />
 
           <View className="gap-3">
             <SectionHeader

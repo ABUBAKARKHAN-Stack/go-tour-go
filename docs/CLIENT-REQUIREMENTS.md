@@ -3,7 +3,7 @@
 The client's feature brief is `documents/GoTourGo Client Requirements (Roman Urdu).pdf` (10 scanned
 pages in Roman Urdu, no text layer). This file is its English summary, mapped to what the app does,
 so agents can search it. Status checked against the code and the live database on **6 Nov 2026**,
-after PR #28. Each requirement counts equally.
+after PR #29. Each requirement counts equally.
 
 | # | Client asks for | Where it is in the app | Status | % |
 |---|---|---|---|---|
@@ -22,13 +22,13 @@ after PR #28. Each requirement counts equally.
 | 4 | Visual search | `lens.tsx` (Gemini vision) | Done | 100 |
 | 5.1 | 24/7 AI chatbot, instant answers, any language | `assistant.tsx`, `supabase/functions/ai` | Done (daily per-user quota) | 100 |
 | 6.1 | Instagram-style profile, followers/following, public or private | `(tabs)/profile.tsx`, `users/[id].tsx`, `follows/[id].tsx`, `profile/edit.tsx` (Public / Private (friends only)) | Done; profile grid of posts is a list, not a photo grid | 95 |
-| 6.2 | Photo **and video** posts tied to coordinates; see posts made at a place; visual reviews | Photo posts with location/destination (`post/new.tsx`), reviews with photos | **No video; no "posts at this place" view** | 50 |
+| 6.2 | Photo **and video** posts tied to coordinates; see posts made at a place; visual reviews | Photo posts with location/destination (`post/new.tsx`); "Traveller posts" on every destination page (`features/community/place-posts.tsx`) and `place-posts/[id].tsx`; "Post from here"; reviews with photos | **No video** | 75 |
 | 6.3 | Direct messages with friends / fellow travellers | `messages/*` | Friends only | 90 |
 | 7.1 | Buddy tracking on the map | friends layer on Explore, `src/features/safety` | Done | 100 |
 | 7.2 | SOS button: live location + alert to trusted followers or local authorities | `safety/index.tsx`, `sos.tsx`, share site | Authorities: one-tap calls only (no public police API) | 85 |
 | 7.3 | Live location for 15 min / 1 h / until stopped, with **selected** buddies | `safety/index.tsx`, `location_shares` | **Shares with all accepted friends; no picking** | 80 |
 
-**Features overall: about 94%** across the 18 numbered requirements 1.1–7.3 (was 87% before PR #28).
+**Features overall: about 95%** across the 18 numbered requirements 1.1–7.3 (87% before PR #28, 94% after it).
 
 ## Data (landmark content), 6 Nov 2026
 
@@ -44,9 +44,7 @@ after PR #28. Each requirement counts equally.
 
 ## Remaining work to reach 100% (in priority order)
 
-1. **Posts at a place (6.2):** a "Traveller posts" section on `destination/[id].tsx` using
-   `useFeed({ destinationId })` (the API filter already exists), and optionally posts near a point.
-   JavaScript only.
+1. ~~Posts at a place (6.2)~~: done in #29.
 2. **Selected buddies (7.3):** a `location_share_viewers (owner_id, viewer_id)` table; RLS on
    `location_shares` select = accepted friend **and** (no viewer rows for owner **or** viewer listed);
    a friend picker in Safety. Migration + JavaScript; no native change.

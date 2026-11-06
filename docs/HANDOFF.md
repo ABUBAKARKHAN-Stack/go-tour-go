@@ -1,7 +1,7 @@
 # GoTourGo: agent and developer handoff
 
 Read this first if you are picking up the project, whether you are another AI agent or a developer.
-It describes the state on **6 Nov 2026** (latest main: PR #28). The project is being handed from
+It describes the state on **6 Nov 2026** (latest main: PR #29). The project is being handed from
 Claude Code to the owner's next agent (Antigravity); everything needed to continue is in this file,
 [CLIENT-REQUIREMENTS.md](CLIENT-REQUIREMENTS.md) (the client's brief mapped to the app, with what is
 left) and [ui-figma-gaps.md](ui-figma-gaps.md). The non-technical walkthroughs for the client are
@@ -78,6 +78,7 @@ differ from plan numbers.
 | #25 | Motion: tab pill, press feedback, skeleton loaders, entrances (JS only) |
 | #26, #27 | Docs: this handoff; `.gitignore` is part of the fingerprint |
 | #28 | Client brief gaps (map card rating + travel time, saved places on map, followers/following lists, AI culture/shopping/food guides) + removal of unused gluestack packages, template images and skill; `docs/CLIENT-REQUIREMENTS.md` |
+| #29 | Community: posts at a place (destination section, `place-posts/[id]`, Post from here), All / Following feed, double-tap like, comments (instant, reply, confirm delete, counts), stories (progress bar, hold to pause, seen rings, next author, own bubble) |
 
 ## 4. Current status and phase
 
@@ -246,8 +247,8 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
    which opens the in-app SOS screen on the phone and the web page on a desktop); "I'm safe" ends it;
    Share live link; offline Lahore with Airplane mode; motion (#25); Explore card rating/travel time,
    "Saved" filter, followers lists, AI guides (#28). Add the passing checks to `docs/TESTING.md`.
-2. Client gaps, in the order of [CLIENT-REQUIREMENTS.md](CLIENT-REQUIREMENTS.md): posts at a place
-   (JS), selected buddies for live sharing (migration + JS), video posts (native, next APK), content.
+2. Client gaps, in the order of [CLIENT-REQUIREMENTS.md](CLIENT-REQUIREMENTS.md): selected buddies for
+   live sharing (migration + JS), video posts (native, next APK), content.
 3. Figma fidelity pass: Explore first, then the remaining gaps in `ui-figma-gaps.md`.
 4. Next APK build: add `expo-haptics`, `expo-video` (if video posts), remove `expo-device` and
    `expo-web-browser`, in one native PR.

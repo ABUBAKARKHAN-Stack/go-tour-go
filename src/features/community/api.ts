@@ -12,14 +12,23 @@ const AUTHOR = 'author:profiles!community_posts_author_id_fkey(id, username, ful
 // with .eq('my_like.user_id', ...), which filters only that embedded alias.
 const POST_SELECT = `*, ${AUTHOR}, destination:destinations(id, name, city), likes:post_likes(count), comments:post_comments(count), my_like:post_likes(user_id)`;
 
-export function useFeed(filter?: { destinationId?: string; authorId?: string }) {
+export type FeedFilter = {
+  destinationId?: string;
+  authorId?: string;
+  /** Only posts by these people (the Following feed). An empty list means no posts. */
+  authorIds?: string[];
+};
+
+export function useFeed(filter?: FeedFilter) {
   const { userId } = useAuth();
+  const authors = filter?.authorIds ? [...filter.authorIds].sort().join(',') : null;
   return useInfiniteQuery({
-    queryKey: ['feed', filter?.destinationId ?? null, filter?.authorId ?? null],
+    queryKey: ['feed', filter?.destinationId ?? null, filter?.authorId ?? null, authors],
     enabled: Boolean(userId),
     initialPageParam: 0,
     getNextPageParam: (last: CommunityPost[], pages) => (last.length < PAGE ? undefined : pages.length * PAGE),
     queryFn: async ({ pageParam }) => {
+      if (filter?.authorIds && filter.authorIds.length === 0) return [];
       let q = supabase
         .from('community_posts')
         .select(POST_SELECT)
@@ -28,9 +37,27 @@ export function useFeed(filter?: { destinationId?: string; authorId?: string }) 
         .range(pageParam, pageParam + PAGE - 1);
       if (filter?.destinationId) q = q.eq('destination_id', filter.destinationId);
       if (filter?.authorId) q = q.eq('author_id', filter.authorId);
+      if (filter?.authorIds) q = q.in('author_id', filter.authorIds);
       const { data, error } = await q;
       if (error) throw error;
       return data as unknown as CommunityPost[];
+    },
+  });
+}
+
+/** How many posts are tagged at a landmark (for "See all (12)"). */
+export function usePlacePostCount(destinationId: string | undefined) {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ['feed', 'count', destinationId],
+    enabled: Boolean(destinationId && userId),
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('community_posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('destination_id', destinationId!);
+      if (error) throw error;
+      return count ?? 0;
     },
   });
 }
@@ -74,7 +101,7 @@ type FeedData = InfiniteData<CommunityPost[]>;
 
 export function useCommunityActions() {
   const qc = useQueryClient();
-  const { userId } = useAuth();
+  const { userId, profile } = useAuth();
 
   const patchPost = (postId: string, fn: (p: CommunityPost) => CommunityPost) => {
     qc.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) =>
@@ -135,17 +162,31 @@ export function useCommunityActions() {
       onSuccess: () => qc.invalidateQueries({ queryKey: ['feed'] }),
     }),
 
+    // Comments show up at once (optimistic) and roll back if sending fails.
     addComment: useMutation({
-      mutationFn: async ({ postId, body }: { postId: string; body: string }) => {
+      mutationFn: async ({ postId, body }: { postId: string; body: string; tempId: string }) => {
         const text = body.trim();
         if (!text) throw new Error('Write a comment first.');
         const { error } = await supabase.from('post_comments').insert({ post_id: postId, author_id: userId, body: text });
         if (error) throw error;
       },
-      onSuccess: (_d, v) => {
-        qc.invalidateQueries({ queryKey: ['comments', v.postId] });
-        patchPost(v.postId, (p) => ({ ...p, comments: [{ count: (p.comments[0]?.count ?? 0) + 1 }] }));
+      onMutate: ({ postId, body, tempId }) => {
+        const pending: PostComment = {
+          id: tempId,
+          post_id: postId,
+          author_id: userId!,
+          body: body.trim(),
+          created_at: new Date().toISOString(),
+          author: profile ? { id: profile.id, username: profile.username, full_name: profile.full_name, avatar_url: profile.avatar_url } : null,
+        };
+        qc.setQueryData<PostComment[]>(['comments', postId], (list) => [...(list ?? []), pending]);
+        patchPost(postId, (p) => ({ ...p, comments: [{ count: (p.comments[0]?.count ?? 0) + 1 }] }));
       },
+      onError: (_e, v) => {
+        qc.setQueryData<PostComment[]>(['comments', v.postId], (list) => list?.filter((c) => c.id !== v.tempId));
+        patchPost(v.postId, (p) => ({ ...p, comments: [{ count: Math.max(0, (p.comments[0]?.count ?? 1) - 1) }] }));
+      },
+      onSettled: (_d, _e, v) => qc.invalidateQueries({ queryKey: ['comments', v.postId] }),
     }),
 
     deleteComment: useMutation({
@@ -153,7 +194,14 @@ export function useCommunityActions() {
         const { error } = await supabase.from('post_comments').delete().eq('id', id);
         if (error) throw error;
       },
-      onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['comments', v.postId] }),
+      onMutate: ({ id, postId }) => {
+        qc.setQueryData<PostComment[]>(['comments', postId], (list) => list?.filter((c) => c.id !== id));
+        patchPost(postId, (p) => ({ ...p, comments: [{ count: Math.max(0, (p.comments[0]?.count ?? 1) - 1) }] }));
+      },
+      onSettled: (_d, _e, v) => {
+        qc.invalidateQueries({ queryKey: ['comments', v.postId] });
+        qc.invalidateQueries({ queryKey: ['feed'] });
+      },
     }),
   };
 }

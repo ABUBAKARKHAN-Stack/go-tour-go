@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ImagePlus, MapPin, Send, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Controller } from 'react-hook-form';
@@ -13,23 +13,30 @@ import { Screen } from '@/components/screen';
 import { InlineError } from '@/components/states';
 import { useCommunityActions } from '@/features/community/api';
 import { postSchema } from '@/features/community/schemas';
-import { useDestinationsByDistance } from '@/features/destinations/api';
+import { useDestinations, useDestinationsByDistance } from '@/features/destinations/api';
 import { serverError, useZodForm } from '@/lib/forms';
 import { chooseImageSource } from '@/lib/pick-image';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 export default function NewPostScreen() {
+  const params = useLocalSearchParams<{ destination?: string }>();
   const actions = useCommunityActions();
   const { sorted, location } = useDestinationsByDistance();
+  const all = useDestinations();
+  // "Post from here" on a destination page arrives with that place tagged.
+  const preset = params.destination ? all.data?.find((d) => d.id === params.destination) : undefined;
   const [image, setImage] = useState<string | null>(null);
-  const { control, handleSubmit, setError, formState } = useZodForm(postSchema, { defaultValues: { body: '', destinationId: null } });
+  const { control, handleSubmit, setError, formState } = useZodForm(postSchema, { defaultValues: { body: '', destinationId: params.destination ?? null } });
 
-  // Suggest the closest destinations as tags.
-  const suggestions = useMemo(() => sorted.slice(0, 6), [sorted]);
+  // Suggest the closest destinations as tags (the preset place first).
+  const suggestions = useMemo(() => {
+    const near = sorted.slice(0, 6);
+    return preset ? [preset, ...near.filter((d) => d.id !== preset.id)] : near;
+  }, [sorted, preset]);
 
   const submit = handleSubmit(({ body, destinationId }) => {
-    const d = sorted.find((x) => x.id === destinationId);
+    const d = suggestions.find((x) => x.id === destinationId) ?? sorted.find((x) => x.id === destinationId);
     actions.createPost.mutate(
       {
         body,
