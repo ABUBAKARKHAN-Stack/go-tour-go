@@ -81,6 +81,11 @@ changes or re-shows it again.
    `urdu_machine_translated = true`; correcting it removes the "machine-translated" note in the app.
 3. Import the file into `landmark_import` as in section 3. Same slug = update.
 
+**Filling the landmarks that are still English-only** (174 on 7 Nov, OpenStreetMap entries without photos):
+export only those with
+`select * from landmark_sheet where short_description_ur is null or description_ur is null;`
+fill the `_ur` columns (and improve the English if you like), then import as usual.
+
 Quick single fixes can also be made directly in the Table Editor (`destinations` for English,
 `destination_translations` with `locale = ur` for Urdu). Editing a landmark there also locks it.
 
@@ -126,5 +131,11 @@ the Urdu. Two different places close together (a fort and a mosque inside it) ar
   `select private.start_urdu_chain(6, 80);` (batch size, max runs); it fills only empty Urdu fields for
   shown landmarks, labels them `machine_translated`, and continues by itself. Progress:
   `select * from private.urdu_job_log order by id desc;`. The queue is `public.urdu_translation_queue()`.
-  Gemini can answer 503 (busy); the job waits and retries.
+  Gemini can answer 503 (busy); the next scheduled run retries.
+- **Lessons (6–7 Nov):** on the free Gemini key the job hit the daily quota after ~40 requests (429), which also
+  blocks the app's AI guide and Lens until midnight Pacific. Flash-Lite looped, invented text and packed other
+  sections into `tips`, so it is not used. Structured output (`responseSchema`), an output budget sized to the
+  input and `thinkingBudget: 0` were needed for Gemini Flash. All visible landmarks were finished by hand;
+  only restart the job (`select cron.schedule('urdu-translation', '*/2 * * * *', 'select private.urdu_cron_tick()');`)
+  with a paid key or a separate translation key, and check the output for non-Urdu scripts afterwards.
 - New imports cannot create one-language content; the job is only for older data or a future language.
