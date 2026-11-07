@@ -81,9 +81,9 @@ changes or re-shows it again.
    `urdu_machine_translated = true`; correcting it removes the "machine-translated" note in the app.
 3. Import the file into `landmark_import` as in section 3. Same slug = update.
 
-**Filling the landmarks that are still English-only** (174 on 7 Nov, OpenStreetMap entries without photos):
-export only those with
-`select * from landmark_sheet where short_description_ur is null or description_ur is null;`
+**Filling the landmarks that are still English-only** (166 on 7 Nov, OpenStreetMap entries without photos;
+the sheet sent to the client on 7 Nov holds exactly these): export only those with
+`select * from landmark_sheet where short_description_ur is null or description_ur is null or name_ur is null;`
 fill the `_ur` columns (and improve the English if you like), then import as usual.
 
 Quick single fixes can also be made directly in the Table Editor (`destinations` for English,
@@ -138,4 +138,8 @@ the Urdu. Two different places close together (a fort and a mosque inside it) ar
   input and `thinkingBudget: 0` were needed for Gemini Flash. All visible landmarks were finished by hand;
   only restart the job (`select cron.schedule('urdu-translation', '*/2 * * * *', 'select private.urdu_cron_tick()');`)
   with a paid key or a separate translation key, and check the output for non-Urdu scripts afterwards.
+- **7 Nov clean-up before the client sheet:** 8 non-landmarks hidden (a school, auditoriums, an expo centre, a
+  photo-shoot house, two duplicate museums, a stray Makli node); wrong English fixed and locked for Marble Peak
+  (had a Canadian description), Gora Sad-Ishtrag, Gori Temple, Bagh-e-Karachi, Butkara Stupa, Amri and the
+  Nagarparkar museum (Urdu in English fields); a few categories corrected.
 - New imports cannot create one-language content; the job is only for older data or a future language.

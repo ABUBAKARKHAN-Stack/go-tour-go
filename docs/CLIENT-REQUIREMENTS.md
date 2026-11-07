@@ -18,7 +18,7 @@ after PR #29. Each requirement counts equally.
 | 3.2 | AI cultural guide: culture, clothing, traditions, etiquette | `assistant.tsx` "Culture & etiquette" guide | Done | 100 |
 | 3.3 | AI shopping and souvenirs guide | `assistant.tsx` "Shopping & souvenirs" guide | Done | 100 |
 | 3.4 | AI culinary guide: dishes, famous food places | `assistant.tsx` "Food guide" + Nearby restaurants | Done | 100 |
-| 4.1 | Multilingual text + audio guide; overcome language barriers | English/Urdu UI (RTL), audio guide (`expo-speech`), AI + Lens in en/ur/zh/ar | Urdu for 357 of 531 landmarks (all visible ones); 174 photo-less entries English-only | 90 |
+| 4.1 | Multilingual text + audio guide; overcome language barriers | English/Urdu UI (RTL), audio guide (`expo-speech`), AI + Lens in en/ur/zh/ar | Urdu for 357 of 523 landmarks (all visible ones); 166 photo-less entries English-only | 90 |
 | 4 | Visual search | `lens.tsx` (Gemini vision) | Done | 100 |
 | 5.1 | 24/7 AI chatbot, instant answers, any language | `assistant.tsx`, `supabase/functions/ai` | Done (daily per-user quota) | 100 |
 | 6.1 | Instagram-style profile, followers/following, public or private | `(tabs)/profile.tsx`, `users/[id].tsx`, `follows/[id].tsx`, `profile/edit.tsx` (Public / Private (friends only)) | Done; profile grid of posts is a list, not a photo grid | 95 |
@@ -39,17 +39,17 @@ locked against the OSM refresh, and Urdu filled for every visible landmark.
 
 | Content | Count | Share |
 |---|---|---|
-| Landmarks shown in the app | 531 in 169 cities/towns (43 hand-written, 488 from OpenStreetMap) | — |
-| With a photo | 306 | 58% |
+| Landmarks shown in the app | 523 in 170 cities/towns (43 hand-written, 480 from OpenStreetMap) | — |
+| With a photo | 306 | 59% |
 | Full paragraph description (200+ chars) | 226 | 43% |
-| Short description only (under 80 chars, e.g. "Glacier in Pakistan") | 191 | 36% |
+| Short description only (under 80 chars, e.g. "Glacier in Pakistan") | 180 | 34% |
 | Full guide (history, significance, culture, food, shopping, tips) | 43 | 8% |
-| **Fully bilingual** (every English field has its Urdu) | **357** | **67%** |
+| **Fully bilingual** (every English field has its Urdu) | **357** | **68%** |
 | …of which Urdu drafted by AI (labelled "machine-translated" in the app, for review) | 140 | — |
-| Still English-only (OpenStreetMap entries without photos) | 174 | 33% |
+| Still English-only (OpenStreetMap entries without photos) | 166 | 32% |
 | Offline search places | 37,111 | done |
 
-Every hand-written landmark and every landmark with a photo is fully bilingual. The 174 left are for the
+Every hand-written landmark and every landmark with a photo is fully bilingual. The 166 left are for the
 client to fill through the bilingual sheet (see [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md) section 4);
 until then the app shows their English text in Urdu mode. New or edited landmarks cannot be one-language:
 the import refuses them.
@@ -62,7 +62,7 @@ the import refuses them.
    a friend picker in Safety. Migration + JavaScript; no native change.
 3. **Video posts (6.2):** `pick-image.ts` → allow videos (size/duration limit), a `post-videos`
    storage bucket, `media_type` column, playback with `expo-video` (**native: next APK build**).
-4. **Content:** the client fills the 174 English-only landmarks and richer sections (history, food, tips)
+4. **Content:** the client fills the 166 English-only landmarks and richer sections (history, food, tips)
    through the bilingual sheet; review the 140 AI-drafted Urdu texts.
 5. **Messaging non-friends (6.3):** optional; currently friends only by design (safety).
 6. **SOS to authorities (7.2):** stays a stated limitation; the app offers one-tap calls to 1122 / 15 / 115 / 130.
