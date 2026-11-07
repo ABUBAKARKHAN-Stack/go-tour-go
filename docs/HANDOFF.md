@@ -11,7 +11,7 @@ separate documents shared with the owner.
 
 **Where things stand on 6 Nov 2026:** everything below is merged into `main` (PR #31 is the last). The
 working tree is clean, there are no open PRs, and `claude/great-gates-0mn6vd` equals `main`. Client brief
-coverage is about **95%** of features; landmark **content** is the main gap: 531 landmarks shown, 357 fully bilingual (all visible ones; 140 with AI-drafted Urdu to review), 174 English-only, 43 with the full guide. Landmarks are added and edited through the bilingual sheet: [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md).
+coverage is about **95%** of features; landmark **content** is the main gap: 523 landmarks shown, 357 fully bilingual (all visible ones; 140 with AI-drafted Urdu to review), 166 English-only, 43 with the full guide. Landmarks are added and edited through the bilingual sheet: [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md).
 
 ### Applied (merged)
 
@@ -52,7 +52,7 @@ coverage is about **95%** of features; landmark **content** is the main gap: 531
 1. Device test of #29 and PR 6 (above); fix what the owner reports.
 2. **Selected buddies for live sharing** (client 7.3): see CLIENT-REQUIREMENTS.md "Remaining work" 2.
 3. **Video posts** (client 6.2): native (`expo-video`), so it goes into the next APK build.
-4. **Landmark content**: the client fills the 174 English-only landmarks and richer sections through the
+4. **Landmark content**: the client fills the 166 English-only landmarks and richer sections through the
    bilingual sheet (LANDMARKS-IMPORT.md). Don't restart the Gemini Urdu job on the free key: it exhausts the
    daily quota the app's AI guide needs (see LANDMARKS-IMPORT.md section 7).
 5. **Figma fidelity**: Explore screen first ([ui-figma-gaps.md](ui-figma-gaps.md)).
