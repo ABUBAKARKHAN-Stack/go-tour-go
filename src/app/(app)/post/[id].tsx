@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { Text, TextInput, type TextInputRef } from '@/components/text';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useCommunityActions, useComments, usePost } from '@/features/community/api';
+import { MentionText } from '@/features/community/mention-text';
 import { PostCard } from '@/features/community/post-card';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
@@ -114,7 +115,7 @@ export default function PostDetail() {
                           </View>
                         ) : null}
                       </View>
-                      <Text className="text-sm leading-5 text-foreground">{item.body}</Text>
+                      <MentionText className="text-sm leading-5 text-foreground" text={item.body} />
                     </View>
                     <View className="flex-row items-center gap-4 px-3">
                       <Text className="text-[11px] text-muted-foreground">{pending ? tx('Sending…') : timeAgo(item.created_at)}</Text>

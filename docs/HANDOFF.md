@@ -271,6 +271,9 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 - Deployed at https://go-tour-go-development.expo.app (`SHARE_SITE` in `src/features/safety/share-links.ts`).
   The SHA-256 cert fingerprint in assetlinks was confirmed by the owner.
 - Links: `/sos?t=<token>` and `/live?t=<token>`; in the app they open `src/app/sos.tsx` / `live.tsx`.
+- Shared posts: `/p?id=<post id>` (`site/post.html`, `site/assets/post.js`, RPC `get_shared_post`: only posts by
+  public profiles). "Open in GoTourGo" uses an Android intent on the custom scheme (`gotourgodevelopment://post/<id>`),
+  so no App Link change (and no APK) was needed. **Redeploy the site after changing `site/`.**
 
 ## 12. Internationalisation
 

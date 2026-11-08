@@ -1083,4 +1083,7 @@ export const ur: Record<string, string> = {
   "Record": "ریکارڈ کریں",
   "Play video, {0}": "ویڈیو چلائیں، {0}",
   "Play video": "ویڈیو چلائیں",
+  "Traveller not found": "مسافر نہیں ملا",
+  "No one is called @{0}, or their profile is private.": "@{0} نام کا کوئی مسافر نہیں، یا ان کی پروفائل نجی ہے۔",
+  "Open profile of {0}": "{0} کی پروفائل کھولیں",
 };

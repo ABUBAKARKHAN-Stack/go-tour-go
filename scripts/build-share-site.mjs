@@ -6,6 +6,8 @@
  *   bunx eas-cli deploy --export-dir site-dist --prod
  *
  * - /sos?t=… and /live?t=… show the shared location when the app isn't installed.
+ * - /p?id=… shows a shared community post (posts by public profiles only) with
+ *   an "Open in GoTourGo" button (custom-scheme intent, no App Link needed).
  * - /.well-known/assetlinks.json lets Android open those links straight in the app
  *   (App Links), so it must list the APK's signing certificate.
  *
@@ -41,7 +43,9 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or add them to .env.local).');
   process.exit(1);
 }
-const androidPackage = JSON.parse(readFileSync(join(root, 'app.json'), 'utf8')).expo.android.package;
+const appJson = JSON.parse(readFileSync(join(root, 'app.json'), 'utf8')).expo;
+const androidPackage = appJson.android.package;
+const appScheme = Array.isArray(appJson.scheme) ? appJson.scheme[0] : appJson.scheme;
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
@@ -58,9 +62,16 @@ for (const kind of ['sos', 'live']) {
 }
 rmSync(join(out, 'share.html'));
 
+// Shared posts: /p?id=… (and /p/?id=…).
+const post = readFileSync(join(src, 'post.html'), 'utf8');
+writeFileSync(join(out, 'p.html'), post);
+mkdirSync(join(out, 'p'), { recursive: true });
+writeFileSync(join(out, 'p', 'index.html'), post);
+rmSync(join(out, 'post.html'));
+
 writeFileSync(
   join(out, 'config.js'),
-  `window.GOTOURGO = ${JSON.stringify({ supabaseUrl, supabaseKey, androidPackage, installUrl: env.GOTOURGO_INSTALL_URL || '' }, null, 2)};\n`,
+  `window.GOTOURGO = ${JSON.stringify({ supabaseUrl, supabaseKey, androidPackage, appScheme, installUrl: env.GOTOURGO_INSTALL_URL || '' }, null, 2)};\n`,
 );
 
 mkdirSync(join(out, '.well-known'), { recursive: true });
