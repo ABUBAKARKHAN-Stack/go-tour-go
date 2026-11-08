@@ -4,7 +4,7 @@ import { Share } from 'react-native';
 import { useAuth } from '@/features/auth/auth-provider';
 import { STORAGE_BUCKETS, supabase } from '@/lib/supabase';
 import type { CommunityPost, PostComment, Story } from '@/lib/types';
-import { tx } from '@/lib/i18n';
+import { SHARE_SITE } from '@/features/safety/share-links';
 import { makeVideoPoster, uploadImage, uploadVideo } from '@/lib/upload';
 
 export { formatCount } from '@/features/community/format';
@@ -233,7 +233,9 @@ export function useCommunityActions() {
     sharePost: useMutation({
       mutationFn: async (post: CommunityPost) => {
         const place = post.destination ? `${post.destination.name}, ${post.destination.city}` : post.place_name;
-        const message = [`"${post.body}"`, place ? `📍 ${place}` : null, tx('Shared from GoTourGo')].filter(Boolean).join('\n');
+        // The link opens a web page with the photos/video and an "Open in GoTourGo" button.
+        const link = `${SHARE_SITE}/p?id=${post.id}`;
+        const message = [`"${post.body}"`, place ? `📍 ${place}` : null, link].filter(Boolean).join('\n');
         const result = await Share.share({ message });
         if (result.action !== Share.sharedAction) return false;
         patchPost(post.id, (p) => ({ ...p, shares: [{ count: (p.shares[0]?.count ?? 0) + 1 }] }));

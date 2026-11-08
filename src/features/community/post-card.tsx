@@ -8,6 +8,7 @@ import { Text } from '@/components/text';
 
 import { Avatar } from '@/components/avatar';
 import { formatCount, useCommunityActions } from '@/features/community/api';
+import { MentionText } from '@/features/community/mention-text';
 import { PostVideo } from '@/features/community/post-video';
 import { useRatings } from '@/features/destinations/api';
 import { timeAgo } from '@/features/safety/friend-locations';
@@ -149,9 +150,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
       </View>
 
       <Pressable disabled={detail} onPress={open}>
-        <Text className="text-[15px] leading-6 text-foreground" numberOfLines={detail ? undefined : 6}>
-          {post.body}
-        </Text>
+        <MentionText className="text-[15px] leading-6 text-foreground" numberOfLines={detail ? undefined : 6} text={post.body} />
       </Pressable>
       {post.video_url ? (
         <PostVideo url={post.video_url} poster={post.image_url} durationMs={post.video_duration_ms} postId={post.id} />
@@ -254,9 +253,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
                 </View>
               ) : null}
             </View>
-            <Text numberOfLines={1} className="text-sm text-muted-foreground">
-              {topComment.body}
-            </Text>
+            <MentionText numberOfLines={1} className="text-sm text-muted-foreground" text={topComment.body} />
           </View>
           <ChevronRight size={18} color={colors.mutedForeground} style={flipX} />
         </Pressable>
