@@ -10,7 +10,7 @@ import { Avatar } from '@/components/avatar';
 import { AppHeader } from '@/components/screen';
 import { ErrorState, LoadingState } from '@/components/states';
 import { useAuth } from '@/features/auth/auth-provider';
-import { otherParticipant, useConversations, useMessages, useSendMessage } from '@/features/messaging/api';
+import { otherParticipant, useConversations, useMarkConversationRead, useMessages, useSendMessage } from '@/features/messaging/api';
 import { displayName } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
@@ -31,6 +31,7 @@ export default function ChatScreen() {
   const conversations = useConversations();
   const messages = useMessages(id);
   const send = useSendMessage(id);
+  useMarkConversationRead(id, messages.data?.[0]?.id);
   const [text, setText] = useState('');
 
   const convo = conversations.data?.find((c) => c.id === id);

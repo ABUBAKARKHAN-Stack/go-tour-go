@@ -7,6 +7,7 @@ import { Avatar } from '@/components/avatar';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { useAuth } from '@/features/auth/auth-provider';
+import { useUnreadConversations } from '@/features/inbox/api';
 import { otherParticipant, useConversations } from '@/features/messaging/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
@@ -16,6 +17,7 @@ import { tx } from '@/lib/i18n';
 export default function ConversationsScreen() {
   const { userId } = useAuth();
   const q = useConversations();
+  const unread = useUnreadConversations();
 
   return (
     <Screen back title={tx('Messages')} scroll={false}>
@@ -40,6 +42,7 @@ export default function ConversationsScreen() {
           }
           renderItem={({ item }) => {
             const other = otherParticipant(item, userId);
+            const isUnread = unread.has(item.id);
             return (
               <Pressable
                 onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
@@ -48,12 +51,13 @@ export default function ConversationsScreen() {
                 <Avatar profile={other} size={46} />
                 <View className="flex-1">
                   <View className="flex-row items-center justify-between gap-2">
-                    <Text numberOfLines={1} className="flex-1 text-base font-semibold text-foreground">
+                    <Text numberOfLines={1} className={`flex-1 text-base text-foreground ${isUnread ? 'font-bold' : 'font-semibold'}`}>
                       {displayName(other)}
                     </Text>
+                    {isUnread ? <View accessibilityLabel={tx('Unread')} className="h-2.5 w-2.5 rounded-full bg-accent" /> : null}
                     {item.last_message_at ? <Text className="text-xs text-muted-foreground">{timeAgo(item.last_message_at)}</Text> : null}
                   </View>
-                  <Text numberOfLines={1} className="text-sm text-muted-foreground">
+                  <Text numberOfLines={1} className={`text-sm ${isUnread ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                     {item.last_message_preview ?? tx('Say hello 👋')}
                   </Text>
                 </View>

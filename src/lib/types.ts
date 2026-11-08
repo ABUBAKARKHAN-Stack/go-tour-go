@@ -205,7 +205,11 @@ export type CommunityPost = {
   destination: Pick<Destination, 'id' | 'name' | 'city'> | null;
   likes: { count: number }[];
   comments: { count: number }[];
+  shares: { count: number }[];
   my_like: { user_id: string }[];
+  my_save: { user_id: string }[];
+  /** The newest comment (at most one), shown under the post in the feed. */
+  top_comment: Pick<PostComment, 'id' | 'author_id' | 'body' | 'created_at' | 'author'>[];
 };
 
 export type PostComment = {

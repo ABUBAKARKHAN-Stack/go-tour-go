@@ -61,6 +61,22 @@ export function useMessages(conversationId: string | undefined) {
   return query;
 }
 
+/**
+ * While a chat is open, its message notifications count as read (the badge on
+ * Community and the list dot clear). Re-runs when new messages arrive.
+ */
+export function useMarkConversationRead(conversationId: string | undefined, newestId: string | undefined) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!conversationId) return;
+    supabase
+      .rpc('mark_conversation_read', { p_conversation_id: conversationId })
+      .then(({ error }) => {
+        if (!error) qc.invalidateQueries({ queryKey: ['inbox'] });
+      });
+  }, [conversationId, newestId, qc]);
+}
+
 export function useSendMessage(conversationId: string) {
   const qc = useQueryClient();
   const { userId } = useAuth();
