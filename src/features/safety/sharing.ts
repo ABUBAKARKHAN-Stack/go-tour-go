@@ -23,8 +23,13 @@ export const SHARING_TASK = 'gotourgo-location-sharing';
 const MIN_INTERVAL_MS = 30_000;
 const MIN_DISTANCE_M = 50;
 
+/** Who sees the share: all accepted friends, or only the friends picked in Safety. */
+export type ShareAudience = 'friends' | 'selected';
+
 export type SharingSession = {
   active: boolean;
+  /** Missing in sessions saved by older versions: treated as 'friends'. */
+  audience?: ShareAudience;
   startedAt: number;
   /** null = until stopped */
   expiresAt: number | null;
@@ -83,6 +88,7 @@ export async function pushSharedLocation(
     accuracy: fix.accuracy ?? null,
     heading: fix.heading ?? null,
     is_active: true,
+    audience: session.audience ?? 'friends',
     started_at: new Date(session.startedAt).toISOString(),
     expires_at: session.expiresAt ? new Date(session.expiresAt).toISOString() : null,
   });
@@ -134,10 +140,12 @@ async function startBackgroundUpdates() {
 export async function startSharing(
   durationMs: number | null,
   fix: { latitude: number; longitude: number; accuracy?: number | null },
+  audience: ShareAudience = 'friends',
 ): Promise<{ background: boolean }> {
   const now = Date.now();
   storage.set<SharingSession>(StorageKeys.sharingSession, {
     active: true,
+    audience,
     startedAt: now,
     expiresAt: durationMs ? now + durationMs : null,
     lastSentAt: null,
@@ -146,6 +154,18 @@ export async function startSharing(
   await pushSharedLocation(fix, true);
   const background = await startBackgroundUpdates().catch(() => false);
   return { background };
+}
+
+/** Changes who sees a share that is already running. */
+export async function setSharingAudience(audience: ShareAudience) {
+  const session = getSharingSession(true);
+  if (!session.active) return;
+  storage.set<SharingSession>(StorageKeys.sharingSession, { ...session, audience });
+  const { data } = await supabase.auth.getSession();
+  const userId = data.session?.user.id;
+  if (!userId) return;
+  const { error } = await supabase.from('location_shares').update({ audience }).eq('user_id', userId);
+  if (error) throw error;
 }
 
 export async function stopSharing() {

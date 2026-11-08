@@ -1029,4 +1029,13 @@ export const ur: Record<string, string> = {
   "Traveller posts": "مسافروں کی پوسٹس",
   "Traveller posts ({0})": "مسافروں کی پوسٹس ({0})",
   "View your story": "اپنی اسٹوری دیکھیں",
+  "Who can see it": "کون دیکھ سکتا ہے",
+  "All friends": "سب دوست",
+  "Chosen friends": "منتخب دوست",
+  "Add friends first to choose who sees your location.": "پہلے دوست شامل کریں، پھر چنیں کہ آپ کا مقام کون دیکھے۔",
+  "{0} of {1} friends chosen": "{1} میں سے {0} دوست منتخب",
+  "Choose friends": "دوست منتخب کریں",
+  "Pick at least one friend, or share with all friends.": "کم از کم ایک دوست منتخب کریں، یا سب دوستوں کے ساتھ شیئر کریں۔",
+  "{2} chosen friends can see your location {0}. {1}": "{2} منتخب دوست آپ کا مقام {0} دیکھ سکتے ہیں۔ {1}",
+  "Change who can see": "دیکھنے والے تبدیل کریں",
 };

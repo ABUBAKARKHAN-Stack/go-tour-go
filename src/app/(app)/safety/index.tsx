@@ -15,8 +15,10 @@ import { LocationStatusCard } from '@/features/location/location-status-card';
 import { openWhatsApp, sosMessage, useTrustedContacts } from '@/features/safety/api';
 import { createShareLink, endLiveLinks, endShareLink, shareUrl, useOwnPhone } from '@/features/safety/share-links';
 import { timeAgo, useFriendLocations } from '@/features/safety/friend-locations';
-import { isSessionLive, SHARING_DURATIONS, startSharing, stopSharing, useSharingSession } from '@/features/safety/sharing';
-import { displayName } from '@/features/social/api';
+import { isSessionLive, SHARING_DURATIONS, setSharingAudience, startSharing, stopSharing, useSharingSession, type ShareAudience } from '@/features/safety/sharing';
+import { ViewerPicker } from '@/features/safety/viewer-picker';
+import { useShareViewers } from '@/features/safety/viewers';
+import { displayName, useFriendships } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
@@ -42,6 +44,48 @@ export default function SafetyScreen() {
   const [linkBusy, setLinkBusy] = useState(false);
   const [ownPhone, setOwnPhone] = useOwnPhone();
   const live = isSessionLive(session);
+  const { friends: friendRows } = useFriendships();
+  const friendProfiles = friendRows.map((f) => f.profile);
+  const viewers = useShareViewers();
+  // Who sees the share. Until the user touches the picker, follow the running
+  // session (or "all friends") and the friends saved last time.
+  const [audienceChoice, setAudienceChoice] = useState<ShareAudience | null>(null);
+  const [chosenChoice, setChosenChoice] = useState<Set<string> | null>(null);
+  const [editingAudience, setEditingAudience] = useState(false);
+  const audience: ShareAudience = audienceChoice ?? (live ? (session.audience ?? 'friends') : 'friends');
+  const chosen = chosenChoice ?? new Set(viewers.viewers);
+  const chosenFriendIds = friendProfiles.map((p) => p.id).filter((id) => chosen.has(id));
+  const toggleChosen = (id: string) => {
+    const next = new Set(chosen);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setChosenChoice(next);
+  };
+
+  /** Saves the picked friends; false when "Chosen friends" has nobody picked. */
+  const saveAudience = async () => {
+    if (audience === 'selected') {
+      if (chosenFriendIds.length === 0) {
+        Alert.alert(tx('Choose friends'), tx('Pick at least one friend, or share with all friends.'));
+        return false;
+      }
+      await viewers.save(chosenFriendIds);
+    }
+    return true;
+  };
+
+  const applyAudience = async () => {
+    setSharingBusy(true);
+    try {
+      if (!(await saveAudience())) return;
+      await setSharingAudience(audience);
+      setEditingAudience(false);
+    } catch (e) {
+      Alert.alert(tx('Location sharing'), errorMessage(e));
+    } finally {
+      setSharingBusy(false);
+    }
+  };
 
   const triggerSos = async () => {
     setTriggering(true);
@@ -50,6 +94,7 @@ export default function SafetyScreen() {
       const fix = await getCurrentFix();
       const name = displayName(profile);
       // Share live location for 1 hour, so the SOS link follows the traveller.
+      // An SOS always goes to all friends, whatever was chosen for normal sharing.
       if (fix && !live) await startSharing(60 * 60_000, fix).catch(() => undefined);
       // The SOS link (friends also get an in-app alert via a DB trigger). Without
       // internet the message falls back to coordinates.
@@ -78,6 +123,7 @@ export default function SafetyScreen() {
         await endLiveLinks().catch(() => undefined);
         return;
       }
+      if (!(await saveAudience())) return;
       if (location.permission !== 'granted' && !(await requestLocationPermission())) return;
       const fix = await getCurrentFix();
       if (!fix) {
@@ -86,7 +132,7 @@ export default function SafetyScreen() {
       }
       // Ask for "Allow all the time" so sharing continues in the background.
       const bg = await requestBackgroundPermission();
-      const { background } = await startSharing(durationMs, fix);
+      const { background } = await startSharing(durationMs, fix, audience);
       if (!bg || !background) {
         Alert.alert(tx('Sharing while the app is open'), tx('Allow location "all the time" in Settings to keep sharing when GoTourGo is in the background.'));
       }
@@ -213,13 +259,22 @@ export default function SafetyScreen() {
         </View>
         {live ? (
           <>
-            <Text className="text-sm text-muted-foreground">{tx('Your accepted friends can see your location {0}. {1}', { 0: session.expiresAt ? tx('until {0}', { 0: new Date(session.expiresAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) }) : tx('until you stop'), 1: session.lastSentAt ? tx(' Last update {0}.', { 0: timeAgo(session.lastSentAt) }) : '' })}</Text>
+            <Text className="text-sm text-muted-foreground">{tx(audience === 'selected' ? '{2} chosen friends can see your location {0}. {1}' : 'Your accepted friends can see your location {0}. {1}', { 2: chosenFriendIds.length, 0: session.expiresAt ? tx('until {0}', { 0: new Date(session.expiresAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) }) : tx('until you stop'), 1: session.lastSentAt ? tx(' Last update {0}.', { 0: timeAgo(session.lastSentAt) }) : '' })}</Text>
+            {editingAudience ? (
+              <>
+                <ViewerPicker audience={audience} onAudience={setAudienceChoice} friends={friendProfiles} chosen={chosen} onToggle={toggleChosen} />
+                <AppButton label={tx('Save')} variant="primary" size="sm" loading={sharingBusy} onPress={applyAudience} />
+              </>
+            ) : (
+              <AppButton label={tx('Change who can see')} icon={Users} variant="ghost" size="sm" onPress={() => setEditingAudience(true)} />
+            )}
             <AppButton label={tx('Share live link')} icon={Link2} variant="secondary" loading={linkBusy} onPress={shareLiveLink} />
             <AppButton label={tx('Stop sharing')} icon={Square} variant="destructive" loading={sharingBusy} onPress={() => toggleSharing(null)} />
           </>
         ) : (
           <>
             <Text className="text-sm text-muted-foreground">{tx('Only accepted friends can see it. You can stop at any time.')}</Text>
+            <ViewerPicker audience={audience} onAudience={setAudienceChoice} friends={friendProfiles} chosen={chosen} onToggle={toggleChosen} />
             <View className="gap-2">
               {SHARING_DURATIONS.map((d) => (
                 <AppButton key={d.label} label={tx('Share for {0}', { 0: d.label.toLowerCase() })} variant="secondary" size="sm" disabled={sharingBusy} onPress={() => toggleSharing(d.ms)} />

@@ -26,9 +26,9 @@ after PR #29. Each requirement counts equally.
 | 6.3 | Direct messages with friends / fellow travellers | `messages/*` | Friends only | 90 |
 | 7.1 | Buddy tracking on the map | friends layer on Explore, `src/features/safety` | Done | 100 |
 | 7.2 | SOS button: live location + alert to trusted followers or local authorities | `safety/index.tsx`, `sos.tsx`, share site | Authorities: one-tap calls only (no public police API) | 85 |
-| 7.3 | Live location for 15 min / 1 h / until stopped, with **selected** buddies | `safety/index.tsx`, `location_shares` | **Shares with all accepted friends; no picking** | 80 |
+| 7.3 | Live location for 15 min / 1 h / until stopped, with **selected** buddies | `safety/index.tsx`, `location_shares`, `location_share_viewers` | All friends or chosen friends (picker in Safety; SOS always all friends) | 100 |
 
-**Features overall: about 95%** across the 18 numbered requirements 1.1–7.3 (87% before PR #28, 94% after it).
+**Features overall: about 96%** across the 18 numbered requirements 1.1–7.3 (87% before PR #28, 94% after it, 96% with selected buddies).
 
 ## Data (landmark content), 7 Nov 2026
 
@@ -57,9 +57,7 @@ the import refuses them.
 ## Remaining work to reach 100% (in priority order)
 
 1. ~~Posts at a place (6.2)~~: done in #29.
-2. **Selected buddies (7.3):** a `location_share_viewers (owner_id, viewer_id)` table; RLS on
-   `location_shares` select = accepted friend **and** (no viewer rows for owner **or** viewer listed);
-   a friend picker in Safety. Migration + JavaScript; no native change.
+2. ~~Selected buddies (7.3)~~: done (migration `20261108101950_location_share_audience`, picker in Safety).
 3. **Video posts (6.2):** `pick-image.ts` → allow videos (size/duration limit), a `post-videos`
    storage bucket, `media_type` column, playback with `expo-video` (**native: next APK build**).
 4. **Content:** the client fills the 166 English-only landmarks and richer sections (history, food, tips)
