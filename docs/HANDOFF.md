@@ -19,7 +19,7 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 |---|---|---|
 | Core MVP | Auth, onboarding, Home, Explore map, geofenced landmark alerts, details, search, trips, saved, AI guide, Lens, Scan, community, messaging, safety | #1–#3 |
 | Redesign + Figma | Theme, fonts, floating tab bar; auth, Home and details close to Figma | #4, #22–#24 |
-| Data | 545 landmarks shown (836 rows; 291 inactive), 37,111 places, offline search, Urdu guides | #7, #9–#11 |
+| Data | 523 landmarks shown (836 rows; 313 hidden), 37,111 places, offline search, Urdu guides | #7, #9–#11 |
 | Journey mode | Route preview, turn-by-turn with voice, landmarks/hazards on the way, re-routing | #8 |
 | Hazards | Traveller hazard reports, road alerts | #12 |
 | Forms | React Hook Form + Zod everywhere | #13 |
@@ -49,17 +49,20 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 
 ### Remaining work, in priority order
 
+**UI design is on hold (owner, 8 Nov):** the client will share their own UI design later. Do not spend time
+matching the current Figma file; finish the features first, then restyle to the client's design.
+
+
 1. Device test of #29 and PR 6 (above); fix what the owner reports.
 2. **Selected buddies for live sharing** (client 7.3): see CLIENT-REQUIREMENTS.md "Remaining work" 2.
 3. **Video posts** (client 6.2): native (`expo-video`), so it goes into the next APK build.
 4. **Landmark content**: the client fills the 166 English-only landmarks and richer sections through the
    bilingual sheet (LANDMARKS-IMPORT.md). Don't restart the Gemini Urdu job on the free key: it exhausts the
    daily quota the app's AI guide needs (see LANDMARKS-IMPORT.md section 7).
-5. **Figma fidelity**: Explore screen first ([ui-figma-gaps.md](ui-figma-gaps.md)).
-6. **Next APK build (one native PR)**: add `expo-haptics` (+ `expo-video`), remove `expo-device` and
+5. **Next APK build (one native PR)**: add `expo-haptics` (+ `expo-video`), remove `expo-device` and
    `expo-web-browser`. Owner builds from their own login.
-7. **Duplicates:** cleaned on 6 Nov (14 hidden); re-run the near-duplicate query in LANDMARKS-IMPORT.md after big imports.
-8. **PR 7 guest mode**: plan in section 17. Not in the client brief, so last unless the owner asks.
+6. **Duplicates:** cleaned on 6 Nov (14 hidden); re-run the near-duplicate query in LANDMARKS-IMPORT.md after big imports.
+7. **PR 7 guest mode**: plan in section 17. Not in the client brief, so last unless the owner asks.
 
 ## 1. What the project is
 
@@ -159,9 +162,8 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
 **Known issues / open items**
 
 - Attabad Lake has 3 rows in `destinations` (duplicate cleanup pending; check for other duplicates too).
-- UI does not yet fully match Figma: auth, Home and details are done; **Explore** (icon markers, two map
-  buttons, "Around you" sheet), the no-photo placeholder and the rest are still open. See
-  [ui-figma-gaps.md](ui-figma-gaps.md).
+- UI: on hold until the client shares their own design (8 Nov); the old Figma gaps in
+  [ui-figma-gaps.md](ui-figma-gaps.md) are no longer planned work.
 - Not yet tested on a device: see section 0 ("Built but NOT yet tested").
 - Haptics are deferred: `expo-haptics` is a native module, so add it with the next APK build.
 - Unused **native** packages to remove with the next APK build: `expo-device`, `expo-web-browser`.
@@ -284,6 +286,8 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 - Loading: `LoadingState variant=...` (list, cards, feed, profile, detail skeletons; `spinner` for actions).
 
 ## 14. Figma
+
+**On hold (8 Nov):** the client will provide their own UI design later; this file is reference only.
 
 - File: https://www.figma.com/design/bO6d8RIpnNL3awG2lQQMA8. Node ids per screen are in
   [ui-figma-gaps.md](ui-figma-gaps.md).
