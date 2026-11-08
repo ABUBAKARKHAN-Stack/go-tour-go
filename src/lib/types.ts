@@ -266,6 +266,8 @@ export type LocationShare = {
   accuracy: number | null;
   heading: number | null;
   is_active: boolean;
+  /** 'selected' = only the friends in location_share_viewers. */
+  audience: 'friends' | 'selected';
   started_at: string | null;
   expires_at: string | null;
   updated_at: string;

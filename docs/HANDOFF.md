@@ -54,7 +54,7 @@ matching the current Figma file; finish the features first, then restyle to the 
 
 
 1. Device test of #29 and PR 6 (above); fix what the owner reports.
-2. **Selected buddies for live sharing** (client 7.3): see CLIENT-REQUIREMENTS.md "Remaining work" 2.
+2. ~~Selected buddies for live sharing~~ (client 7.3): done, needs a device test (two friends, pick one).
 3. **Video posts** (client 6.2): native (`expo-video`), so it goes into the next APK build.
 4. **Landmark content**: the client fills the 166 English-only landmarks and richer sections through the
    bilingual sheet (LANDMARKS-IMPORT.md). Don't restart the Gemini Urdu job on the free key: it exhausts the
