@@ -22,13 +22,13 @@ after PR #29. Each requirement counts equally.
 | 4 | Visual search | `lens.tsx` (Gemini vision) | Done | 100 |
 | 5.1 | 24/7 AI chatbot, instant answers, any language | `assistant.tsx`, `supabase/functions/ai` | Done (daily per-user quota) | 100 |
 | 6.1 | Instagram-style profile, followers/following, public or private | `(tabs)/profile.tsx`, `users/[id].tsx`, `follows/[id].tsx`, `profile/edit.tsx` (Public / Private (friends only)) | Done; profile grid of posts is a list, not a photo grid | 95 |
-| 6.2 | Photo **and video** posts tied to coordinates; see posts made at a place; visual reviews | Photo posts with location/destination (`post/new.tsx`); "Traveller posts" on every destination page (`features/community/place-posts.tsx`) and `place-posts/[id].tsx`; "Post from here"; reviews with photos | **No video** | 75 |
+| 6.2 | Photo **and video** posts tied to coordinates; see posts made at a place; visual reviews | Photo posts with location/destination (`post/new.tsx`); "Traveller posts" on every destination page (`features/community/place-posts.tsx`) and `place-posts/[id].tsx`; "Post from here"; reviews with photos | Video posts up to 60 s with a poster frame, tap to play (`post-video.tsx`, `post-videos` bucket) | 100 |
 | 6.3 | Direct messages with friends / fellow travellers | `messages/*` | Friends only | 90 |
 | 7.1 | Buddy tracking on the map | friends layer on Explore, `src/features/safety` | Done | 100 |
 | 7.2 | SOS button: live location + alert to trusted followers or local authorities | `safety/index.tsx`, `sos.tsx`, share site | Authorities: one-tap calls only (no public police API) | 85 |
 | 7.3 | Live location for 15 min / 1 h / until stopped, with **selected** buddies | `safety/index.tsx`, `location_shares`, `location_share_viewers` | All friends or chosen friends (picker in Safety; SOS always all friends) | 100 |
 
-**Features overall: about 96%** across the 18 numbered requirements 1.1–7.3 (87% before PR #28, 94% after it, 96% with selected buddies).
+**Features overall: about 97%** across the 18 numbered requirements 1.1–7.3 (87% before PR #28, 94% after it, 96% with selected buddies, 97% with video posts).
 
 ## Data (landmark content), 7 Nov 2026
 
@@ -58,8 +58,7 @@ the import refuses them.
 
 1. ~~Posts at a place (6.2)~~: done in #29.
 2. ~~Selected buddies (7.3)~~: done (migration `20261108101950_location_share_audience`, picker in Safety).
-3. **Video posts (6.2):** `pick-image.ts` → allow videos (size/duration limit), a `post-videos`
-   storage bucket, `media_type` column, playback with `expo-video` (**native: next APK build**).
+3. ~~Video posts (6.2)~~: done in #39 (needs the new APK build).
 4. **Content:** the client fills the 166 English-only landmarks and richer sections (history, food, tips)
    through the bilingual sheet; review the 140 AI-drafted Urdu texts.
 5. **Messaging non-friends (6.3):** optional; currently friends only by design (safety).

@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { STORAGE_BUCKETS, supabase } from '@/lib/supabase';
 import type { CommunityPost, PostComment, Story } from '@/lib/types';
 import { tx } from '@/lib/i18n';
-import { uploadImage } from '@/lib/upload';
+import { makeVideoPoster, uploadImage, uploadVideo } from '@/lib/upload';
 
 export { formatCount } from '@/features/community/format';
 
@@ -163,6 +163,8 @@ export function useCommunityActions() {
       mutationFn: async (input: {
         body: string;
         imageLocalUri?: string | null;
+        /** A video replaces the photo; its first frames become the poster. */
+        video?: { uri: string; mimeType: string; durationMs: number | null } | null;
         destinationId?: string | null;
         placeName?: string | null;
         latitude?: number | null;
@@ -170,11 +172,23 @@ export function useCommunityActions() {
       }) => {
         const body = input.body.trim();
         if (!body) throw new Error('Write something to share.');
-        const image_url = input.imageLocalUri ? await uploadImage(STORAGE_BUCKETS.posts, userId!, input.imageLocalUri) : null;
+        let image_url: string | null = null;
+        let video_url: string | null = null;
+        if (input.video) {
+          const poster = await makeVideoPoster(input.video.uri);
+          [video_url, image_url] = await Promise.all([
+            uploadVideo(userId!, input.video.uri, input.video.mimeType),
+            poster ? uploadImage(STORAGE_BUCKETS.posts, userId!, poster).catch(() => null) : Promise.resolve(null),
+          ]);
+        } else if (input.imageLocalUri) {
+          image_url = await uploadImage(STORAGE_BUCKETS.posts, userId!, input.imageLocalUri);
+        }
         const { error } = await supabase.from('community_posts').insert({
           author_id: userId,
           body,
           image_url,
+          video_url,
+          video_duration_ms: input.video?.durationMs != null ? Math.round(input.video.durationMs) : null,
           destination_id: input.destinationId ?? null,
           place_name: input.placeName ?? null,
           latitude: input.latitude ?? null,

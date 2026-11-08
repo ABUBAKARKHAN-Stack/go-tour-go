@@ -67,6 +67,7 @@ export function readStoredSession(): Session | null {
 export const STORAGE_BUCKETS = {
   avatars: 'avatars',
   posts: 'post-images',
+  postVideos: 'post-videos',
   stories: 'story-images',
   reviews: 'review-images',
 } as const;

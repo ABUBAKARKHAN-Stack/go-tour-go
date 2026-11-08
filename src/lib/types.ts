@@ -195,7 +195,10 @@ export type CommunityPost = {
   id: string;
   author_id: string;
   body: string;
+  /** For a video post: the poster frame. */
   image_url: string | null;
+  video_url: string | null;
+  video_duration_ms: number | null;
   destination_id: string | null;
   place_name: string | null;
   latitude: number | null;

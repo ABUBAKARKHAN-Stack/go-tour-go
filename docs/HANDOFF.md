@@ -32,6 +32,7 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 | Cleanup | gluestack packages, template images and skill removed | #28 |
 | Community | Posts at a place, All / Following feed, double-tap like, comments (instant, reply, confirm delete), stories (progress, pause, seen rings, next author) | #29 |
 | Selected buddies | Live location with all friends or chosen friends (`location_share_viewers`); SOS always all friends | #37 |
+| Video posts + haptics | Clips up to 60 s with poster frames, tap-to-play inline/full screen; touch feedback; unused native modules removed (**new APK**) | #39 |
 | Social upgrade | For you / Nearby (50 km) / Following feeds; search (travellers, posts, places); bookmark + Saved posts; share with count; place rating and newest comment on each post; compose button; place-labelled stories; unread Messages badge | #38 |
 
 ### Tested on the owner's phone (Pixel 3, Android 12)
@@ -56,12 +57,13 @@ matching the current Figma file; finish the features first, then restyle to the 
 
 1. Device test of #29 and PR 6 (above); fix what the owner reports.
 2. ~~Selected buddies for live sharing~~ (client 7.3): done, needs a device test (two friends, pick one).
-3. **Video posts** (client 6.2): native (`expo-video`), so it goes into the next APK build.
+3. ~~Video posts~~ (client 6.2) + ~~haptics~~: done in #39 (native). **Needs a new APK build from the owner's
+   login before testing; OTA updates published after #39 only reach that new build.**
 4. **Landmark content**: the client fills the 166 English-only landmarks and richer sections through the
    bilingual sheet (LANDMARKS-IMPORT.md). Don't restart the Gemini Urdu job on the free key: it exhausts the
    daily quota the app's AI guide needs (see LANDMARKS-IMPORT.md section 7).
-5. **Next APK build (one native PR)**: add `expo-haptics` (+ `expo-video`), remove `expo-device` and
-   `expo-web-browser`. Owner builds from their own login.
+5. **Next APK build**: #39 added `expo-video` + `expo-haptics` and removed `expo-device` + `expo-web-browser`.
+   Owner runs `bunx eas-cli build -p android --profile preview` from their own login.
 6. **Duplicates:** cleaned on 6 Nov (14 hidden); re-run the near-duplicate query in LANDMARKS-IMPORT.md after big imports.
 7. **PR 7 guest mode**: plan in section 17. Not in the client brief, so last unless the owner asks.
 
@@ -166,8 +168,10 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
 - UI: on hold until the client shares their own design (8 Nov); the old Figma gaps in
   [ui-figma-gaps.md](ui-figma-gaps.md) are no longer planned work.
 - Not yet tested on a device: see section 0 ("Built but NOT yet tested").
-- Haptics are deferred: `expo-haptics` is a native module, so add it with the next APK build.
-- Unused **native** packages to remove with the next APK build: `expo-device`, `expo-web-browser`.
+- Haptics: `src/lib/haptics.ts` (Android system effects, no VIBRATE needed): like/bookmark, segmented
+  controls, posting, SOS hold, live sharing start/stop. One per action, always with a visual change.
+- Video posts: `post-videos` bucket (50 MB, video types), `community_posts.video_url` + `video_duration_ms`;
+  clips up to 60 s; poster frame from `expo-video` thumbnails; tap-to-play (`features/community/post-video.tsx`).
   Keep `expo-glass-effect` and `expo-symbols` (expo-router needs them) and `react-native-url-polyfill`
   (side-effect import in `src/lib/supabase.ts`).
 - The UI is built from `src/components` only; gluestack-ui was removed in #28. Do not reintroduce it.
@@ -176,7 +180,8 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
 
 - `runtimeVersion` uses the **fingerprint** policy. An EAS Update only reaches builds with the same fingerprint.
 - Check: `node node_modules/@expo/fingerprint/bin/cli.js fingerprint:generate --platform android` → `.hash`.
-- In this container main's Android fingerprint computes as `50642d95dbd0ddbe8d392f9d5ac17a55a6931fe7`, while
+- In this container main's Android fingerprint computed as `50642d95dbd0ddbe8d392f9d5ac17a55a6931fe7` up to #38
+  and `fc7027e2ee6625133a886b657e51cbbedcc863bc` after #39 (native modules changed), while
   EAS recorded runtime `3fe76e5c…` for the same code (computed on the owner's machine). Hashes differ
   between machines, so compare **before vs after on the same machine**: unchanged = OTA-safe. OTA updates
   published by the owner reach APK `4df88d41` (and later builds with the same native config), not older APKs.
