@@ -44,7 +44,8 @@ test('trusted contact normalises local numbers', () => {
 
 test('review needs stars; post needs text; trip notes empty to null', () => {
   expect(firstError(reviewSchema.safeParse({ rating: 0, body: '' }))).toBe('rating: Choose a star rating.');
-  expect(firstError(postSchema.safeParse({ body: '   ', destinationId: null }))).toBe('body: Write something to share.');
+  expect(firstError(postSchema.safeParse({ body: '   ', hasMedia: false }))).toBe('body: Add a photo or video, or write something.');
+  expect(postSchema.safeParse({ body: '', hasMedia: true }).success).toBe(true);
   expect(tripItemSchema.parse({ status: 'todo', plannedDate: '2026-12-01', notes: ' ' }).notes).toBeNull();
   expect(tripItemSchema.safeParse({ status: 'todo', plannedDate: '1 Dec', notes: '' }).success).toBe(false);
 });

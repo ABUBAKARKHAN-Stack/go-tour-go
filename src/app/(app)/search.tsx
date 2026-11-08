@@ -33,6 +33,7 @@ import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 import { flipX, tx } from '@/lib/i18n';
+import { KIND_LABEL } from '@/features/data/place-kinds';
 
 type Row =
   | { type: 'place'; id: string; name: string; subtitle: string; latitude: number; longitude: number; distance: number | null; online?: boolean }
@@ -40,25 +41,6 @@ type Row =
 
 type Recent = { id: string; name: string; subtitle: string; latitude: number; longitude: number; landmarkId?: string };
 
-const KIND_LABEL: Record<string, string> = {
-  city: tx('City'),
-  town: tx('Town'),
-  village: tx('Village'),
-  suburb: tx('Area'),
-  borough: tx('Area'),
-  quarter: tx('Neighbourhood'),
-  neighbourhood: tx('Neighbourhood'),
-  locality: tx('Locality'),
-  hamlet: tx('Village'),
-  university: tx('University'),
-  college: tx('College'),
-  hospital: tx('Hospital'),
-  airport: tx('Airport'),
-  railway_station: tx('Railway station'),
-  bus_station: tx('Bus station'),
-  mall: tx('Shopping mall'),
-  stadium: tx('Stadium'),
-};
 
 function useDebounced<T>(value: T, ms: number) {
   const [debounced, setDebounced] = useState(value);

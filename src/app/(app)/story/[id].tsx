@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MapPin, Trash2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,6 +17,13 @@ import { displayName } from '@/features/social/api';
 import { tx } from '@/lib/i18n';
 
 const STORY_MS = 6000;
+const MAX_VIDEO_MS = 60_000;
+
+/** How long a story stays up: a photo 6 s, a video its own length (at most 60 s). */
+function storyLength(s: { video_url?: string | null; video_duration_ms?: number | null }) {
+  if (!s.video_url) return STORY_MS;
+  return Math.min(MAX_VIDEO_MS, Math.max(STORY_MS / 2, s.video_duration_ms ?? STORY_MS * 2));
+}
 const FILL = { from: { width: '0%' }, to: { width: '100%' } } as const;
 
 /**
@@ -48,6 +56,7 @@ export default function StoryViewer() {
   }
   const index = Math.min(position.index, Math.max(0, items.length - 1));
   const story = items[index];
+  const length = story ? storyLength(story) : STORY_MS;
 
   const [paused, setPaused] = useState(false);
   const remaining = useRef(STORY_MS);
@@ -69,7 +78,7 @@ export default function StoryViewer() {
   useEffect(() => {
     if (!story) return;
     markStorySeen(story);
-    remaining.current = STORY_MS;
+    remaining.current = storyLength(story);
   }, [story]);
 
   // Advance when the time runs out; holding pauses and keeps what was left.
@@ -110,7 +119,11 @@ export default function StoryViewer() {
 
   return (
     <View className="flex-1 bg-black">
-      <Image source={{ uri: story.image_url }} style={{ flex: 1 }} contentFit="contain" transition={150} />
+      {story.video_url ? (
+        <StoryVideo key={story.id} url={story.video_url} poster={story.image_url} paused={paused} />
+      ) : (
+        <Image source={{ uri: story.image_url }} style={{ flex: 1 }} contentFit="contain" transition={150} />
+      )}
       <View className="absolute inset-0 flex-row">
         <Pressable accessibilityLabel={tx('Previous')} className="w-1/3" onPress={goPrev} {...hold} />
         <Pressable accessibilityLabel={tx('Next')} className="flex-1" onPress={goNext} {...hold} />
@@ -127,7 +140,7 @@ export default function StoryViewer() {
                   className="absolute bottom-0 left-0 top-0 bg-white"
                   style={{
                     animationName: FILL,
-                    animationDuration: STORY_MS,
+                    animationDuration: length,
                     animationTimingFunction: 'linear',
                     animationFillMode: 'forwards',
                     animationPlayState: paused ? 'paused' : 'running',
@@ -178,6 +191,24 @@ export default function StoryViewer() {
           ) : null}
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/** A video story: plays with sound from the start, pauses while the story is held. */
+function StoryVideo({ url, poster, paused }: { url: string; poster: string; paused: boolean }) {
+  const player = useVideoPlayer({ uri: url, useCaching: true }, (p) => {
+    p.loop = false;
+    p.play();
+  });
+  useEffect(() => {
+    if (paused) player.pause();
+    else player.play();
+  }, [paused, player]);
+  return (
+    <View style={{ flex: 1 }}>
+      <Image source={{ uri: poster }} style={{ position: 'absolute', inset: 0 }} contentFit="contain" />
+      <VideoView player={player} style={{ flex: 1 }} contentFit="contain" nativeControls={false} />
     </View>
   );
 }
