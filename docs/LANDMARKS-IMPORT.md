@@ -74,10 +74,8 @@ changes or re-shows it again.
 
 ## 4. Editing existing landmarks
 
-1. **Download the full sheet** (the SQL editor shows only 100 rows, so use one of these):
-   - Supabase → **Table Editor** → view **`landmark_sheet`** → **Export** → **Export table as CSV** (all rows); or
-   - on a computer with `psql`, using the connection string from the dashboard's **Connect** button:
-     `psql "<connection string>" -c "\copy (select * from landmark_sheet) to 'landmarks-all.csv' csv header"`
+1. Supabase → SQL editor → run `select * from landmark_sheet;` → **Download CSV** (the editor returns up to
+   1,000 rows, enough for all shown landmarks).
 
    It has every shown landmark in the import columns, English and Urdu side by side. The first column,
    `edited`, says `no` on every row; the last, `urdu_machine_translated`, is ignored on import.
