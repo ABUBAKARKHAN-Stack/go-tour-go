@@ -8,9 +8,11 @@ import { Text } from '@/components/text';
 
 import { Avatar } from '@/components/avatar';
 import { formatCount, useCommunityActions } from '@/features/community/api';
+import { PostVideo } from '@/features/community/post-video';
 import { useRatings } from '@/features/destinations/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
+import { haptics } from '@/lib/haptics';
 import { CSS_EASE_OUT } from '@/lib/motion';
 import { colors } from '@/lib/theme';
 import type { CommunityPost } from '@/lib/types';
@@ -62,6 +64,8 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
   const open = () => router.push({ pathname: '/post/[id]', params: { id: post.id } });
   const like = (value: boolean) => {
     if (value) setPops((n) => n + 1);
+    if (value) haptics.on();
+    else haptics.off();
     actions.toggleLike.mutate({ postId: post.id, like: value });
   };
 
@@ -127,7 +131,11 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           accessibilityRole="button"
           accessibilityLabel={saved ? tx('Remove from saved') : tx('Save post')}
           accessibilityState={{ selected: saved }}
-          onPress={() => actions.toggleSave.mutate({ postId: post.id, save: !saved })}
+          onPress={() => {
+            if (saved) haptics.off();
+            else haptics.on();
+            actions.toggleSave.mutate({ postId: post.id, save: !saved });
+          }}
           hitSlop={8}
           className="h-10 w-9 items-center justify-center"
         >
@@ -145,7 +153,9 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           {post.body}
         </Text>
       </Pressable>
-      {post.image_url ? (
+      {post.video_url ? (
+        <PostVideo url={post.video_url} poster={post.image_url} durationMs={post.video_duration_ms} postId={post.id} />
+      ) : post.image_url ? (
         <Pressable
           accessibilityRole="imagebutton"
           accessibilityLabel={tx('Photo. Double-tap to like.')}

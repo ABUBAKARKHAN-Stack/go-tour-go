@@ -15,6 +15,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { useDestination } from '@/features/destinations/api';
 import { useDeleteReview, useReviews, useSaveReview } from '@/features/reviews/api';
 import { reviewSchema } from '@/features/reviews/schemas';
+import { haptics } from '@/lib/haptics';
 import { serverError, useZodForm } from '@/lib/forms';
 import { chooseImageSource } from '@/lib/pick-image';
 import { tx } from '@/lib/i18n';
@@ -56,7 +57,16 @@ function ReviewForm({ destinationId, existing }: { destinationId: string; existi
   const submit = handleSubmit(({ rating, body }) =>
     save.mutate(
       { destinationId, rating, body, imageLocalUri: image, existingImage },
-      { onSuccess: () => router.back(), onError: (e) => setError('root', serverError(e)) },
+      {
+        onSuccess: () => {
+          haptics.success();
+          router.back();
+        },
+        onError: (e) => {
+          haptics.error();
+          setError('root', serverError(e));
+        },
+      },
     ),
   );
 

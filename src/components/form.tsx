@@ -3,6 +3,7 @@ import { I18nManager, Pressable, View, type TextInputProps } from 'react-native'
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Text, TextInput } from '@/components/text';
 
+import { haptics } from '@/lib/haptics';
 import { EASE_IN_OUT, usePressScale } from '@/lib/motion';
 import { colors } from '@/lib/theme';
 
@@ -129,7 +130,10 @@ export function Segmented<T extends string>({
             key={o.value}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            onPress={() => onChange(o.value)}
+            onPress={() => {
+              if (o.value !== value) haptics.select();
+              onChange(o.value);
+            }}
             className={`min-h-10 flex-1 items-center justify-center rounded-full px-2 ${active && !segment ? 'bg-card shadow-sm' : ''}`}
           >
             <Text numberOfLines={1} className={`text-sm font-semibold ${active ? 'text-foreground' : 'text-faint'}`}>

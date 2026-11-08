@@ -13,6 +13,7 @@ import { InlineError } from '@/components/states';
 import { useStoryActions } from '@/features/community/api';
 import { storySchema } from '@/features/community/schemas';
 import { useDestinationsByDistance } from '@/features/destinations/api';
+import { haptics } from '@/lib/haptics';
 import { serverError, useZodForm } from '@/lib/forms';
 import { pickImage } from '@/lib/pick-image';
 import { tx } from '@/lib/i18n';
@@ -29,7 +30,16 @@ export default function NewStory() {
     const d = sorted.find((x) => x.id === destinationId);
     actions.create.mutate(
       { imageLocalUri: image, caption, destinationId, placeName: d?.name ?? null },
-      { onSuccess: () => router.back(), onError: (e) => setError('root', serverError(e)) },
+      {
+        onSuccess: () => {
+          haptics.success();
+          router.back();
+        },
+        onError: (e) => {
+          haptics.error();
+          setError('root', serverError(e));
+        },
+      },
     );
   });
 

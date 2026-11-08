@@ -19,6 +19,7 @@ import { isSessionLive, SHARING_DURATIONS, setSharingAudience, startSharing, sto
 import { ViewerPicker } from '@/features/safety/viewer-picker';
 import { useShareViewers } from '@/features/safety/viewers';
 import { displayName, useFriendships } from '@/features/social/api';
+import { haptics } from '@/lib/haptics';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
@@ -88,6 +89,7 @@ export default function SafetyScreen() {
   };
 
   const triggerSos = async () => {
+    haptics.longPress(); // the hold committed: same moment the button changes to "Locating..."
     setTriggering(true);
     try {
       if (location.permission !== 'granted') await requestLocationPermission();
@@ -120,6 +122,7 @@ export default function SafetyScreen() {
     try {
       if (live) {
         await stopSharing();
+        haptics.off();
         await endLiveLinks().catch(() => undefined);
         return;
       }
@@ -133,6 +136,7 @@ export default function SafetyScreen() {
       // Ask for "Allow all the time" so sharing continues in the background.
       const bg = await requestBackgroundPermission();
       const { background } = await startSharing(durationMs, fix, audience);
+      haptics.success();
       if (!bg || !background) {
         Alert.alert(tx('Sharing while the app is open'), tx('Allow location "all the time" in Settings to keep sharing when GoTourGo is in the background.'));
       }
