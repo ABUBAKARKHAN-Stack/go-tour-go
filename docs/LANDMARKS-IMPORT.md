@@ -74,17 +74,28 @@ changes or re-shows it again.
 
 ## 4. Editing existing landmarks
 
-1. Supabase → SQL editor → run `select * from landmark_sheet;` → **Download CSV**. It has every shown
-   landmark in the import columns, English and Urdu side by side (plus `urdu_machine_translated`, which is
-   ignored on import).
-2. In the sheet, delete the rows you are not changing, then edit the rest. Urdu drafted by AI is marked
+1. **Download the full sheet** (the SQL editor shows only 100 rows, so use one of these):
+   - Supabase → **Table Editor** → view **`landmark_sheet`** → **Export** → **Export table as CSV** (all rows); or
+   - on a computer with `psql`, using the connection string from the dashboard's **Connect** button:
+     `psql "<connection string>" -c "\copy (select * from landmark_sheet) to 'landmarks-all.csv' csv header"`
+
+   It has every shown landmark in the import columns, English and Urdu side by side. The first column,
+   `edited`, says `no` on every row; the last, `urdu_machine_translated`, is ignored on import.
+2. The client edits any rows and **changes `edited` to `yes` on each row they changed**. New landmarks go at
+   the bottom with `edited` = `yes` and a new slug. Urdu drafted by AI is marked
    `urdu_machine_translated = true`; correcting it removes the "machine-translated" note in the app.
-3. Import the file into `landmark_import` as in section 3. Same slug = update.
+3. Import the whole file into `landmark_import` as in section 3. Rows left at `no` are only logged
+   (`result` = `skipped (edited = no)`): they are not checked, not changed and not locked, so spreadsheet
+   damage on untouched rows can't reach the app. Rows marked `yes` (or files without an `edited` column, such
+   as the new-landmark template) are checked and applied. Same slug = update.
+   Before importing, an agent can also compare the returned file with the database and list the real
+   changes, which catches a row that was changed but not marked.
 
 **Filling the landmarks that are still English-only** (166 on 7 Nov, OpenStreetMap entries without photos;
 the sheet sent to the client on 7 Nov holds exactly these): export only those with
 `select * from landmark_sheet where short_description_ur is null or description_ur is null or name_ur is null;`
-fill the `_ur` columns (and improve the English if you like), then import as usual.
+fill the `_ur` columns (and improve the English if you like), set `edited` to `yes` on the rows filled,
+then import as usual. (The 7 Nov file has no `edited` column, so every row in it is applied.)
 
 Quick single fixes can also be made directly in the Table Editor (`destinations` for English,
 `destination_translations` with `locale = ur` for Urdu). Editing a landmark there also locks it.
@@ -142,4 +153,6 @@ the Urdu. Two different places close together (a fort and a mosque inside it) ar
   photo-shoot house, two duplicate museums, a stray Makli node); wrong English fixed and locked for Marble Peak
   (had a Canadian description), Gora Sad-Ishtrag, Gori Temple, Bagh-e-Karachi, Butkara Stupa, Amri and the
   Nagarparkar museum (Urdu in English fields); a few categories corrected.
+- `edited` flag: migration `20261108080852_landmark_sheet_edited_flag` (view column + early skip in
+  `private.apply_landmark_import`).
 - New imports cannot create one-language content; the job is only for older data or a future language.
