@@ -2,7 +2,7 @@ import { File } from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { createVideoPlayer } from 'expo-video';
 
-import { STORAGE_BUCKETS, supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 /** Resizes to max 1280 px JPEG (keeps uploads small on mobile data). */
 export async function compressImage(uri: string, maxSize = 1280, base64 = false) {
@@ -60,16 +60,4 @@ export async function makeVideoPoster(videoUri: string): Promise<string | null> 
   } finally {
     player.release();
   }
-}
-
-const VIDEO_EXT: Record<string, string> = { 'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/3gpp': '3gp', 'video/webm': 'webm' };
-
-/** Uploads a video under "<userId>/..." in the post-videos bucket and returns its public URL. */
-export async function uploadVideo(userId: string, uri: string, mimeType: string): Promise<string> {
-  const contentType = VIDEO_EXT[mimeType] ? mimeType : 'video/mp4';
-  const bytes = await new File(uri).arrayBuffer();
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${VIDEO_EXT[contentType]}`;
-  const { error } = await supabase.storage.from(STORAGE_BUCKETS.postVideos).upload(path, bytes, { contentType, upsert: false });
-  if (error) throw error;
-  return supabase.storage.from(STORAGE_BUCKETS.postVideos).getPublicUrl(path).data.publicUrl;
 }

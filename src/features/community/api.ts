@@ -2,10 +2,9 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteD
 import { Share } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
-import { STORAGE_BUCKETS, supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type { CommunityPost, PostComment, Story } from '@/lib/types';
 import { SHARE_SITE } from '@/features/safety/share-links';
-import { makeVideoPoster, uploadImage, uploadVideo } from '@/lib/upload';
 
 export { formatCount } from '@/features/community/format';
 
@@ -16,7 +15,7 @@ const AUTHOR = 'author:profiles!community_posts_author_id_fkey(id, username, ful
 // current user with .eq('my_like.user_id', ...), which filters only that
 // embedded alias. `top_comment` is the newest comment (ordered and limited
 // inside the embed).
-const POST_SELECT = `*, ${AUTHOR}, destination:destinations(id, name, city), likes:post_likes(count), comments:post_comments(count), shares:post_shares(count), my_like:post_likes(user_id), my_save:saved_posts(user_id), top_comment:post_comments(id, author_id, body, created_at, author:profiles(id, username, full_name, avatar_url))`;
+const POST_SELECT = `*, ${AUTHOR}, destination:destinations(id, name, city), likes:post_likes(count), comments:post_comments(count), shares:post_shares(count), my_like:post_likes(user_id), my_save:saved_posts(user_id), top_comment:post_comments(id, author_id, body, created_at, author:profiles(id, username, full_name, avatar_url)), media:post_media(id, position, type, url, poster_url, duration_ms)`;
 
 /** Applies the per-user filters and the top-comment limit every post query needs. */
 function postQuery(userId: string) {
@@ -26,6 +25,7 @@ function postQuery(userId: string) {
     .eq('my_like.user_id', userId)
     .eq('my_save.user_id', userId)
     .order('created_at', { referencedTable: 'top_comment', ascending: false })
+    .order('position', { referencedTable: 'media', ascending: true })
     .limit(1, { referencedTable: 'top_comment' });
 }
 
@@ -159,46 +159,6 @@ export function useCommunityActions() {
   };
 
   return {
-    createPost: useMutation({
-      mutationFn: async (input: {
-        body: string;
-        imageLocalUri?: string | null;
-        /** A video replaces the photo; its first frames become the poster. */
-        video?: { uri: string; mimeType: string; durationMs: number | null } | null;
-        destinationId?: string | null;
-        placeName?: string | null;
-        latitude?: number | null;
-        longitude?: number | null;
-      }) => {
-        const body = input.body.trim();
-        if (!body) throw new Error('Write something to share.');
-        let image_url: string | null = null;
-        let video_url: string | null = null;
-        if (input.video) {
-          const poster = await makeVideoPoster(input.video.uri);
-          [video_url, image_url] = await Promise.all([
-            uploadVideo(userId!, input.video.uri, input.video.mimeType),
-            poster ? uploadImage(STORAGE_BUCKETS.posts, userId!, poster).catch(() => null) : Promise.resolve(null),
-          ]);
-        } else if (input.imageLocalUri) {
-          image_url = await uploadImage(STORAGE_BUCKETS.posts, userId!, input.imageLocalUri);
-        }
-        const { error } = await supabase.from('community_posts').insert({
-          author_id: userId,
-          body,
-          image_url,
-          video_url,
-          video_duration_ms: input.video?.durationMs != null ? Math.round(input.video.durationMs) : null,
-          destination_id: input.destinationId ?? null,
-          place_name: input.placeName ?? null,
-          latitude: input.latitude ?? null,
-          longitude: input.longitude ?? null,
-        });
-        if (error) throw error;
-      },
-      onSuccess: () => qc.invalidateQueries({ queryKey: ['feed'] }),
-    }),
-
     toggleLike: useMutation({
       mutationFn: async ({ postId, like }: { postId: string; like: boolean }) => {
         const { error } = like
@@ -235,7 +195,7 @@ export function useCommunityActions() {
         const place = post.destination ? `${post.destination.name}, ${post.destination.city}` : post.place_name;
         // The link opens a web page with the photos/video and an "Open in GoTourGo" button.
         const link = `${SHARE_SITE}/p?id=${post.id}`;
-        const message = [`"${post.body}"`, place ? `📍 ${place}` : null, link].filter(Boolean).join('\n');
+        const message = [post.body ? `"${post.body}"` : null, place ? `📍 ${place}` : null, link].filter(Boolean).join('\n');
         const result = await Share.share({ message });
         if (result.action !== Share.sharedAction) return false;
         patchPost(post.id, (p) => ({ ...p, shares: [{ count: (p.shares[0]?.count ?? 0) + 1 }] }));
@@ -316,22 +276,7 @@ export function useStories() {
 
 export function useStoryActions() {
   const qc = useQueryClient();
-  const { userId } = useAuth();
   return {
-    create: useMutation({
-      mutationFn: async (input: { imageLocalUri: string; caption?: string; placeName?: string | null; destinationId?: string | null }) => {
-        const image_url = await uploadImage(STORAGE_BUCKETS.stories, userId!, input.imageLocalUri);
-        const { error } = await supabase.from('stories').insert({
-          author_id: userId,
-          image_url,
-          caption: input.caption?.trim() || null,
-          place_name: input.placeName ?? null,
-          destination_id: input.destinationId ?? null,
-        });
-        if (error) throw error;
-      },
-      onSuccess: () => qc.invalidateQueries({ queryKey: ['stories'] }),
-    }),
     remove: useMutation({
       mutationFn: async (id: string) => {
         const { error } = await supabase.from('stories').delete().eq('id', id);

@@ -33,6 +33,7 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 | Community | Posts at a place, All / Following feed, double-tap like, comments (instant, reply, confirm delete), stories (progress, pause, seen rings, next author) | #29 |
 | Selected buddies | Live location with all friends or chosen friends (`location_share_viewers`); SOS always all friends | #37 |
 | Video posts + haptics | Clips up to 60 s with poster frames, tap-to-play inline/full screen; touch feedback; unused native modules removed (**new APK**) | #39 |
+| Instagram-style posting | Up to 10 photos/videos per post (carousel) and per story batch, video stories, captions optional with media, search any landmark or offline place as the location, background upload with a progress card on Community (Retry / Discard), @mention links, share links to `/p?id=` | #40, #41 |
 | Social upgrade | For you / Nearby (50 km) / Following feeds; search (travellers, posts, places); bookmark + Saved posts; share with count; place rating and newest comment on each post; compose button; place-labelled stories; unread Messages badge | #38 |
 
 ### Tested on the owner's phone (Pixel 3, Android 12)
@@ -170,6 +171,11 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
 - Not yet tested on a device: see section 0 ("Built but NOT yet tested").
 - Haptics: `src/lib/haptics.ts` (Android system effects, no VIBRATE needed): like/bookmark, segmented
   controls, posting, SOS hold, live sharing start/stop. One per action, always with a visual change.
+- Posting pipeline: composers (`post/new.tsx`, `story/new.tsx`) build `DraftMedia` with `media-strip.tsx` /
+  `media-picker.ts` and a `PlaceTag` with `place-picker.tsx`, then call `startUpload` (`upload-queue.ts`) and close.
+  The queue resizes photos, streams each file to a signed upload URL with progress (`lib/upload-progress.ts`,
+  `expo-file-system/legacy` upload task), then inserts the post + `post_media` rows (or one story per item).
+  Jobs live in memory: if the app is killed mid-upload the job is lost (the composer can be reopened).
 - Video posts: `post-videos` bucket (50 MB, video types), `community_posts.video_url` + `video_duration_ms`;
   clips up to 60 s; poster frame from `expo-video` thumbnails; tap-to-play (`features/community/post-video.tsx`).
   Keep `expo-glass-effect` and `expo-symbols` (expo-router needs them) and `react-native-url-polyfill`

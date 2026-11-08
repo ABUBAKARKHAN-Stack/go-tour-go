@@ -211,8 +211,20 @@ export type CommunityPost = {
   shares: { count: number }[];
   my_like: { user_id: string }[];
   my_save: { user_id: string }[];
+  /** Photos and videos in order (empty for posts made before multi-media; use image_url / video_url). */
+  media?: PostMedia[];
   /** The newest comment (at most one), shown under the post in the feed. */
   top_comment: Pick<PostComment, 'id' | 'author_id' | 'body' | 'created_at' | 'author'>[];
+};
+
+export type PostMedia = {
+  id: string;
+  position: number;
+  type: 'image' | 'video';
+  url: string;
+  /** Poster frame of a video. */
+  poster_url: string | null;
+  duration_ms: number | null;
 };
 
 export type PostComment = {
@@ -227,7 +239,10 @@ export type PostComment = {
 export type Story = {
   id: string;
   author_id: string;
+  /** The photo, or a video story's poster frame. */
   image_url: string;
+  video_url?: string | null;
+  video_duration_ms?: number | null;
   caption: string | null;
   place_name: string | null;
   destination_id: string | null;

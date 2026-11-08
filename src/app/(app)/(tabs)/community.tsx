@@ -18,6 +18,7 @@ import { requestLocationPermission } from '@/features/location/location-provider
 import { useLastLocation } from '@/features/location/location-store';
 import { usePressScale } from '@/lib/motion';
 import { orderStoryAuthors, useSeenStories, type StoryGroup } from '@/features/community/story-seen';
+import { PendingUploads } from '@/features/community/pending-uploads';
 import { PostCard } from '@/features/community/post-card';
 import { displayName, useFriendships, useMyFollowingIds } from '@/features/social/api';
 import { colors } from '@/lib/theme';
@@ -97,6 +98,7 @@ export default function CommunityScreen() {
         }
         ListHeaderComponent={
           <View className="gap-4">
+            <PendingUploads />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
               <OwnStoryBubble group={mine} />
               {others.map((g) => (

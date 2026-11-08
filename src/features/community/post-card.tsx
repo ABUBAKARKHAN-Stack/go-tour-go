@@ -8,6 +8,7 @@ import { Text } from '@/components/text';
 
 import { Avatar } from '@/components/avatar';
 import { formatCount, useCommunityActions } from '@/features/community/api';
+import { MediaCarousel } from '@/features/community/media-carousel';
 import { MentionText } from '@/features/community/mention-text';
 import { PostVideo } from '@/features/community/post-video';
 import { useRatings } from '@/features/destinations/api';
@@ -149,10 +150,14 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
         ) : null}
       </View>
 
-      <Pressable disabled={detail} onPress={open}>
-        <MentionText className="text-[15px] leading-6 text-foreground" numberOfLines={detail ? undefined : 6} text={post.body} />
-      </Pressable>
-      {post.video_url ? (
+      {post.body ? (
+        <Pressable disabled={detail} onPress={open}>
+          <MentionText className="text-[15px] leading-6 text-foreground" numberOfLines={detail ? undefined : 6} text={post.body} />
+        </Pressable>
+      ) : null}
+      {(post.media?.length ?? 0) > 1 ? (
+        <MediaCarousel media={post.media!} postId={post.id} onPhotoPress={detail ? undefined : open} />
+      ) : post.video_url ? (
         <PostVideo url={post.video_url} poster={post.image_url} durationMs={post.video_duration_ms} postId={post.id} />
       ) : post.image_url ? (
         <Pressable
