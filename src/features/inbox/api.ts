@@ -29,6 +29,16 @@ export function useUnreadCount() {
   return (data ?? []).filter((n) => !n.read_at).length;
 }
 
+/** Conversations with unread messages (for the Messages badge). */
+export function useUnreadConversations() {
+  const { data } = useInbox();
+  const ids = new Set(
+    (data ?? []).filter((n) => n.type === 'message' && !n.read_at).map((n) => String((n.data as { conversation_id?: string } | null)?.conversation_id ?? '')),
+  );
+  ids.delete('');
+  return ids;
+}
+
 export function useMarkAllRead() {
   const qc = useQueryClient();
   return useMutation({

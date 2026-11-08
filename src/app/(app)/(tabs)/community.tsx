@@ -1,27 +1,39 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { MessagesSquare, PenSquare, Plus, Users } from 'lucide-react-native';
+import { MapPin, MessagesSquare, PenSquare, Pencil, Plus, Search, Users } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Text } from '@/components/text';
 
-import { AppButton, IconButton } from '@/components/app-button';
+import { IconButton } from '@/components/app-button';
 import { Segmented } from '@/components/form';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
+import { useTabBarSpace } from '@/components/tab-bar';
 import { useAuth } from '@/features/auth/auth-provider';
-import { useFeed, useStories } from '@/features/community/api';
+import { useCommenterRatings, useFeed, useStories } from '@/features/community/api';
+import { useUnreadConversations } from '@/features/inbox/api';
+import { requestLocationPermission } from '@/features/location/location-provider';
+import { useLastLocation } from '@/features/location/location-store';
+import { usePressScale } from '@/lib/motion';
 import { orderStoryAuthors, useSeenStories, type StoryGroup } from '@/features/community/story-seen';
 import { PostCard } from '@/features/community/post-card';
 import { displayName, useFriendships, useMyFollowingIds } from '@/features/social/api';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
-type FeedTab = 'all' | 'following';
+type FeedTab = 'all' | 'nearby' | 'following';
+
+/** The Nearby feed: posts tagged within this distance of you. */
+const NEARBY_KM = 50;
 
 export default function CommunityScreen() {
   const { userId } = useAuth();
   const [tab, setTab] = useState<FeedTab>('all');
+  const here = useLastLocation();
+  const unread = useUnreadConversations();
+  const tabSpace = useTabBarSpace();
   const following = useMyFollowingIds();
   const friendships = useFriendships();
   // Following feed: people you follow, your friends and you.
@@ -31,10 +43,19 @@ export default function CommunityScreen() {
     if (userId) ids.add(userId);
     return [...ids];
   }, [following.data, friendships.friends, userId]);
-  const feed = useFeed(tab === 'following' ? { authorIds: circle } : undefined);
+  const feed = useFeed(
+    tab === 'following'
+      ? { authorIds: circle }
+      : tab === 'nearby'
+        ? here
+          ? { near: { latitude: here.latitude, longitude: here.longitude, km: NEARBY_KM } }
+          : { authorIds: [] } // no location yet: empty, with a prompt below
+        : undefined,
+  );
   const stories = useStories();
   const isSeen = useSeenStories();
   const posts = useMemo(() => feed.data?.pages.flat() ?? [], [feed.data]);
+  const commenterRatings = useCommenterRatings(posts);
   const groups = useMemo(() => orderStoryAuthors(stories.data ?? [], userId, isSeen), [stories.data, userId, isSeen]);
   const mine = groups.find((g) => g.authorId === userId);
   const others = groups.filter((g) => g.authorId !== userId);
@@ -47,15 +68,21 @@ export default function CommunityScreen() {
       scroll={false}
       right={
         <View className="flex-row gap-2">
-          <IconButton icon={Users} label={tx('Friends')} onPress={() => router.push('/friends')} />
-          <IconButton icon={MessagesSquare} label={tx('Messages')} onPress={() => router.push('/messages')} />
+          <IconButton icon={Search} label={tx('Search travellers and posts')} onPress={() => router.push('/community-search')} />
+          <IconButton
+            icon={MessagesSquare}
+            label={unread.size ? tx('Messages, {0} unread', { 0: unread.size }) : tx('Messages')}
+            badge={unread.size}
+            onPress={() => router.push('/messages')}
+          />
         </View>
       }
     >
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
-        contentContainerClassName="gap-4 px-4 pb-6"
+        contentContainerClassName="gap-4 px-4"
+        contentContainerStyle={{ paddingBottom: tabSpace + 64 }}
         onEndReachedThreshold={0.4}
         onEndReached={() => feed.hasNextPage && !feed.isFetchingNextPage && feed.fetchNextPage()}
         refreshControl={
@@ -76,12 +103,12 @@ export default function CommunityScreen() {
                 <StoryBubble key={g.authorId} group={g} />
               ))}
             </ScrollView>
-            <AppButton label={tx('Share a travel moment')} icon={PenSquare} variant="secondary" onPress={() => router.push('/post/new')} />
             <Segmented
               value={tab}
               onChange={setTab}
               options={[
-                { value: 'all', label: tx('All travellers') },
+                { value: 'all', label: tx('For you') },
+                { value: 'nearby', label: tx('Nearby') },
                 { value: 'following', label: tx('Following') },
               ]}
             />
@@ -92,6 +119,22 @@ export default function CommunityScreen() {
             <LoadingState variant="feed" label={tx('Loading posts...')} />
           ) : feed.isError ? (
             <ErrorState error={feed.error} onRetry={feed.refetch} />
+          ) : tab === 'nearby' && !here ? (
+            <EmptyState
+              icon={MapPin}
+              title={tx('See posts near you')}
+              message={tx('Turn on location to see what travellers shared within {0} km.', { 0: NEARBY_KM })}
+              actionLabel={tx('Turn on location')}
+              onAction={() => void requestLocationPermission()}
+            />
+          ) : tab === 'nearby' ? (
+            <EmptyState
+              icon={MapPin}
+              title={tx('No posts nearby yet')}
+              message={tx('Nobody has posted within {0} km of you. Share the first one.', { 0: NEARBY_KM })}
+              actionLabel={tx('Create post')}
+              onAction={() => router.push('/post/new')}
+            />
           ) : tab === 'following' ? (
             <EmptyState
               icon={Users}
@@ -105,9 +148,35 @@ export default function CommunityScreen() {
           )
         }
         ListFooterComponent={feed.isFetchingNextPage ? <ActivityIndicator color={colors.primary} /> : undefined}
-        renderItem={({ item }) => <PostCard post={item} userId={userId} />}
+        renderItem={({ item }) => (
+          <PostCard
+            post={item}
+            userId={userId}
+            commenterRating={item.destination_id && item.top_comment?.[0] ? commenterRatings[`${item.top_comment[0].author_id}:${item.destination_id}`] : undefined}
+          />
+        )}
       />
+      <ComposeButton bottom={tabSpace - 8} />
     </Screen>
+  );
+}
+
+/** Floating "new post" button above the tab bar. */
+function ComposeButton({ bottom }: { bottom: number }) {
+  const press = usePressScale(0.94);
+  return (
+    <Animated.View style={[press.style, { position: 'absolute', end: 20, bottom }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={tx('Share a travel moment')}
+        onPress={() => router.push('/post/new')}
+        {...press.handlers}
+        className="h-14 w-14 items-center justify-center rounded-full bg-primary"
+        style={{ boxShadow: '0 6px 16px rgba(15,76,74,0.30)' }}
+      >
+        <Pencil color={colors.primaryForeground} size={22} />
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -148,10 +217,12 @@ function OwnStoryBubble({ group }: { group: StoryGroup | undefined }) {
 
 /** Someone else's stories: terracotta ring while there is something new, grey once all are seen. */
 function StoryBubble({ group }: { group: StoryGroup }) {
+  // A story tagged at a place is labelled with the place (the name is in the accessibility label).
+  const place = group.latest.place_name?.split(',')[0]?.trim() || null;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={tx('Story by {0}', { 0: displayName(group.author) })}
+      accessibilityLabel={place ? tx('Story by {0} at {1}', { 0: displayName(group.author), 1: place }) : tx('Story by {0}', { 0: displayName(group.author) })}
       accessibilityHint={group.allSeen ? undefined : tx('New')}
       onPress={() => router.push({ pathname: '/story/[id]', params: { id: group.authorId } })}
       className="w-20 items-center gap-1"
@@ -159,8 +230,13 @@ function StoryBubble({ group }: { group: StoryGroup }) {
       <View className={`h-16 w-16 overflow-hidden rounded-full border-2 p-0.5 ${group.allSeen ? 'border-border' : 'border-accent'}`}>
         <Image source={{ uri: group.latest.image_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} contentFit="cover" />
       </View>
+      {place ? (
+        <View className="absolute right-1 top-0 h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-accent">
+          <MapPin color={colors.accentForeground} size={12} />
+        </View>
+      ) : null}
       <Text numberOfLines={1} className={`w-16 text-center text-xs ${group.allSeen ? 'text-muted-foreground' : 'font-semibold text-foreground'}`}>
-        {displayName(group.author)}
+        {place ?? displayName(group.author)}
       </Text>
     </Pressable>
   );

@@ -1,19 +1,20 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Heart, MapPin, MessageCircle, Trash2 } from 'lucide-react-native';
+import { Bookmark, ChevronRight, Heart, MapPin, MessageCircle, MoreVertical, Share2, Star } from 'lucide-react-native';
 import { memo, useRef, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { Text } from '@/components/text';
 
 import { Avatar } from '@/components/avatar';
-import { useCommunityActions } from '@/features/community/api';
+import { formatCount, useCommunityActions } from '@/features/community/api';
+import { useRatings } from '@/features/destinations/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { CSS_EASE_OUT } from '@/lib/motion';
 import { colors } from '@/lib/theme';
 import type { CommunityPost } from '@/lib/types';
-import { tx } from '@/lib/i18n';
+import { flipX, tx } from '@/lib/i18n';
 
 const DOUBLE_TAP_MS = 260;
 
@@ -31,11 +32,24 @@ const LIKE_POP = {
   to: { transform: [{ scale: 1 }] },
 };
 
-function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: string | null; detail?: boolean }) {
+type Props = {
+  post: CommunityPost;
+  userId: string | null;
+  detail?: boolean;
+  /** Stars the top commenter gave this landmark, if they reviewed it. */
+  commenterRating?: number;
+};
+
+function PostCardBase({ post, userId, detail, commenterRating }: Props) {
   const actions = useCommunityActions();
+  const ratings = useRatings();
   const liked = post.my_like.length > 0;
+  const saved = (post.my_save?.length ?? 0) > 0;
   const likes = post.likes[0]?.count ?? 0;
   const comments = post.comments[0]?.count ?? 0;
+  const shares = post.shares?.[0]?.count ?? 0;
+  const placeRating = post.destination_id ? ratings.data?.[post.destination_id] : undefined;
+  const topComment = detail ? undefined : post.top_comment?.[0];
   const mine = post.author_id === userId;
   const place = post.destination?.name ?? post.place_name;
   const reduced = useReducedMotion();
@@ -67,6 +81,15 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
     singleTap.current = setTimeout(open, DOUBLE_TAP_MS);
   };
 
+  const openPlace = () => post.destination && router.push({ pathname: '/destination/[id]', params: { id: post.destination.id } });
+
+  const menu = () =>
+    Alert.alert(tx('Post'), undefined, [
+      { text: tx('Share'), onPress: () => actions.sharePost.mutate(post) },
+      { text: tx('Delete post'), style: 'destructive', onPress: remove },
+      { text: tx('Cancel'), style: 'cancel' },
+    ]);
+
   const remove = () =>
     Alert.alert(tx('Delete post?'), tx('This cannot be undone.'), [
       { text: tx('Cancel'), style: 'cancel' },
@@ -84,12 +107,35 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
           <Avatar profile={post.author} size={40} />
         </Pressable>
         <View className="flex-1">
-          <Text className="text-sm font-semibold text-foreground">{displayName(post.author)}</Text>
-          <Text className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</Text>
+          <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
+            {displayName(post.author)}
+          </Text>
+          <View className="flex-row items-center gap-1">
+            {place ? (
+              <Pressable disabled={!post.destination} onPress={openPlace} hitSlop={4} className="shrink flex-row items-center gap-1">
+                <MapPin color={colors.primary} size={12} />
+                <Text numberOfLines={1} className="shrink text-xs font-medium text-primary">
+                  {place}
+                  {post.destination?.city ? `, ${post.destination.city}` : ''}
+                </Text>
+              </Pressable>
+            ) : null}
+            <Text className="text-xs text-muted-foreground">{place ? `· ${timeAgo(post.created_at)}` : timeAgo(post.created_at)}</Text>
+          </View>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={saved ? tx('Remove from saved') : tx('Save post')}
+          accessibilityState={{ selected: saved }}
+          onPress={() => actions.toggleSave.mutate({ postId: post.id, save: !saved })}
+          hitSlop={8}
+          className="h-10 w-9 items-center justify-center"
+        >
+          <Bookmark size={20} color={saved ? colors.primary : colors.mutedForeground} fill={saved ? colors.primary : 'transparent'} />
+        </Pressable>
         {mine ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={tx('Delete post')} onPress={remove} hitSlop={10} className="h-10 w-10 items-center justify-center">
-            <Trash2 color={colors.mutedForeground} size={18} />
+          <Pressable accessibilityRole="button" accessibilityLabel={tx('More options')} onPress={menu} hitSlop={8} className="h-10 w-8 items-center justify-center">
+            <MoreVertical color={colors.mutedForeground} size={20} />
           </Pressable>
         ) : null}
       </View>
@@ -127,21 +173,7 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
         </Pressable>
       ) : null}
 
-      {place ? (
-        <Pressable
-          disabled={!post.destination}
-          onPress={() => post.destination && router.push({ pathname: '/destination/[id]', params: { id: post.destination.id } })}
-          className="flex-row items-center gap-1"
-        >
-          <MapPin color={colors.primary} size={14} />
-          <Text className="text-xs font-medium text-primary">
-            {place}
-            {post.destination?.city ? `, ${post.destination.city}` : ''}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      <View className="flex-row items-center gap-6">
+      <View className="flex-row items-center gap-5">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={liked ? tx('Unlike') : tx('Like')}
@@ -156,7 +188,7 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
           >
             <Heart size={20} color={liked ? colors.destructive : colors.mutedForeground} fill={liked ? colors.destructive : 'transparent'} />
           </Animated.View>
-          <Text className="text-sm text-muted-foreground">{likes}</Text>
+          <Text className="text-sm text-muted-foreground">{formatCount(likes)}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -166,9 +198,59 @@ function PostCardBase({ post, userId, detail }: { post: CommunityPost; userId: s
           className="min-h-10 flex-row items-center gap-1.5"
         >
           <MessageCircle size={20} color={colors.mutedForeground} />
-          <Text className="text-sm text-muted-foreground">{comments}</Text>
+          <Text className="text-sm text-muted-foreground">{formatCount(comments)}</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tx('Share')}
+          onPress={() => actions.sharePost.mutate(post)}
+          hitSlop={6}
+          className="min-h-10 flex-row items-center gap-1.5"
+        >
+          <Share2 size={19} color={colors.mutedForeground} />
+          {shares > 0 ? <Text className="text-sm text-muted-foreground">{formatCount(shares)}</Text> : null}
+        </Pressable>
+        <View className="flex-1" />
+        {placeRating && placeRating.review_count > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tx('{0} rating from {1} reviews', { 0: placeRating.average_rating.toFixed(1), 1: placeRating.review_count })}
+            onPress={openPlace}
+            className="min-h-9 flex-row items-center gap-1 rounded-xl bg-secondary px-2.5"
+          >
+            <Star size={14} color={colors.primary} />
+            <Text className="text-sm font-semibold text-primary">{Number(placeRating.average_rating).toFixed(1)}</Text>
+          </Pressable>
+        ) : null}
       </View>
+
+      {topComment ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tx('Comment by {0}: {1}', { 0: displayName(topComment.author), 1: topComment.body })}
+          onPress={open}
+          className="flex-row items-center gap-3 rounded-2xl bg-secondary p-3"
+        >
+          <Avatar profile={topComment.author} size={32} />
+          <View className="flex-1 gap-0.5">
+            <View className="flex-row items-center gap-2">
+              <Text numberOfLines={1} className="shrink text-sm font-semibold text-foreground">
+                {displayName(topComment.author)}
+              </Text>
+              {commenterRating ? (
+                <View className="flex-row items-center gap-0.5 rounded-md bg-card px-1.5 py-0.5">
+                  <Star size={11} color={colors.primary} fill={colors.primary} />
+                  <Text className="text-xs font-semibold text-primary">{commenterRating.toFixed(1)}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text numberOfLines={1} className="text-sm text-muted-foreground">
+              {topComment.body}
+            </Text>
+          </View>
+          <ChevronRight size={18} color={colors.mutedForeground} style={flipX} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

@@ -31,6 +31,8 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 | Client brief gaps | Map card rating + travel time, saved places on map, followers lists, AI culture/shopping/food guides | #28 |
 | Cleanup | gluestack packages, template images and skill removed | #28 |
 | Community | Posts at a place, All / Following feed, double-tap like, comments (instant, reply, confirm delete), stories (progress, pause, seen rings, next author) | #29 |
+| Selected buddies | Live location with all friends or chosen friends (`location_share_viewers`); SOS always all friends | #37 |
+| Social upgrade | For you / Nearby (50 km) / Following feeds; search (travellers, posts, places); bookmark + Saved posts; share with count; place rating and newest comment on each post; compose button; place-labelled stories; unread Messages badge | #38 |
 
 ### Tested on the owner's phone (Pixel 3, Android 12)
 
@@ -40,8 +42,7 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 
 ### Built but NOT yet tested on a device
 
-- **#29 community update** (posts at a place, Following feed, double-tap like, comments, stories): the owner
-  has not published/tested it yet. First job: ask the owner to run
+- **#29 community update + #37 buddies + #38 social upgrade**: the owner has not published/tested them yet. First job: ask the owner to run
   `bunx eas-cli update --channel preview --message "Community"` and walk through section 16 step 1.
 - PR 6 details on the new APK: SOS WhatsApp link opening in the app (App Links), web page on desktop,
   "I'm safe", live link.

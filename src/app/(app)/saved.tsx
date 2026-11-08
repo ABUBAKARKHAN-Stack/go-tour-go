@@ -1,10 +1,14 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Bookmark, BookmarkX } from 'lucide-react-native';
-import { useMemo } from 'react';
-import { FlatList, RefreshControl } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
 
 import { IconButton } from '@/components/app-button';
 import { DestinationCard } from '@/components/destination-card';
+import { Segmented } from '@/components/form';
+import { useAuth } from '@/features/auth/auth-provider';
+import { useFeed } from '@/features/community/api';
+import { PostCard } from '@/features/community/post-card';
 import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { useDestinationsByDistance } from '@/features/destinations/api';
@@ -12,7 +16,59 @@ import { useSavedIds, useToggleSaved } from '@/features/saved/api';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
+type Tab = 'places' | 'posts';
+
 export default function SavedScreen() {
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<Tab>(params.tab === 'posts' ? 'posts' : 'places');
+  return (
+    <Screen back title={tx('Saved')} scroll={false}>
+      <View className="px-4 pb-3">
+        <Segmented<Tab>
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'places', label: tx('Places') },
+            { value: 'posts', label: tx('Posts') },
+          ]}
+        />
+      </View>
+      {tab === 'places' ? <SavedPlaces /> : <SavedPosts />}
+    </Screen>
+  );
+}
+
+/** Bookmarked community posts, newest saved first. */
+function SavedPosts() {
+  const { userId } = useAuth();
+  const feed = useFeed({ saved: true });
+  const posts = useMemo(() => feed.data?.pages.flat() ?? [], [feed.data]);
+  if (feed.isLoading) return <LoadingState variant="feed" label={tx('Loading saved posts...')} />;
+  if (feed.isError && !feed.data) return <ErrorState error={feed.error} onRetry={feed.refetch} />;
+  return (
+    <FlatList
+      data={posts}
+      keyExtractor={(p) => p.id}
+      contentContainerClassName="gap-4 px-4 pb-8"
+      onEndReachedThreshold={0.4}
+      onEndReached={() => feed.hasNextPage && !feed.isFetchingNextPage && feed.fetchNextPage()}
+      refreshControl={<RefreshControl refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={() => void feed.refetch()} tintColor={colors.primary} />}
+      ListEmptyComponent={
+        <EmptyState
+          icon={Bookmark}
+          title={tx('No saved posts yet')}
+          message={tx('Tap the bookmark on a post to keep it here.')}
+          actionLabel={tx('Open Community')}
+          onAction={() => router.navigate('/community')}
+        />
+      }
+      ListFooterComponent={feed.isFetchingNextPage ? <ActivityIndicator color={colors.primary} /> : undefined}
+      renderItem={({ item }) => <PostCard post={item} userId={userId} />}
+    />
+  );
+}
+
+function SavedPlaces() {
   const saved = useSavedIds();
   const toggle = useToggleSaved();
   const { sorted } = useDestinationsByDistance();
@@ -22,7 +78,7 @@ export default function SavedScreen() {
   }, [saved.data, sorted]);
 
   return (
-    <Screen back title={tx('Saved places')} scroll={false}>
+    <>
       {saved.isLoading ? (
         <LoadingState label={tx('Loading saved places...')} />
       ) : saved.isError && !saved.data ? (
@@ -52,6 +108,6 @@ export default function SavedScreen() {
           )}
         />
       )}
-    </Screen>
+    </>
   );
 }
