@@ -66,7 +66,7 @@ export default function ResetPassword() {
             placeholder={tx('At least 8 characters')}
             returnKeyType="go"
             onSubmitEditing={() => submit()}
-            left={<Lock color={colors.faint} size={20} />}
+            left={<Lock color={colors.primary} size={20} />}
           />
           <AppButton label={tx('Update password')} icon={KeyRound} onPress={submit} loading={formState.isSubmitting} />
         </>

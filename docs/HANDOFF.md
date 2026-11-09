@@ -55,7 +55,8 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 **UI restyle to the client's design guide (started 9 Nov).** Same app, same features and tabs (Home · Explore ·
 Trips · Community · Profile), new look; no Google sign-in and no features from the AI mockups that the app doesn't
 have. Phases: A brand kit + style tile (done, Figma `oEFixqzn09XSHhoI3oXM39`) → B foundations (done: tokens, fonts,
-components, logo) → C welcome/onboarding/auth → D Home + Explore → E destination page + "Ask AI" sheet → F AI
+components, logo) → C welcome/onboarding/auth (done: `features/brand/mood.tsx`, real Wikimedia photos in
+`features/brand/hero-photos.ts`) → D Home + Explore → E destination page + "Ask AI" sheet → F AI
 Assistant → G Trips/Community/Profile/Saved → sweep of the other screens → H app icon + splash (**the only native
 step: new APK**). B–G and the sweep are OTA. Brand: `assets/brand/v2/README.md`.
 

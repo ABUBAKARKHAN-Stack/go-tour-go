@@ -52,6 +52,7 @@
     /* Brand extras from the style tile */
     --heading: 26 83 114;             /* navy   #1A5372 */
     --sky: 46 159 217;                /* sky    #2E9FD9 (decorative) */
+    --sky-strong: 30 139 200;         /*        #1E8BC8 (large headline text only, 3.6:1) */
     --sand: 239 224 201;              /* sand   #EFE0C9 */
     --mint: 228 244 238;              /* mint   #E4F4EE */
     --peach: 252 235 221;             /* peach  #FCEBDD */
@@ -92,6 +93,7 @@
   --color-accent-soft: rgb(var(--accent-soft));
   --color-heading: rgb(var(--heading));
   --color-sky: rgb(var(--sky));
+  --color-sky-strong: rgb(var(--sky-strong));
   --color-sand: rgb(var(--sand));
   --color-mint: rgb(var(--mint));
   --color-peach: rgb(var(--peach));

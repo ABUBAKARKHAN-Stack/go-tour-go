@@ -44,6 +44,8 @@ type Props = {
   onPress?: () => void;
   variant?: Variant;
   icon?: LucideIcon;
+  /** Icon after the label (e.g. a forward arrow), mirrored in right-to-left. */
+  trailingIcon?: LucideIcon;
   loading?: boolean;
   disabled?: boolean;
   size?: 'md' | 'sm';
@@ -62,6 +64,7 @@ export function AppButton({
   onPress,
   variant = 'primary',
   icon: Icon,
+  trailingIcon: Trailing,
   loading,
   disabled,
   size = 'md',
@@ -95,6 +98,7 @@ export function AppButton({
         <Icon color={iconColor[variant]} size={size === 'md' ? 18 : 16} />
       ) : null}
       <Text className={`${size === 'md' ? 'text-base' : 'text-sm'} font-semibold ${textClass[variant]}`}>{label}</Text>
+      {Trailing && !loading ? <Trailing color={iconColor[variant]} size={size === 'md' ? 18 : 16} style={flipX} /> : null}
     </Pressable>
     </Animated.View>
   );
