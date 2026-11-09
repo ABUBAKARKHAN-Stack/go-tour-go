@@ -115,7 +115,7 @@ export default function Home() {
     >
       <View className="flex-row items-center gap-3">
         <View className="flex-1">
-          <BrandLogo height={34} />
+          <BrandLogo height={40} />
         </View>
         <View className="flex-row items-center gap-2">
           <IconButton icon={Bell} label={tx('Notifications')} badge={unread} onPress={() => router.push('/notifications')} />

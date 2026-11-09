@@ -1159,4 +1159,7 @@ export const ur: Record<string, string> = {
   "Already have an account?": "پہلے سے اکاؤنٹ ہے؟",
   "Log in": "لاگ اِن کریں",
   "New password (at least 8 characters)": "نیا پاس ورڈ (کم از کم 8 حروف)",
+  "Photo credits": "تصاویر کا شکریہ",
+  "Welcome and sign-in photos from Wikimedia Commons, used under their free licences.": "خوش آمدید اور سائن اِن کی تصاویر وکی میڈیا کامنز سے، ان کے آزاد لائسنس کے تحت۔",
+  "{0} · {1}": "{0} · {1}",
 };

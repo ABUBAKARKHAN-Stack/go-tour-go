@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton, IconButton } from '@/components/app-button';
 import { Card, Chip, Segmented, ToggleRow } from '@/components/form';
 import { Screen } from '@/components/screen';
+import { HERO_PHOTOS } from '@/features/brand/hero-photos';
 import { syncLocalData, useDataSync } from '@/features/data/sync';
 import { useJourney } from '@/features/journey/journey-store';
 import { useDestinations } from '@/features/destinations/api';
@@ -216,6 +217,16 @@ export default function SettingsScreen() {
         />
         <AppButton label={tx('Offline map engine test')} variant="ghost" size="sm" onPress={() => router.push('/map-engine-test')} />
         <LastErrorRow />
+      </Card>
+
+      <Card className="gap-2">
+        <Text className="text-base font-semibold text-foreground">{tx('Photo credits')}</Text>
+        <Text className="text-xs text-muted-foreground">{tx('Welcome and sign-in photos from Wikimedia Commons, used under their free licences.')}</Text>
+        {Object.values(HERO_PHOTOS).map((p) => (
+          <Text key={p.uri} className="text-xs text-foreground">
+            {tx('{0} · {1}', { 0: p.place, 1: p.credit })}
+          </Text>
+        ))}
       </Card>
 
       <Text className="text-center text-xs text-muted-foreground">{tx('GoTourGo FYP MVP · Map data © OpenStreetMap contributors')}</Text>
