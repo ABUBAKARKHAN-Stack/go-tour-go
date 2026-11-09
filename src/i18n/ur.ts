@@ -87,7 +87,6 @@ export const ur: Record<string, string> = {
   "Your people, one tap away": "آپ کے اپنے، بس ایک ٹیپ کی دوری پر",
   "Share your live location for as long as you choose, and send an SOS with your position to the people you trust.": "جتنی دیر چاہیں اپنی لائیو لوکیشن شیئر کریں، اور اپنے بھروسے کے لوگوں کو اپنے مقام کے ساتھ SOS بھیجیں۔",
   "Get started": "شروع کریں",
-  "I already have an account": "میرا اکاؤنٹ پہلے سے موجود ہے",
   "Page {0} of {1}": "صفحہ {0} از {1}",
 
   // Auth
@@ -102,7 +101,6 @@ export const ur: Record<string, string> = {
   "Forgot password?": "پاس ورڈ بھول گئے؟",
   "Show password": "پاس ورڈ دکھائیں",
   "Hide password": "پاس ورڈ چھپائیں",
-  "Create an account": "اکاؤنٹ بنائیں",
   "Create account": "اکاؤنٹ بنائیں",
   "Create your account": "اپنا اکاؤنٹ بنائیں",
   "Save places, plan journeys and travel with friends.": "مقامات محفوظ کریں، سفر کی منصوبہ بندی کریں اور دوستوں کے ساتھ گھومیں۔",
@@ -1158,6 +1156,8 @@ export const ur: Record<string, string> = {
   "Password (at least 8 characters)": "پاس ورڈ (کم از کم 8 حروف)",
   "Already have an account?": "پہلے سے اکاؤنٹ ہے؟",
   "Log in": "لاگ اِن کریں",
+  "Don't have an account?": "اکاؤنٹ نہیں ہے؟",
+  "Sign up": "سائن اپ کریں",
   "New password (at least 8 characters)": "نیا پاس ورڈ (کم از کم 8 حروف)",
   "Photo credits": "تصاویر کا شکریہ",
   "Welcome and sign-in photos from Wikimedia Commons, used under their free licences.": "خوش آمدید اور سائن اِن کی تصاویر وکی میڈیا کامنز سے، ان کے آزاد لائسنس کے تحت۔",

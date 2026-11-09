@@ -16,12 +16,13 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 import { AppButton } from '@/components/app-button';
 import { IconTile, type TileTone } from '@/components/brand';
 import { Text } from '@/components/text';
 import { HERO_PHOTOS, prefetchHeroPhotos, type HeroPhoto } from '@/features/brand/hero-photos';
-import { FloatingCard, HandNote, heroHeight, PhotoHeader, StepPill, TwoToneTitle } from '@/features/brand/mood';
+import { FloatingCard, HandNote, PhotoHeader, photoHeight, StepPill, sweepOverlap, TwoToneTitle } from '@/features/brand/mood';
 import { haptics } from '@/lib/haptics';
 import { changeLanguage, language, tx } from '@/lib/i18n';
 import { LOCALES } from '@/lib/preferences';
@@ -40,6 +41,9 @@ type Slide = {
   overlay: (w: number, h: number) => ReactNode;
 };
 
+/** Overlays stay below the logo, language switch and Skip on short phones. */
+const OVERLAY_TOP = 112;
+
 const SLIDES: Slide[] = [
   {
     key: 'discover',
@@ -53,7 +57,7 @@ const SLIDES: Slide[] = [
       { icon: Camera, label: tx('Photos & guides'), tone: 'mint' },
       { icon: MapIcon, label: tx('Offline maps'), tone: 'lemon' },
     ],
-    overlay: (w, h) => <HandNote lines={[tx('New views,'), tx('new stories')]} style={{ end: 18, top: h * 0.26 }} />,
+    overlay: (w, h) => <HandNote lines={[tx('New views,'), tx('new stories')]} style={{ end: 18, top: Math.max(h * 0.3, OVERLAY_TOP) }} />,
   },
   {
     key: 'companion',
@@ -68,7 +72,7 @@ const SLIDES: Slide[] = [
       { icon: Navigation, label: tx('Journey mode'), tone: 'lemon' },
     ],
     overlay: (w, h) => (
-      <FloatingCard icon={Sparkles} title={tx('AI travel guide')} text={tx('"What should I eat near Hunza?"')} style={{ end: 16, top: h * 0.42 }} rotate={2} />
+      <FloatingCard icon={Sparkles} title={tx('AI travel guide')} text={tx('"What should I eat near Hunza?"')} style={{ end: 16, top: Math.max(h * 0.42, OVERLAY_TOP) }} rotate={2} />
     ),
   },
   {
@@ -90,21 +94,26 @@ const SLIDES: Slide[] = [
         text={tx('Hold to send your location to trusted contacts.')}
         tone="peach"
         iconColor={colors.destructive}
-        style={{ end: 16, top: h * 0.42 }}
+        style={{ end: 16, top: Math.max(h * 0.42, OVERLAY_TOP) }}
         rotate={2}
       />
     ),
   },
 ];
 
-/** Three-step welcome in the design guide's mood. Same content and controls as before. */
+/**
+ * Three-step welcome in the design guide's mood. Skip and "Get started" both
+ * finish it (a one-way door: the root guard then shows sign-in, and back
+ * cannot return here).
+ */
 export default function Onboarding() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const list = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
-  // Same photo height on every step (and on the sign-in screens).
-  const photoHeight = heroHeight(height);
+  // Same photo height on every step.
+  const photoH = photoHeight('onboarding', height);
+  const overlap = sweepOverlap('onboarding', width);
 
   useEffect(prefetchHeroPhotos, []);
 
@@ -117,6 +126,7 @@ export default function Onboarding() {
 
   return (
     <View className="flex-1 bg-background">
+      <StatusBar style="dark" />
       <FlatList
         ref={list}
         data={SLIDES}
@@ -126,19 +136,17 @@ export default function Onboarding() {
         keyExtractor={(s) => s.key}
         onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
         renderItem={({ item, index: i }) => (
-          <ScrollView style={{ width }} contentContainerStyle={{ paddingBottom: 12 }} showsVerticalScrollIndicator={false} bounces={false}>
-            <View style={{ paddingTop: insets.top }} className="bg-background">
-              <PhotoHeader photo={item.photo} width={width} height={photoHeight}>
-                {item.overlay(width, photoHeight)}
-              </PhotoHeader>
-            </View>
-            <View className="-mt-2 gap-2.5 px-6">
+          <ScrollView style={{ width }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={false} bounces={false} overScrollMode="never">
+            <PhotoHeader kind="onboarding" photo={item.photo} width={width} height={photoH} topInset={insets.top}>
+              {item.overlay(width, photoH)}
+            </PhotoHeader>
+            <View className="gap-3 px-6" style={{ marginTop: -overlap }}>
               <StepPill label={tx('Step {0} of {1}', { 0: i + 1, 1: SLIDES.length })} />
               <TwoToneTitle first={item.first} second={item.second} />
               <Text className="text-[14px] leading-[21px] text-muted-foreground">{item.body}</Text>
-              <View className="flex-row justify-between pt-2">
+              <View className="flex-row justify-between pt-1">
                 {item.features.map((f) => (
-                  <IconTile key={f.label} icon={f.icon} label={f.label} tone={f.tone} size={46} />
+                  <IconTile key={f.label} round icon={f.icon} label={f.label} tone={f.tone} size={48} />
                 ))}
               </View>
             </View>
@@ -146,9 +154,9 @@ export default function Onboarding() {
         )}
       />
 
-      {/* Language and Skip stay on top of every slide. */}
-      <View className="absolute end-4 flex-row items-center gap-2" style={{ top: insets.top + 10 }}>
-        <View className="flex-row rounded-full bg-white/85 p-0.5" accessibilityRole="radiogroup" accessibilityLabel="Language / زبان">
+      {/* Language and Skip stay on top of every step, level with the logo. */}
+      <View className="absolute end-4 flex-row items-center gap-1" style={{ top: insets.top + 16 }}>
+        <View className="flex-row rounded-full bg-white/80 p-0.5" accessibilityRole="radiogroup" accessibilityLabel="Language / زبان">
           {LOCALES.map((l) => (
             <Pressable
               key={l.value}
@@ -161,21 +169,20 @@ export default function Onboarding() {
             </Pressable>
           ))}
         </View>
-        <Pressable accessibilityRole="button" onPress={finish} hitSlop={12} className="min-h-10 justify-center rounded-full bg-white/85 px-3">
-          <Text className="text-sm font-semibold text-accent">{tx('Skip')}</Text>
+        <Pressable accessibilityRole="button" onPress={finish} hitSlop={8} className="min-h-11 justify-center px-2 active:opacity-60">
+          <Text className="text-[15px] font-semibold text-accent">{tx('Skip')}</Text>
         </Pressable>
       </View>
 
-      <View className="gap-3 px-6" style={{ paddingBottom: insets.bottom + 12 }}>
+      <View className="items-center gap-4 px-6 pt-2" style={{ paddingBottom: insets.bottom + 16 }}>
         <View className="flex-row justify-center gap-1.5" accessibilityLabel={tx('Page {0} of {1}', { 0: index + 1, 1: SLIDES.length })}>
           {SLIDES.map((s, i) => (
             <View key={s.key} className={`h-2 rounded-full ${i === index ? 'w-6 bg-primary' : 'w-2 bg-border-strong'}`} />
           ))}
         </View>
-        <AppButton label={index === SLIDES.length - 1 ? tx('Get started') : tx('Next')} trailingIcon={ArrowRight} onPress={next} />
-        <Pressable accessibilityRole="button" onPress={finish} hitSlop={6} className="min-h-10 items-center justify-center">
-          <Text className="text-sm font-semibold text-heading">{tx('I already have an account')}</Text>
-        </Pressable>
+        <View className="w-full max-w-[300px]">
+          <AppButton label={index === SLIDES.length - 1 ? tx('Get started') : tx('Next')} trailingIcon={ArrowRight} onPress={next} />
+        </View>
       </View>
     </View>
   );

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { ArrowRight, AtSign, CheckCircle2, Lock, Mail, MailCheck, UserRound, XCircle } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
@@ -10,7 +10,7 @@ import { InlineError } from '@/components/states';
 import { Text } from '@/components/text';
 import { signUp } from '@/features/auth/api';
 import { HERO_PHOTOS } from '@/features/brand/hero-photos';
-import { AuthShell } from '@/features/auth/auth-shell';
+import { AuthShell, AuthSwitch } from '@/features/auth/auth-shell';
 import { signUpSchema } from '@/features/auth/schemas';
 import { useUsernameAvailability, type UsernameStatus } from '@/features/auth/use-username-availability';
 import { suggestUsername } from '@/features/auth/username';
@@ -129,12 +129,7 @@ export default function SignUp() {
       <View className="pt-1">
         <AppButton label={tx('Create account')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
       </View>
-      <View className="flex-row items-center justify-center gap-1.5">
-        <Text className="text-sm text-muted-foreground">{tx('Already have an account?')}</Text>
-        <Pressable accessibilityRole="link" hitSlop={10} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} className="min-h-10 justify-center">
-          <Text className="text-sm font-bold text-accent">{tx('Log in')}</Text>
-        </Pressable>
-      </View>
+      <AuthSwitch prompt={tx('Already have an account?')} action={tx('Log in')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} />
     </AuthShell>
   );
 }
