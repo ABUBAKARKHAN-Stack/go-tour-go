@@ -204,7 +204,7 @@ export default function JourneyNavigate() {
         {upcoming ? (
           <View
             className={`flex-row items-center gap-2 self-start rounded-full px-3 py-2 ${upcoming.kind === 'hazard' ? 'bg-destructive-soft' : 'bg-card'}`}
-            style={{ boxShadow: '0 2px 8px rgba(28,26,23,0.10)' }}
+            style={{ boxShadow: '0 2px 8px rgba(21,56,79,0.10)' }}
           >
             {upcoming.kind === 'hazard' ? <TriangleAlert color={colors.destructive} size={15} /> : <Landmark color={colors.accent} size={15} />}
             <Text className="text-xs font-semibold text-foreground">
@@ -236,7 +236,7 @@ export default function JourneyNavigate() {
 
       <View
         className="absolute bottom-0 left-0 right-0 flex-row items-center gap-4 rounded-t-[28px] bg-card px-6 pt-5"
-        style={{ paddingBottom: insets.bottom + 18, boxShadow: '0 -8px 24px rgba(28,26,23,0.10)' }}
+        style={{ paddingBottom: insets.bottom + 18, boxShadow: '0 -8px 24px rgba(21,56,79,0.10)' }}
       >
         <Pressable accessibilityRole="button" accessibilityLabel={tx('End journey')} onPress={end} className="h-13 w-13 items-center justify-center rounded-full bg-destructive-soft" style={{ height: 52, width: 52 }}>
           <X color={colors.destructive} size={22} />
@@ -259,7 +259,7 @@ function MapButton({ icon: Icon, label, onPress }: { icon: LucideIcon; label: st
       accessibilityLabel={label}
       onPress={onPress}
       className="h-12 w-12 items-center justify-center rounded-full bg-card"
-      style={{ boxShadow: '0 2px 8px rgba(28,26,23,0.12)' }}
+      style={{ boxShadow: '0 2px 8px rgba(21,56,79,0.12)' }}
     >
       <Icon color={colors.foreground} size={20} />
     </Pressable>

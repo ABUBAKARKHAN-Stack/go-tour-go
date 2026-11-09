@@ -41,18 +41,18 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   }, [error]);
   const report = crashReport({ message: error.message, stack: error.stack ?? null, at, fatal: true, where: 'screen' });
   return (
-    <View style={{ flex: 1, backgroundColor: '#FBF8F3', padding: 24, paddingTop: 72, gap: 16 }}>
-      <Text style={{ fontSize: 26, fontWeight: '700', color: '#1C1A17' }}>Something went wrong</Text>
-      <Text style={{ fontSize: 15, color: '#6B6459' }}>GoTourGo hit an error. Please share the details below with the developer, then try again.</Text>
-      <ScrollView style={{ maxHeight: 260, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8E1D6' }} contentContainerStyle={{ padding: 12 }}>
-        <Text selectable style={{ fontSize: 12, color: '#1C1A17' }}>
+    <View style={{ flex: 1, backgroundColor: '#F6FAFC', padding: 24, paddingTop: 72, gap: 16 }}>
+      <Text style={{ fontSize: 26, fontWeight: '700', color: '#15384F' }}>Something went wrong</Text>
+      <Text style={{ fontSize: 15, color: '#4E6B7D' }}>GoTourGo hit an error. Please share the details below with the developer, then try again.</Text>
+      <ScrollView style={{ maxHeight: 260, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE8F0' }} contentContainerStyle={{ padding: 12 }}>
+        <Text selectable style={{ fontSize: 12, color: '#15384F' }}>
           {report}
         </Text>
       </ScrollView>
-      <Pressable accessibilityRole="button" onPress={() => Share.share({ message: report })} style={{ minHeight: 52, borderRadius: 999, backgroundColor: '#DCEBE8', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F4C4A' }}>Share error details</Text>
+      <Pressable accessibilityRole="button" onPress={() => Share.share({ message: report })} style={{ minHeight: 52, borderRadius: 999, backgroundColor: '#E8F2F9', alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: '#19709B' }}>Share error details</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={retry} style={{ minHeight: 52, borderRadius: 999, backgroundColor: '#0F4C4A', alignItems: 'center', justifyContent: 'center' }}>
+      <Pressable accessibilityRole="button" onPress={retry} style={{ minHeight: 52, borderRadius: 999, backgroundColor: '#19709B', alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFFFFF' }}>Try again</Text>
       </Pressable>
     </View>

@@ -5,8 +5,10 @@
     "": {
       "name": "go-tour-go-development",
       "dependencies": {
+        "@expo-google-fonts/caveat": "^0.4.2",
         "@expo-google-fonts/fraunces": "^0.4.1",
         "@expo-google-fonts/noto-nastaliq-urdu": "^0.4.2",
+        "@expo-google-fonts/outfit": "^0.4.3",
         "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
         "@hookform/resolvers": "^7.0.3",
         "@maplibre/maplibre-react-native": "^11.5.1",
@@ -234,11 +236,15 @@
 
     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.4.1", "", { "dependencies": { "@eslint/core": "^0.17.0", "levn": "^0.4.1" } }, "sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA=="],
 
+    "@expo-google-fonts/caveat": ["@expo-google-fonts/caveat@0.4.2", "", {}, "sha512-kCG35tRUX8Wi+u0Jh5ck3K1u7vZkdLnwRTuKMrEnlVmikvxQFXN1KjF5cL2vqRG7Hwm7648Zl8xe1BWAoIsPCA=="],
+
     "@expo-google-fonts/fraunces": ["@expo-google-fonts/fraunces@0.4.1", "", {}, "sha512-gYc9P92ObyWvz1rWPOeWSvVKyBFIuA8hgOdhvo4DSiPBaWLbFA6v8uLIEIBwW+0oWTlXbBzjeBReHQI2H7UNjQ=="],
 
     "@expo-google-fonts/material-symbols": ["@expo-google-fonts/material-symbols@0.4.52", "", {}, "sha512-iC9GRpj7WV0GENbHTYPtJqGjyy/7yI3soG9SrKTY1ta19cbMZm2HA0nUdIK8d6OD9uv1BZHAh3Zn/UWV57IeWg=="],
 
     "@expo-google-fonts/noto-nastaliq-urdu": ["@expo-google-fonts/noto-nastaliq-urdu@0.4.2", "", {}, "sha512-ciSPIxljdusLFb66Ov5uP8vXNuP2/CPAxwHqF2lIHqQwxZ8YtYf1B9VGiK0hcwp4XqmX6/hog8QNgViWoY9KGg=="],
+
+    "@expo-google-fonts/outfit": ["@expo-google-fonts/outfit@0.4.3", "", {}, "sha512-2uQmDVJencWLllxds6SG92E+SjxyZfvg7eZKZ5XLHggmm5AuUyQK7lzMAFOUzT6kheq2kJ7BAiubMdjKT32fJg=="],
 
     "@expo-google-fonts/plus-jakarta-sans": ["@expo-google-fonts/plus-jakarta-sans@0.4.2", "", {}, "sha512-6LYVmVGwjQvH+uzzWlVc9+oMj4lkNQ41aymVDjO+x8aFk8kCye20wOyLomYMZaMezA++Uf1mZRCw3W3Fy/hxEA=="],
 

@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/text';
 import { EASE_IN_OUT, usePressScale } from '@/lib/motion';
-import { colors } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 
 const ICONS: Record<string, LucideIcon> = {
   index: House,
@@ -61,8 +61,8 @@ export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTab
   return (
     <View pointerEvents="box-none" className="absolute left-0 right-0 px-4" style={{ bottom: Math.max(insets.bottom, 12) }}>
       <View
-        className="flex-row rounded-full border border-border bg-card"
-        style={{ height: TAB_BAR_HEIGHT, paddingHorizontal: BAR_PADDING, boxShadow: '0 8px 24px rgba(28, 26, 23, 0.10)' }}
+        className="flex-row rounded-full bg-card"
+        style={{ height: TAB_BAR_HEIGHT, paddingHorizontal: BAR_PADDING, boxShadow: shadow(0.14, 8, 24) }}
         accessibilityRole="tablist"
         onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
       >

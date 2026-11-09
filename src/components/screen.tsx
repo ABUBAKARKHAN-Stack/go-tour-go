@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OfflineBanner } from '@/components/offline-banner';
 import { useTabBarSpace } from '@/components/tab-bar';
-import { colors } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 import { flipX, tx } from '@/lib/i18n';
 
 type HeaderProps = {
@@ -26,14 +26,15 @@ export function AppHeader({ title, subtitle, back, right }: HeaderProps) {
           accessibilityLabel={tx('Go back')}
           hitSlop={8}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
+          className="h-11 w-11 items-center justify-center rounded-full bg-card"
+          style={{ boxShadow: shadow(0.1, 3, 10) }}
         >
-          <ArrowLeft color={colors.foreground} size={22} style={flipX} />
+          <ArrowLeft color={colors.heading} size={22} style={flipX} />
         </Pressable>
       ) : null}
       <View className="flex-1">
         {title ? (
-          <Text numberOfLines={1} className="font-display text-2xl text-foreground">
+          <Text numberOfLines={1} className="font-display text-[26px] leading-8 text-heading">
             {title}
           </Text>
         ) : null}

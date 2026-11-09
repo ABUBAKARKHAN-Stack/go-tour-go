@@ -8,15 +8,17 @@ import { fonts } from '@/lib/theme';
 /**
  * Android picks a font file per family name, and `fontWeight` on a custom
  * family falls back to a synthetic or system font. So weight utilities in
- * className are mapped to the matching Plus Jakarta Sans file here, and
- * `font-display` selects Fraunces for editorial headings.
+ * className are mapped to the matching Plus Jakarta Sans file here,
+ * `font-display` selects Outfit (bold; `font-display font-semibold` = SemiBold) for
+ * headings, and `font-script` selects Caveat for the occasional handwritten accent.
  *
  * Urdu text uses Noto Nastaliq Urdu (when the app is in Urdu), which needs
  * much taller lines than Latin text or its letters are clipped.
  */
 export function fontFamilyFor(className?: string): string {
   if (!className) return fonts.regular;
-  if (className.includes('font-display')) return fonts.display;
+  if (className.includes('font-script')) return fonts.script;
+  if (className.includes('font-display')) return /\bfont-(medium|semibold)\b/.test(className) ? fonts.displaySemi : fonts.display;
   if (/\bfont-(bold|extrabold|black)\b/.test(className)) return fonts.bold;
   if (/\bfont-semibold\b/.test(className)) return fonts.semibold;
   if (/\bfont-medium\b/.test(className)) return fonts.medium;
