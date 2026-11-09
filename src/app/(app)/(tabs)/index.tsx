@@ -20,6 +20,7 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { Avatar } from '@/components/avatar';
+import { BrandLogo } from '@/components/brand';
 import { IconButton } from '@/components/app-button';
 import { DestinationCard } from '@/components/destination-card';
 import { DestinationImage } from '@/components/destination-image';
@@ -112,20 +113,23 @@ export default function Home() {
         />
       }
     >
-      <View className="flex-row items-start gap-3">
-        <View className="flex-1 gap-1">
-          <Text className="text-[11px] font-bold tracking-[1.6px] text-faint">{context}</Text>
-          <Text className="font-display text-[32px] leading-[38px] text-foreground">
-            {greeting()},{'\n'}
-            {firstName}
-          </Text>
+      <View className="flex-row items-center gap-3">
+        <View className="flex-1">
+          <BrandLogo height={34} />
         </View>
-        <View className="flex-row items-center gap-2 pt-1">
+        <View className="flex-row items-center gap-2">
           <IconButton icon={Bell} label={tx('Notifications')} badge={unread} onPress={() => router.push('/notifications')} />
           <Pressable accessibilityRole="button" accessibilityLabel={tx('Your profile')} onPress={() => router.navigate('/profile')}>
             <Avatar profile={profile} size={44} />
           </Pressable>
         </View>
+      </View>
+      <View className="gap-1">
+        <Text className="text-[11px] font-bold tracking-[1.6px] text-faint">{context}</Text>
+        <Text className="font-display text-[32px] leading-[38px] text-heading">
+          {greeting()},{'\n'}
+          {firstName}
+        </Text>
       </View>
 
       <Pressable
@@ -133,7 +137,7 @@ export default function Home() {
         accessibilityLabel={tx('Search places and plan a journey')}
         onPress={() => router.push('/search')}
         className="min-h-14 flex-row items-center gap-3 rounded-full border border-border bg-card pl-5 pr-2"
-        style={{ boxShadow: '0 2px 8px rgba(28, 26, 23, 0.05)' }}
+        style={{ boxShadow: '0 2px 8px rgba(21, 56, 79, 0.05)' }}
       >
         <Search color={colors.faint} size={20} />
         <Text className="flex-1 text-base text-faint">{tx('Where to next?')}</Text>

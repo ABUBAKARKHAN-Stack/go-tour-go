@@ -1,0 +1,151 @@
+import type { LucideIcon } from 'lucide-react-native';
+import { useId } from 'react';
+import { View } from 'react-native';
+import Svg, { Defs, G, LinearGradient, Path, Stop } from 'react-native-svg';
+
+import { GO_GO, PIN, PLANE, TOUR } from '@/components/brand-paths';
+import { Text } from '@/components/text';
+import { colors } from '@/lib/theme';
+
+type LogoTone = 'color' | 'white' | 'navy';
+
+const SYMBOL = { w: 505, h: 481 };
+const WORDMARK = { x: 434, y: 150, w: 1026, h: 162 };
+
+function useTone(tone: LogoTone) {
+  const id = `pin-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  const solid = tone === 'white' ? '#FFFFFF' : colors.heading;
+  return {
+    id,
+    defs:
+      tone === 'color' ? (
+        <Defs>
+          <LinearGradient id={id} x1="1" y1="0" x2="0.1" y2="1">
+            <Stop offset="0" stopColor="#1EB9EF" />
+            <Stop offset="1" stopColor="#035591" />
+          </LinearGradient>
+        </Defs>
+      ) : null,
+    pin: tone === 'color' ? `url(#${id})` : solid,
+    plane: tone === 'color' ? '#1C7DBF' : solid,
+    go: tone === 'color' ? colors.heading : solid,
+    tour: tone === 'color' ? colors.sky : solid,
+  };
+}
+
+/** The pin + plane symbol. `size` is its height; the width follows the logo's proportions. */
+export function BrandSymbol({ size = 40, tone = 'color' }: { size?: number; tone?: LogoTone }) {
+  const t = useTone(tone);
+  return (
+    <Svg width={(size * SYMBOL.w) / SYMBOL.h} height={size} viewBox={`0 0 ${SYMBOL.w} ${SYMBOL.h}`} accessibilityElementsHidden importantForAccessibility="no">
+      {t.defs}
+      <Path d={PIN} fill={t.pin} fillRule="evenodd" />
+      <Path d={PLANE} fill={t.plane} fillRule="evenodd" />
+    </Svg>
+  );
+}
+
+/**
+ * Full logo (symbol + "GoTourGo"), horizontal or stacked. `height` is the
+ * overall height. The wordmark is drawn from outlines, so it reads the same in
+ * Urdu mode; the accessibility label carries the name.
+ */
+export function BrandLogo({ height = 40, tone = 'color', layout = 'horizontal' }: { height?: number; tone?: LogoTone; layout?: 'horizontal' | 'stacked' }) {
+  const t = useTone(tone);
+  if (layout === 'stacked') {
+    const gap = 56;
+    const W = WORDMARK.w;
+    const H = SYMBOL.h + gap + WORDMARK.h;
+    return (
+      <View accessible accessibilityRole="image" accessibilityLabel="GoTourGo">
+        <Svg width={(height * W) / H} height={height} viewBox={`0 0 ${W} ${H}`}>
+          {t.defs}
+          <G x={(W - SYMBOL.w) / 2}>
+            <Path d={PIN} fill={t.pin} fillRule="evenodd" />
+            <Path d={PLANE} fill={t.plane} fillRule="evenodd" />
+          </G>
+          <G x={-WORDMARK.x} y={SYMBOL.h + gap - WORDMARK.y}>
+            <Path d={GO_GO} fill={t.go} fillRule="evenodd" />
+            <Path d={TOUR} fill={t.tour} fillRule="evenodd" />
+          </G>
+        </Svg>
+      </View>
+    );
+  }
+  return (
+    <View accessible accessibilityRole="image" accessibilityLabel="GoTourGo">
+      <Svg width={(height * 1460) / SYMBOL.h} height={height} viewBox={`0 0 1460 ${SYMBOL.h}`}>
+        {t.defs}
+        <Path d={PIN} fill={t.pin} fillRule="evenodd" />
+        <Path d={PLANE} fill={t.plane} fillRule="evenodd" />
+        <Path d={GO_GO} fill={t.go} fillRule="evenodd" />
+        <Path d={TOUR} fill={t.tour} fillRule="evenodd" />
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * Soft wave that ends a photo header (the curved edge in the design guide).
+ * Place it absolutely at the bottom of the photo; it is filled with the page
+ * background so the content below seems to rise over the photo.
+ */
+export function WaveEdge({ width, height = 48, color = colors.background, flip = false }: { width: number; height?: number; color?: string; flip?: boolean }) {
+  const d = flip
+    ? `M0 ${height} L0 ${height * 0.35} C${width * 0.3} ${height * 1.05} ${width * 0.62} ${-height * 0.25} ${width} ${height * 0.42} L${width} ${height} Z`
+    : `M0 ${height} L0 ${height * 0.42} C${width * 0.38} ${-height * 0.25} ${width * 0.7} ${height * 1.05} ${width} ${height * 0.35} L${width} ${height} Z`;
+  return (
+    <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no">
+      <Path d={d} fill={color} />
+    </Svg>
+  );
+}
+
+/** Small leaf sprig used sparingly as a corner decoration (design guide). Decorative only. */
+export function LeafSprig({ size = 56, color = colors.sky, opacity = 0.35, mirrored = false }: { size?: number; color?: string; opacity?: number; mirrored?: boolean }) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      style={mirrored ? { transform: [{ scaleX: -1 }] } : undefined}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+    >
+      <G opacity={opacity}>
+        <Path d="M8 60 C20 44 30 30 52 10" stroke={color} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+        <Path d="M22 44 C12 40 8 30 12 22 C20 26 25 34 22 44 Z" fill={color} />
+        <Path d="M32 33 C24 26 24 16 30 10 C36 16 37 26 32 33 Z" fill={color} />
+        <Path d="M30 46 C38 40 48 40 54 46 C47 52 37 52 30 46 Z" fill={color} />
+        <Path d="M42 24 C48 18 56 18 60 22 C56 28 48 29 42 24 Z" fill={color} />
+      </G>
+    </Svg>
+  );
+}
+
+export type TileTone = 'ice' | 'mint' | 'peach' | 'lemon' | 'sand';
+
+const TILE_BG: Record<TileTone, string> = {
+  ice: 'bg-primary-soft',
+  mint: 'bg-mint',
+  peach: 'bg-peach',
+  lemon: 'bg-lemon',
+  sand: 'bg-sand',
+};
+
+/** Rounded square with a soft tint and an icon (category and feature tiles). */
+export function IconTile({ icon: Icon, tone = 'ice', size = 56, label }: { icon: LucideIcon; tone?: TileTone; size?: number; label?: string }) {
+  return (
+    <View className="items-center gap-1.5">
+      <View className={`items-center justify-center rounded-[20px] ${TILE_BG[tone]}`} style={{ width: size, height: size }}>
+        <Icon color={colors.primary} size={Math.round(size * 0.44)} strokeWidth={1.8} />
+      </View>
+      {label ? (
+        <Text numberOfLines={2} className="text-center text-xs font-medium text-heading" style={{ maxWidth: size + 24 }}>
+          {label}
+        </Text>
+      ) : null}
+    </View>
+  );
+}

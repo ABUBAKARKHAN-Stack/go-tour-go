@@ -52,8 +52,12 @@ coverage is about **95%** of features; landmark **content** is the main gap: 523
 
 ### Remaining work, in priority order
 
-**UI design is on hold (owner, 8 Nov):** the client will share their own UI design later. Do not spend time
-matching the current Figma file; finish the features first, then restyle to the client's design.
+**UI restyle to the client's design guide (started 9 Nov).** Same app, same features and tabs (Home · Explore ·
+Trips · Community · Profile), new look; no Google sign-in and no features from the AI mockups that the app doesn't
+have. Phases: A brand kit + style tile (done, Figma `oEFixqzn09XSHhoI3oXM39`) → B foundations (done: tokens, fonts,
+components, logo) → C welcome/onboarding/auth → D Home + Explore → E destination page + "Ask AI" sheet → F AI
+Assistant → G Trips/Community/Profile/Saved → sweep of the other screens → H app icon + splash (**the only native
+step: new APK**). B–G and the sweep are OTA. Brand: `assets/brand/v2/README.md`.
 
 
 1. Device test of #29 and PR 6 (above); fix what the owner reports.
@@ -299,6 +303,16 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
   ease-in-out; entrances 250 ms with 40 ms stagger; tab screens switch instantly; every animation honours
   Reduce Motion; no `entering` on virtualised list rows.
 - Loading: `LoadingState variant=...` (list, cards, feed, profile, detail skeletons; `spinner` for actions).
+
+## 13a. Design system (client guide, 9 Nov)
+
+- Tokens in `global.css` (+ hex mirrors in `src/lib/theme.ts`): mist background `#F6FAFC`, ink text `#15384F`,
+  ocean primary `#19709B` (buttons use `brandGradient` → `#2381B6`), link accent `#1672AE`, navy headings
+  (`text-heading` `#1A5372`), decorative sky `#2E9FD9` (never small text), ice `#E8F2F9`, sand/mint/peach/lemon tiles.
+- Fonts (runtime, OTA): Outfit for `font-display` (Bold; `font-display font-semibold` = SemiBold), Plus Jakarta Sans
+  body, Caveat via `font-script` for one or two handwritten accents per screen, Noto Nastaliq for Urdu.
+- Components: gradient pill buttons, pill inputs on ice, ice chips (navy when selected), white cards with a soft navy
+  `shadow()`, `BrandLogo`/`BrandSymbol`, `WaveEdge`, `LeafSprig`, `IconTile` (`src/components/brand.tsx`).
 
 ## 14. Figma
 

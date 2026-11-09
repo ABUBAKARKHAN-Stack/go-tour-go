@@ -2,49 +2,60 @@
 @import 'uniwind';
 
 /*
- * GoTourGo design tokens: light, warm editorial theme (Figma file bO6d8RIpnNL3awG2lQQMA8).
+ * GoTourGo design tokens: light "sky" theme from the client's design guide
+ * (brand kit + style tile: Figma file oEFixqzn09XSHhoI3oXM39).
  * Hex mirrors live in src/lib/theme.ts for native props (map paint, icons, status bar). Keep in sync.
- * Older semantic names (primary, accent, card, muted...) are kept so every screen picks up the new look.
+ * Semantic names (primary, accent, card, muted...) are unchanged, so every screen picks up the new look.
+ * Contrast: foreground 11.7:1 on background, muted-foreground 5.4:1, white on primary 5.5:1,
+ * accent (links, badges) 5.2:1 on white. Sky (#2E9FD9) is decorative only (logo, icons), never small text.
  */
 @layer theme {
   :root {
-    --background: 251 248 243;        /* canvas  #FBF8F3 */
-    --foreground: 28 26 23;           /* text    #1C1A17 */
+    --background: 246 250 252;        /* mist   #F6FAFC */
+    --foreground: 21 56 79;           /* ink    #15384F */
 
-    --card: 255 255 255;              /* surface #FFFFFF */
-    --card-foreground: 28 26 23;
+    --card: 255 255 255;              /* #FFFFFF */
+    --card-foreground: 21 56 79;
     --popover: 255 255 255;
-    --popover-foreground: 28 26 23;
+    --popover-foreground: 21 56 79;
 
-    --primary: 15 76 74;              /* teal    #0F4C4A */
+    --primary: 25 112 155;            /* ocean  #19709B (buttons: gradient to #2381B6) */
     --primary-foreground: 255 255 255;
-    --primary-pressed: 11 58 56;      /*         #0B3A38 */
-    --primary-soft: 220 235 232;      /*         #DCEBE8 */
+    --primary-pressed: 19 90 125;     /*        #135A7D */
+    --primary-soft: 232 242 249;      /* ice    #E8F2F9 */
 
-    --accent: 200 100 59;             /* terracotta #C8643B */
+    --accent: 22 114 174;             /* link   #1672AE */
     --accent-foreground: 255 255 255;
-    --accent-soft: 246 227 217;       /*         #F6E3D9 */
+    --accent-soft: 225 240 250;       /*        #E1F0FA */
 
-    --secondary: 243 237 228;         /* sunken  #F3EDE4 */
-    --secondary-foreground: 28 26 23;
+    --secondary: 238 245 250;         /* sunken #EEF5FA */
+    --secondary-foreground: 21 56 79;
 
-    --muted: 245 239 230;             /* sunken  #F5EFE6 */
-    --muted-foreground: 94 87 77;     /* text secondary #5E574D */
-    --faint: 138 129 116;             /* text muted     #8A8174 */
+    --muted: 238 244 248;             /*        #EEF4F8 */
+    --muted-foreground: 78 107 125;   /*        #4E6B7D */
+    --faint: 107 131 148;             /*        #6B8394 */
 
-    --border: 234 225 211;            /* #EAE1D3 */
-    --border-strong: 217 204 184;     /* #D9CCB8 */
-    --input: 217 204 184;
-    --ring: 15 76 74;
+    --border: 220 232 240;            /* #DCE8F0 */
+    --border-strong: 195 214 226;     /* #C3D6E2 */
+    --input: 195 214 226;
+    --ring: 25 112 155;
 
     --destructive: 180 56 47;         /* #B4382F */
     --destructive-soft: 248 226 223;  /* #F8E2DF */
     --success: 47 125 91;             /* #2F7D5B */
     --success-soft: 221 238 229;      /* #DDEEE5 */
     --warning: 201 138 27;            /* #C98A1B */
-    --rating: 227 169 75;             /* #E3A94B */
-    --info: 47 111 163;               /* #2F6FA3 */
-    --inverse: 28 26 23;              /* #1C1A17 */
+    --rating: 242 169 59;             /* star   #F2A93B */
+    --info: 22 114 174;               /* #1672AE */
+    --inverse: 26 83 114;             /* navy   #1A5372 (selected chips, dark surfaces) */
+
+    /* Brand extras from the style tile */
+    --heading: 26 83 114;             /* navy   #1A5372 */
+    --sky: 46 159 217;                /* sky    #2E9FD9 (decorative) */
+    --sand: 239 224 201;              /* sand   #EFE0C9 */
+    --mint: 228 244 238;              /* mint   #E4F4EE */
+    --peach: 252 235 221;             /* peach  #FCEBDD */
+    --lemon: 253 243 220;             /* lemon  #FDF3DC */
   }
 }
 
@@ -79,8 +90,15 @@
   --color-accent: rgb(var(--accent));
   --color-accent-foreground: rgb(var(--accent-foreground));
   --color-accent-soft: rgb(var(--accent-soft));
+  --color-heading: rgb(var(--heading));
+  --color-sky: rgb(var(--sky));
+  --color-sand: rgb(var(--sand));
+  --color-mint: rgb(var(--mint));
+  --color-peach: rgb(var(--peach));
+  --color-lemon: rgb(var(--lemon));
 
   /* Font families (loaded at runtime with expo-font, see src/lib/fonts.ts). */
-  --font-display: Fraunces_600SemiBold;
+  --font-display: Outfit_700Bold;
+  --font-script: Caveat_700Bold;
   --font-sans: PlusJakartaSans_400Regular;
 }

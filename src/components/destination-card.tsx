@@ -47,7 +47,7 @@ function SaveButton({ id, name }: { id: string; name: string }) {
       hitSlop={8}
       onPress={() => toggle.mutate({ destinationId: id, save: !isSaved })}
       className="absolute right-3 top-3 h-10 w-10 items-center justify-center rounded-xl bg-card"
-      style={{ boxShadow: '0 2px 6px rgba(28,26,23,0.15)' }}
+      style={{ boxShadow: '0 2px 6px rgba(21,56,79,0.15)' }}
     >
       <Bookmark color={isSaved ? colors.accent : colors.foreground} fill={isSaved ? colors.accent : 'transparent'} size={18} />
     </Pressable>

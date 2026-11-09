@@ -1,11 +1,13 @@
+import { ChevronRight } from 'lucide-react-native';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { I18nManager, Pressable, View, type TextInputProps } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Text, TextInput } from '@/components/text';
 
 import { haptics } from '@/lib/haptics';
+import { flipX } from '@/lib/i18n';
 import { EASE_IN_OUT, usePressScale } from '@/lib/motion';
-import { colors } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 
 export type FieldProps = TextInputProps & {
   label: string;
@@ -22,8 +24,8 @@ export function TextField({ label, error, hint, left, right, multiline, onFocus,
     <View className="gap-1.5">
       <Text className="text-sm font-medium text-muted-foreground">{label}</Text>
       <View
-        className={`flex-row items-center gap-3 rounded-2xl bg-card px-4 ${multiline ? 'min-h-28 py-3' : 'min-h-14'} ${
-          error ? 'border-[1.5px] border-destructive' : focused ? 'border-[1.5px] border-primary' : 'border border-border'
+        className={`flex-row items-center gap-3 px-5 ${multiline ? 'min-h-28 rounded-3xl py-3' : 'min-h-14 rounded-full'} ${
+          error ? 'border-[1.5px] border-destructive bg-card' : focused ? 'border-[1.5px] border-primary bg-card' : 'border-[1.5px] border-transparent bg-primary-soft'
         }`}
       >
         {left}
@@ -75,12 +77,10 @@ export function Chip({
         accessibilityState={{ selected }}
         onPress={onPress}
         {...press.handlers}
-        className={`min-h-10 flex-row items-center gap-1.5 rounded-full border px-4 ${
-          selected ? 'border-inverse bg-inverse' : 'border-border bg-card'
-        }`}
+        className={`min-h-10 flex-row items-center gap-1.5 rounded-full px-4 ${selected ? 'bg-inverse' : 'bg-primary-soft'}`}
       >
         {icon}
-        <Text className={`text-sm font-medium ${selected ? 'text-white' : 'text-foreground'}`}>{label}</Text>
+        <Text className={`text-sm font-semibold ${selected ? 'text-white' : 'text-heading'}`}>{label}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -115,12 +115,12 @@ export function Segmented<T extends string>({
   const indicatorStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
 
   return (
-    <View className="flex-row rounded-full bg-secondary p-1" accessibilityRole="tablist" onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+    <View className="flex-row rounded-full bg-primary-soft p-1" accessibilityRole="tablist" onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       {segment ? (
         <Animated.View
           pointerEvents="none"
           className="absolute rounded-full bg-card"
-          style={[{ top: 4, bottom: 4, start: 4, width: segment, boxShadow: '0 1px 3px rgba(28,26,23,0.10)' }, indicatorStyle]}
+          style={[{ top: 4, bottom: 4, start: 4, width: segment, boxShadow: shadow(0.12, 1, 4) }, indicatorStyle]}
         />
       ) : null}
       {options.map((o) => {
@@ -136,7 +136,7 @@ export function Segmented<T extends string>({
             }}
             className={`min-h-10 flex-1 items-center justify-center rounded-full px-2 ${active && !segment ? 'bg-card shadow-sm' : ''}`}
           >
-            <Text numberOfLines={1} className={`text-sm font-semibold ${active ? 'text-foreground' : 'text-faint'}`}>
+            <Text numberOfLines={1} className={`text-sm font-semibold ${active ? 'text-heading' : 'text-muted-foreground'}`}>
               {o.label}
             </Text>
           </Pressable>
@@ -146,17 +146,23 @@ export function Segmented<T extends string>({
   );
 }
 
+/** White card with a soft navy shadow (style tile). */
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <View className={`rounded-3xl border border-border bg-card p-4 ${className ?? ''}`}>{children}</View>;
+  return (
+    <View className={`rounded-3xl bg-card p-4 ${className ?? ''}`} style={{ boxShadow: shadow(0.08, 6, 20) }}>
+      {children}
+    </View>
+  );
 }
 
 export function SectionHeader({ title, actionLabel, onAction }: { title: string; actionLabel?: string; onAction?: () => void }) {
   return (
     <View className="flex-row items-center justify-between">
-      <Text className="font-display text-[22px] leading-7 text-foreground">{title}</Text>
+      <Text className="font-display text-[22px] leading-7 text-heading">{title}</Text>
       {actionLabel && onAction ? (
-        <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10} className="min-h-10 justify-center">
-          <Text className="text-sm font-semibold text-primary">{actionLabel}</Text>
+        <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10} className="min-h-10 flex-row items-center gap-0.5">
+          <Text className="text-sm font-semibold text-accent">{actionLabel}</Text>
+          <ChevronRight color={colors.accent} size={16} style={flipX} />
         </Pressable>
       ) : null}
     </View>

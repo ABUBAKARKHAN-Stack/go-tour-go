@@ -72,7 +72,7 @@ export function HazardCardOverlay() {
       pointerEvents="box-none"
       accessibilityLiveRegion="polite"
     >
-      <View className="overflow-hidden rounded-[28px] bg-card" style={{ boxShadow: '0 10px 28px rgba(28,26,23,0.18)' }}>
+      <View className="overflow-hidden rounded-[28px] bg-card" style={{ boxShadow: '0 10px 28px rgba(21,56,79,0.18)' }}>
         <View className="flex-row items-center gap-2 bg-destructive-soft px-4 py-2.5">
           <TriangleAlert color={colors.destructive} size={18} />
           <Text className="flex-1 text-[11px] font-bold uppercase tracking-[1.6px] text-destructive">

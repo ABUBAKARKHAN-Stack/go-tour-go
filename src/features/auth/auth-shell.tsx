@@ -68,7 +68,7 @@ export function AuthShell({ title, subtitle, back, compact, children, footer }: 
               hitSlop={8}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}
               className="absolute left-5 h-11 w-11 items-center justify-center rounded-full bg-card"
-              style={{ top: insets.top + 8, boxShadow: '0 2px 8px rgba(28,26,23,0.12)' }}
+              style={{ top: insets.top + 8, boxShadow: '0 2px 8px rgba(21,56,79,0.12)' }}
             >
               <ArrowLeft color={colors.foreground} size={20} style={flipX} />
             </Pressable>

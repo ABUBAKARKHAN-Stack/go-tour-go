@@ -183,7 +183,7 @@ export default function JourneyPreview() {
         padding={{ top: insets.top + 84, bottom: sheetHeight }}
       />
 
-      <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-3xl bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(28,26,23,0.10)' }}>
+      <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-3xl bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(21,56,79,0.10)' }}>
         <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
           <ArrowLeft color={colors.foreground} size={20} style={flipX} />
         </Pressable>
@@ -197,7 +197,7 @@ export default function JourneyPreview() {
 
       <View
         className="absolute bottom-0 left-0 right-0 rounded-t-[28px] bg-background"
-        style={{ height: sheetHeight, boxShadow: '0 -8px 24px rgba(28,26,23,0.10)' }}
+        style={{ height: sheetHeight, boxShadow: '0 -8px 24px rgba(21,56,79,0.10)' }}
       >
         <View className="items-center pb-1 pt-3">
           <View className="h-1 w-10 rounded-full bg-border-strong" />

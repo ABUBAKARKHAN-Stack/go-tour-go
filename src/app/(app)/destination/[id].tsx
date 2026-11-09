@@ -74,7 +74,7 @@ function HeroButton({ icon: Icon, label, onPress, active, flip }: { icon: Lucide
         hitSlop={6}
         onPress={onPress}
         className="h-11 w-11 items-center justify-center rounded-full bg-card"
-        style={{ boxShadow: '0 2px 8px rgba(28,26,23,0.15)' }}
+        style={{ boxShadow: '0 2px 8px rgba(21,56,79,0.15)' }}
       >
         <Icon color={active ? colors.accent : colors.foreground} size={20} style={flip ? flipX : undefined} />
       </Pressable>
