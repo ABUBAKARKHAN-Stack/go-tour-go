@@ -89,7 +89,7 @@ export function AppButton({
       delayLongPress={delayLongPress}
       {...press.handlers}
       pressRetentionOffset={16}
-      className={`${size === 'md' ? 'min-h-14 px-6' : 'min-h-11 px-4'} flex-row items-center justify-center gap-2 rounded-full ${containerClass[variant]} ${isDisabled ? 'opacity-50' : ''}`}
+      className={`${size === 'md' ? 'min-h-[52px] px-6' : 'min-h-11 px-4'} flex-row items-center justify-center gap-2 rounded-full ${containerClass[variant]} ${isDisabled ? 'opacity-50' : ''}`}
       style={variant === 'primary' || variant === 'accent' ? GRADIENT_STYLE : undefined}
     >
       {loading ? (
@@ -97,7 +97,7 @@ export function AppButton({
       ) : Icon ? (
         <Icon color={iconColor[variant]} size={size === 'md' ? 18 : 16} />
       ) : null}
-      <Text className={`${size === 'md' ? 'text-base' : 'text-sm'} font-semibold ${textClass[variant]}`}>{label}</Text>
+      <Text className={`${size === 'md' ? 'text-[15px]' : 'text-sm'} font-semibold ${textClass[variant]}`}>{label}</Text>
       {Trailing && !loading ? <Trailing color={iconColor[variant]} size={size === 'md' ? 18 : 16} style={flipX} /> : null}
     </Pressable>
     </Animated.View>

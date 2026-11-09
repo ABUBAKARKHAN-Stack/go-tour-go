@@ -11,6 +11,8 @@ import { colors, shadow } from '@/lib/theme';
 
 export type FieldProps = TextInputProps & {
   label: string;
+  /** Keep the label for screen readers only (the icon + placeholder show it, as on the sign-in screens). */
+  hideLabel?: boolean;
   left?: ReactNode;
   error?: string | null;
   hint?: string;
@@ -18,13 +20,13 @@ export type FieldProps = TextInputProps & {
 };
 
 /** Labelled text input with error/hint text, sized for touch. */
-export function TextField({ label, error, hint, left, right, multiline, onFocus, onBlur, ...props }: FieldProps) {
+export function TextField({ label, hideLabel, error, hint, left, right, multiline, onFocus, onBlur, ...props }: FieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className="gap-1.5">
-      <Text className="text-sm font-medium text-muted-foreground">{label}</Text>
+      {hideLabel ? null : <Text className="text-sm font-medium text-muted-foreground">{label}</Text>}
       <View
-        className={`flex-row items-center gap-3 px-5 ${multiline ? 'min-h-28 rounded-3xl py-3' : 'min-h-14 rounded-full'} ${
+        className={`flex-row items-center gap-3 px-5 ${multiline ? 'min-h-28 rounded-3xl py-3' : 'min-h-[52px] rounded-full'} ${
           error ? 'border-[1.5px] border-destructive bg-card' : focused ? 'border-[1.5px] border-primary bg-card' : 'border-[1.5px] border-transparent bg-primary-soft'
         }`}
       >
@@ -32,7 +34,7 @@ export function TextField({ label, error, hint, left, right, multiline, onFocus,
         <TextInput
           accessibilityLabel={label}
           placeholderTextColor={colors.faint}
-          className="flex-1 text-base text-foreground"
+          className="flex-1 text-[15px] text-foreground"
           style={multiline ? { textAlignVertical: 'top', minHeight: 88 } : undefined}
           multiline={multiline}
           {...props}

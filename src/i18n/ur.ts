@@ -1154,4 +1154,9 @@ export const ur: Record<string, string> = {
   "Explore the world, one destination at a time.": "دنیا گھومیں، ایک منزل کے بعد دوسری۔",
   "Explore • Connect • Experience": "گھومیں • جڑیں • تجربہ کریں",
   "Photo: {0} by {1}, Wikimedia Commons": "تصویر: {0}، از {1}، وکی میڈیا کامنز",
+  "Email address": "ای میل ایڈریس",
+  "Password (at least 8 characters)": "پاس ورڈ (کم از کم 8 حروف)",
+  "Already have an account?": "پہلے سے اکاؤنٹ ہے؟",
+  "Log in": "لاگ اِن کریں",
+  "New password (at least 8 characters)": "نیا پاس ورڈ (کم از کم 8 حروف)",
 };

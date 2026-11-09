@@ -40,7 +40,7 @@ export default function ResetPassword() {
 
   if (!ready) {
     return (
-      <AuthShell compact title={tx('Reset password')} subtitle={tx('Verifying link...')}>
+      <AuthShell title={tx('Reset password')} subtitle={tx('Verifying link...')}>
         <LoadingState variant="spinner" label={tx('Verifying link...')} />
       </AuthShell>
     );
@@ -48,7 +48,6 @@ export default function ResetPassword() {
 
   return (
     <AuthShell
-      compact
       title={done ? tx('Password updated') : tx('Choose a new password')}
       subtitle={done ? tx('Your password has been updated.') : tx('Use at least 8 characters with letters and numbers.')}
     >
@@ -58,12 +57,13 @@ export default function ResetPassword() {
         <>
           {error ? <InlineError message={error} /> : null}
           <FormTextField
+        hideLabel
             control={control}
             name="password"
             label={tx('New password')}
             secureTextEntry
             autoComplete="new-password"
-            placeholder={tx('At least 8 characters')}
+            placeholder={tx('New password (at least 8 characters)')}
             returnKeyType="go"
             onSubmitEditing={() => submit()}
             left={<Lock color={colors.primary} size={20} />}

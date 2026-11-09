@@ -1,14 +1,14 @@
 import { Link, router } from 'expo-router';
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
 import { InlineError } from '@/components/states';
 import { signIn } from '@/features/auth/api';
-import { AuthShell, AuthTagline, OrDivider } from '@/features/auth/auth-shell';
+import { AuthShell, OrDivider } from '@/features/auth/auth-shell';
 import { signInSchema } from '@/features/auth/schemas';
 import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
@@ -33,16 +33,12 @@ export default function SignIn() {
       scriptWord={tx('Explore?')}
       subtitle={tx('Your next adventure starts here.')}
       note={[tx('Good trips,'), tx('better stories')]}
-      footer={
-        <View className="gap-3">
-          <AuthTagline />
-          <Text className="text-center text-xs text-faint">{tx('By continuing you agree to our Terms and Privacy Policy.')}</Text>
-        </View>
-      }
+      footer={<Text className="text-center text-xs text-faint">{tx('By continuing you agree to our Terms and Privacy Policy.')}</Text>}
     >
       {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
 
       <FormTextField
+        hideLabel
         control={control}
         name="email"
         label={tx('Email')}
@@ -50,19 +46,20 @@ export default function SignIn() {
         autoComplete="email"
         keyboardType="email-address"
         textContentType="emailAddress"
-        placeholder="you@example.com"
+        placeholder={tx('Email address')}
         returnKeyType="next"
         onSubmitEditing={() => setFocus('password')}
         left={<Mail color={colors.primary} size={20} />}
       />
       <FormTextField
+        hideLabel
         control={control}
         name="password"
         label={tx('Password')}
         secureTextEntry={!show}
         autoComplete="current-password"
         textContentType="password"
-        placeholder={tx('Your password')}
+        placeholder={tx('Password')}
         returnKeyType="go"
         onSubmitEditing={() => submit()}
         left={<Lock color={colors.primary} size={20} />}
@@ -74,7 +71,7 @@ export default function SignIn() {
       />
 
       <Link href="/forgot-password" asChild>
-        <Pressable accessibilityRole="link" className="-mt-1 min-h-10 justify-center self-end">
+        <Pressable accessibilityRole="link" className="-my-1 min-h-9 justify-center self-end">
           <Text className="text-sm font-semibold text-primary">{tx('Forgot password?')}</Text>
         </Pressable>
       </Link>
