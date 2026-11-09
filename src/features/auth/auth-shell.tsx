@@ -79,7 +79,8 @@ export function AuthShell({ title, scriptWord, subtitle, back, photo = HERO_PHOT
                 isUrdu ? (
                   ` ${scriptWord}`
                 ) : (
-                  <Text className="font-script text-[36px] text-sky-strong">{` ${scriptWord}`}</Text>
+                  // Caveat runs small for its size: 31 px matches 28 px Outfit.
+                  <Text className="font-script text-[31px] leading-[34px] text-sky-strong">{` ${scriptWord}`}</Text>
                 )
               ) : null}
             </Text>

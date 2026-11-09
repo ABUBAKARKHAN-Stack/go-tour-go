@@ -7,7 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 import { BrandLogo, WaveEdge, type TileTone } from '@/components/brand';
 import { Text } from '@/components/text';
 import { FALLBACK_PHOTO, type HeroPhoto } from '@/features/brand/hero-photos';
-import { isUrdu, tx } from '@/lib/i18n';
+import { isUrdu } from '@/lib/i18n';
 import { colors, shadow } from '@/lib/theme';
 
 /**
@@ -25,7 +25,7 @@ export function heroHeight(windowHeight: number) {
   return Math.round(Math.min(300, Math.max(220, windowHeight * 0.32)));
 }
 
-/** Photo header: misty top (logo stays readable on any photo), wave edge, small credit. */
+/** Photo header: misty top (logo stays readable on any photo) and wave edge. Credits: Settings → Photo credits. */
 export function PhotoHeader({
   photo,
   width,
@@ -59,26 +59,19 @@ export function PhotoHeader({
           left: 0,
           right: 0,
           top: 0,
-          height: height * 0.42,
-          experimental_backgroundImage: 'linear-gradient(180deg, rgba(246,250,252,0.92), rgba(246,250,252,0.55) 55%, rgba(246,250,252,0))',
+          height: height * 0.45,
+          experimental_backgroundImage: 'linear-gradient(180deg, rgba(246,250,252,0.95), rgba(246,250,252,0.6) 55%, rgba(246,250,252,0))',
         }}
       />
       {logo ? (
-        <View pointerEvents="none" className="absolute start-5" style={{ top: 14 }}>
-          <BrandLogo height={32} />
+        <View pointerEvents="none" className="absolute start-5" style={{ top: 12 }}>
+          <BrandLogo height={52} />
         </View>
       ) : null}
       {children}
       <View pointerEvents="none" className="absolute bottom-0 left-0 right-0">
         <WaveEdge width={width} height={56} />
       </View>
-      <Text
-        className="absolute text-[9px] text-white/80"
-        style={{ end: 12, bottom: 58, textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 3 }}
-        accessibilityLabel={tx('Photo: {0} by {1}, Wikimedia Commons', { 0: photo.place, 1: photo.credit })}
-      >
-        {photo.credit} · Wikimedia Commons
-      </Text>
     </View>
   );
 }
@@ -86,14 +79,20 @@ export function PhotoHeader({
 /** Handwritten note with a hand-drawn underline and a small heart (design guide). */
 export function HandNote({ lines, style, rotate = -8 }: { lines: string[]; style?: ViewStyle; rotate?: number }) {
   return (
-    <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[{ position: 'absolute', transform: [{ rotate: `${rotate}deg` }] }, style]}>
+    <View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      className="rounded-[22px] bg-white/80 px-4 pb-1.5 pt-2"
+      style={[{ position: 'absolute', boxShadow: shadow(0.14, 4, 14), transform: [{ rotate: `${rotate}deg` }] }, style]}
+    >
       {lines.map((l, i) => (
         <View key={i} className="flex-row items-center gap-1" style={{ marginStart: i * 18 }}>
           <Text className="font-script text-[24px] leading-[28px] text-heading">{l}</Text>
           {i === lines.length - 1 ? <Heart color={colors.heading} fill={colors.heading} size={14} /> : null}
         </View>
       ))}
-      <Svg width={150} height={14} viewBox="0 0 150 14" style={{ marginStart: 24, marginTop: -2 }}>
+      <Svg width={130} height={12} viewBox="0 0 150 14" style={{ marginStart: 20, marginTop: -2 }}>
         <Path d="M2 12 C40 2 100 1 148 5" stroke={colors.heading} strokeWidth={2} fill="none" strokeLinecap="round" />
       </Svg>
     </View>
@@ -125,7 +124,7 @@ export function FloatingCard({
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      className="absolute flex-row items-center gap-2.5 rounded-[20px] bg-white/95 px-3 py-2.5"
+      className="absolute flex-row items-center gap-2.5 rounded-[20px] bg-white px-3 py-2.5"
       style={[{ maxWidth: 230, boxShadow: shadow(0.16, 6, 18), transform: [{ rotate: `${rotate}deg` }] }, style]}
     >
       <View className={`h-10 w-10 items-center justify-center rounded-2xl ${CARD_TILE[tone]}`}>
