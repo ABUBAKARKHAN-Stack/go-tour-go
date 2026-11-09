@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "appllama-app-design-skill": {
+      "source": "Appllama/appllama-skills",
+      "sourceType": "github",
+      "skillPath": "skills/appllama-app-design-skill/SKILL.md",
+      "computedHash": "023b25559a5e9a4ab85ccffc9612d0d0f650608eb7f281dce8408a32649b2340"
+    },
     "eas-app-stores": {
       "source": "expo/skills",
       "sourceType": "github",
