@@ -1,14 +1,14 @@
 import { Link, router } from 'expo-router';
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable } from 'react-native';
-import { Text } from '@/components/text';
+import { Pressable, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
 import { InlineError } from '@/components/states';
+import { Text } from '@/components/text';
 import { signIn } from '@/features/auth/api';
-import { AuthShell, OrDivider } from '@/features/auth/auth-shell';
+import { AuthShell, AuthSwitch } from '@/features/auth/auth-shell';
 import { signInSchema } from '@/features/auth/schemas';
 import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
@@ -71,14 +71,15 @@ export default function SignIn() {
       />
 
       <Link href="/forgot-password" asChild>
-        <Pressable accessibilityRole="link" className="-my-1 min-h-9 justify-center self-end">
-          <Text className="text-sm font-semibold text-primary">{tx('Forgot password?')}</Text>
+        <Pressable accessibilityRole="link" hitSlop={6} className="-my-1 min-h-9 justify-center self-end active:opacity-60">
+          <Text className="text-sm font-semibold text-accent">{tx('Forgot password?')}</Text>
         </Pressable>
       </Link>
 
-      <AppButton label={tx('Sign in')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
-      <OrDivider />
-      <AppButton label={tx('Create an account')} variant="outline" onPress={() => router.push('/sign-up')} />
+      <View className="pt-1">
+        <AppButton label={tx('Sign in')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
+      </View>
+      <AuthSwitch prompt={tx("Don't have an account?")} action={tx('Sign up')} onPress={() => router.push('/sign-up')} />
     </AuthShell>
   );
 }

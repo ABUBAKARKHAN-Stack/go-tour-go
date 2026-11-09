@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { BrandLogo, WaveEdge, type TileTone } from '@/components/brand';
+import { BrandLogo, SweepEdge, type SweepShape, type TileTone } from '@/components/brand';
 import { Text } from '@/components/text';
 import { FALLBACK_PHOTO, type HeroPhoto } from '@/features/brand/hero-photos';
 import { isUrdu } from '@/lib/i18n';
@@ -12,32 +12,61 @@ import { colors, shadow } from '@/lib/theme';
 
 /**
  * Pieces of the client design guide's "mood" (onboarding and sign-in): a
- * full-bleed photo with a misty top for the logo and a wave where the page
- * rises over it, a handwritten note, a floating glass card and the step pill.
+ * full-bleed photo with a misty top for the logo and a big curve where the
+ * page sweeps up over it, a handwritten note, a floating card, the step pill,
+ * the two-tone title and the handwritten title word.
  * Decorations are hidden from screen readers.
  */
 
+export type HeaderKind = 'onboarding' | 'auth';
+
+const SHAPE: Record<HeaderKind, SweepShape> = { onboarding: 'valley', auth: 'slope' };
+
 /**
- * One photo height for every onboarding step and auth screen, so they line up:
- * about a third of the screen, 220–300 dp.
+ * Photo height, status bar included (the photo runs under it, like the
+ * mockups). One height for every onboarding step and one for every auth
+ * screen, so the screens line up.
  */
-export function heroHeight(windowHeight: number) {
-  return Math.round(Math.min(300, Math.max(220, windowHeight * 0.32)));
+export function photoHeight(kind: HeaderKind, windowHeight: number) {
+  // Onboarding: the photo gets what the text below leaves (about 400 dp: step,
+  // title, three lines, features, button), so tall phones get half a screen
+  // of photo and small ones still fit the step without scrolling.
+  if (kind === 'onboarding') return Math.round(Math.min(440, Math.max(240, windowHeight - 400)));
+  return Math.round(Math.min(310, Math.max(240, windowHeight * 0.35)));
 }
 
-/** Photo header: misty top (logo stays readable on any photo) and wave edge. Credits: Settings → Photo credits. */
+/** Height of the curved edge; it scales with the width so the curve keeps its shape. */
+export function sweepHeight(kind: HeaderKind, width: number) {
+  return Math.round(width * (kind === 'onboarding' ? 0.22 : 0.25));
+}
+
+/**
+ * How far the content below may rise into the curve without touching the
+ * photo: the start side is high, so a short line ("‹ Back", the step pill)
+ * fits further up than a long title.
+ */
+export function sweepOverlap(kind: HeaderKind, width: number, shortFirstLine = false) {
+  const h = sweepHeight(kind, width);
+  if (kind === 'onboarding') return Math.round(h * 0.36);
+  return Math.round(h * (shortFirstLine ? 0.55 : 0.22));
+}
+
+/** Full-bleed photo header: misty top (the logo reads on any photo) and the curved edge. Credits: Settings → Photo credits. */
 export function PhotoHeader({
   photo,
+  kind,
   width,
   height,
+  topInset,
   children,
-  logo = true,
 }: {
   photo: HeroPhoto;
+  kind: HeaderKind;
   width: number;
   height: number;
+  /** Status bar height: the photo runs under it and the logo sits below it. */
+  topInset: number;
   children?: ReactNode;
-  logo?: boolean;
 }) {
   return (
     <View style={{ width, height }} className="overflow-hidden">
@@ -51,7 +80,6 @@ export function PhotoHeader({
         transition={250}
         accessible={false}
       />
-      {/* Misty sky at the top, like the mockups, so the coloured logo reads on any photo. */}
       <View
         pointerEvents="none"
         style={{
@@ -59,18 +87,16 @@ export function PhotoHeader({
           left: 0,
           right: 0,
           top: 0,
-          height: height * 0.45,
-          experimental_backgroundImage: 'linear-gradient(180deg, rgba(246,250,252,0.95), rgba(246,250,252,0.6) 55%, rgba(246,250,252,0))',
+          height: topInset + 120,
+          experimental_backgroundImage: 'linear-gradient(180deg, rgba(246,250,252,0.92), rgba(246,250,252,0.55) 60%, rgba(246,250,252,0))',
         }}
       />
-      {logo ? (
-        <View pointerEvents="none" className="absolute start-5" style={{ top: 12 }}>
-          <BrandLogo height={52} />
-        </View>
-      ) : null}
+      <View pointerEvents="none" className="absolute start-5" style={{ top: topInset + 8 }}>
+        <BrandLogo height={52} />
+      </View>
       {children}
       <View pointerEvents="none" className="absolute bottom-0 left-0 right-0">
-        <WaveEdge width={width} height={56} />
+        <SweepEdge width={width} height={sweepHeight(kind, width)} shape={SHAPE[kind]} mirrored={isUrdu} />
       </View>
     </View>
   );
@@ -171,5 +197,20 @@ export function TwoToneTitle({ first, second, size = 28 }: { first: string; seco
         {second}
       </Text>
     </Text>
+  );
+}
+
+/**
+ * The handwritten word after a title ("Ready to Explore?"), with the
+ * hand-drawn swash under it. Caveat runs small, so 31 px matches 28 px Outfit.
+ */
+export function ScriptWord({ word }: { word: string }) {
+  return (
+    <View>
+      <Text className="font-script text-[31px] leading-[34px] text-sky-strong">{word}</Text>
+      <Svg width="100%" height={8} viewBox="0 0 100 8" preserveAspectRatio="none" style={{ marginTop: -5 }} pointerEvents="none">
+        <Path d="M3 6 C30 1.5 70 0.5 97 3" stroke={colors.skyStrong} strokeWidth={2} fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      </Svg>
+    </View>
   );
 }

@@ -86,40 +86,32 @@ export function BrandLogo({ height = 40, tone = 'color', layout = 'horizontal' }
 }
 
 /**
- * Soft wave that ends a photo header (the curved edge in the design guide).
+ * The big curved edge where the page sweeps up over a photo (design guide).
  * Place it absolutely at the bottom of the photo; it is filled with the page
- * background so the content below seems to rise over the photo.
+ * background. "valley" (onboarding) rises on both sides and dips right of
+ * centre; "slope" (sign-in screens) is high at the start and falls to the
+ * photo's bottom at the end, leaving the photo open on that side.
+ * Shapes are in 0–1 units; Urdu mirrors them so the high side follows the text.
  */
-export function WaveEdge({ width, height = 48, color = colors.background, flip = false }: { width: number; height?: number; color?: string; flip?: boolean }) {
-  const d = flip
-    ? `M0 ${height} L0 ${height * 0.35} C${width * 0.3} ${height * 1.05} ${width * 0.62} ${-height * 0.25} ${width} ${height * 0.42} L${width} ${height} Z`
-    : `M0 ${height} L0 ${height * 0.42} C${width * 0.38} ${-height * 0.25} ${width * 0.7} ${height * 1.05} ${width} ${height * 0.35} L${width} ${height} Z`;
-  return (
-    <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no">
-      <Path d={d} fill={color} />
-    </Svg>
-  );
-}
+const SWEEPS = {
+  valley: 'M0 .42 C.22 .30 .40 1 .64 .96 C.82 .93 .90 .30 1 .06 L1 1 L0 1 Z',
+  slope: 'M0 .06 C.25 0 .42 .38 .62 .66 C.78 .88 .90 .98 1 1 L0 1 Z',
+} as const;
+export type SweepShape = keyof typeof SWEEPS;
 
-/** Small leaf sprig used sparingly as a corner decoration (design guide). Decorative only. */
-export function LeafSprig({ size = 56, color = colors.sky, opacity = 0.35, mirrored = false }: { size?: number; color?: string; opacity?: number; mirrored?: boolean }) {
+export function SweepEdge({ width, height, shape, mirrored = false }: { width: number; height: number; shape: SweepShape; mirrored?: boolean }) {
   return (
     <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
+      width={width}
+      height={height}
+      viewBox="0 0 1 1"
+      preserveAspectRatio="none"
       style={mirrored ? { transform: [{ scaleX: -1 }] } : undefined}
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no"
     >
-      <G opacity={opacity}>
-        <Path d="M8 60 C20 44 30 30 52 10" stroke={color} strokeWidth={2.2} fill="none" strokeLinecap="round" />
-        <Path d="M22 44 C12 40 8 30 12 22 C20 26 25 34 22 44 Z" fill={color} />
-        <Path d="M32 33 C24 26 24 16 30 10 C36 16 37 26 32 33 Z" fill={color} />
-        <Path d="M30 46 C38 40 48 40 54 46 C47 52 37 52 30 46 Z" fill={color} />
-        <Path d="M42 24 C48 18 56 18 60 22 C56 28 48 29 42 24 Z" fill={color} />
-      </G>
+      <Path d={SWEEPS[shape]} fill={colors.background} />
     </Svg>
   );
 }
@@ -134,11 +126,11 @@ const TILE_BG: Record<TileTone, string> = {
   sand: 'bg-sand',
 };
 
-/** Rounded square with a soft tint and an icon (category and feature tiles). */
-export function IconTile({ icon: Icon, tone = 'ice', size = 56, label }: { icon: LucideIcon; tone?: TileTone; size?: number; label?: string }) {
+/** Rounded square (or circle) with a soft tint and an icon (category and feature tiles). */
+export function IconTile({ icon: Icon, tone = 'ice', size = 56, label, round = false }: { icon: LucideIcon; tone?: TileTone; size?: number; label?: string; round?: boolean }) {
   return (
     <View className="items-center gap-1.5">
-      <View className={`items-center justify-center rounded-[20px] ${TILE_BG[tone]}`} style={{ width: size, height: size }}>
+      <View className={`items-center justify-center ${round ? 'rounded-full' : 'rounded-[20px]'} ${TILE_BG[tone]}`} style={{ width: size, height: size }}>
         <Icon color={colors.primary} size={Math.round(size * 0.44)} strokeWidth={1.8} />
       </View>
       {label ? (
