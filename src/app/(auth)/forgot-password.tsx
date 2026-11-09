@@ -29,7 +29,7 @@ export default function ForgotPassword() {
 
   if (sent) {
     return (
-      <AuthShell back compact title={tx('Check your inbox')} subtitle={tx('If an account exists for this email, you will receive a reset link. Open it on this phone to choose a new password.')}>
+      <AuthShell back title={tx('Check your inbox')} subtitle={tx('If an account exists for this email, you will receive a reset link. Open it on this phone to choose a new password.')}>
         <View className="flex-row items-center gap-3 rounded-2xl bg-primary-soft p-4">
           <MailCheck color={colors.primary} size={22} />
           <Text className="flex-1 text-sm text-foreground">{tx('Did not get it? Check your spam folder, or try again in a few minutes.')}</Text>
@@ -40,16 +40,17 @@ export default function ForgotPassword() {
   }
 
   return (
-    <AuthShell back compact title={tx('Reset password')} subtitle={tx('Enter your email and we will send you a link to choose a new password.')}>
+    <AuthShell back title={tx('Reset password')} subtitle={tx('Enter your email and we will send you a link to choose a new password.')}>
       {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
       <FormTextField
+        hideLabel
         control={control}
         name="email"
         label={tx('Email')}
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"
-        placeholder="you@example.com"
+        placeholder={tx('Email address')}
         onSubmitEditing={() => submit()}
         left={<Mail color={colors.primary} size={20} />}
       />

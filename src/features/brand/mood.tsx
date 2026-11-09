@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { BrandLogo, LeafSprig, WaveEdge, type TileTone } from '@/components/brand';
+import { BrandLogo, WaveEdge, type TileTone } from '@/components/brand';
 import { Text } from '@/components/text';
 import { FALLBACK_PHOTO, type HeroPhoto } from '@/features/brand/hero-photos';
 import { isUrdu, tx } from '@/lib/i18n';
@@ -13,9 +13,17 @@ import { colors, shadow } from '@/lib/theme';
 /**
  * Pieces of the client design guide's "mood" (onboarding and sign-in): a
  * full-bleed photo with a misty top for the logo and a wave where the page
- * rises over it, a handwritten note, floating glass cards, the step pill and
- * soft sand/sky waves at the bottom. Decorations are hidden from screen readers.
+ * rises over it, a handwritten note, a floating glass card and the step pill.
+ * Decorations are hidden from screen readers.
  */
+
+/**
+ * One photo height for every onboarding step and auth screen, so they line up:
+ * about a third of the screen, 220–300 dp.
+ */
+export function heroHeight(windowHeight: number) {
+  return Math.round(Math.min(300, Math.max(220, windowHeight * 0.32)));
+}
 
 /** Photo header: misty top (logo stays readable on any photo), wave edge, small credit. */
 export function PhotoHeader({
@@ -56,9 +64,8 @@ export function PhotoHeader({
         }}
       />
       {logo ? (
-        <View pointerEvents="none" className="absolute left-5 gap-1" style={{ top: 12 }}>
-          <BrandLogo height={36} />
-          <Text className="ps-[33px] text-[11px] font-medium tracking-[0.5px] text-heading">{tx('Explore • Connect • Experience')}</Text>
+        <View pointerEvents="none" className="absolute start-5" style={{ top: 14 }}>
+          <BrandLogo height={32} />
         </View>
       ) : null}
       {children}
@@ -82,7 +89,7 @@ export function HandNote({ lines, style, rotate = -8 }: { lines: string[]; style
     <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[{ position: 'absolute', transform: [{ rotate: `${rotate}deg` }] }, style]}>
       {lines.map((l, i) => (
         <View key={i} className="flex-row items-center gap-1" style={{ marginStart: i * 18 }}>
-          <Text className="font-script text-[26px] leading-[30px] text-heading">{l}</Text>
+          <Text className="font-script text-[24px] leading-[28px] text-heading">{l}</Text>
           {i === lines.length - 1 ? <Heart color={colors.heading} fill={colors.heading} size={14} /> : null}
         </View>
       ))}
@@ -148,7 +155,7 @@ export function StepPill({ label }: { label: string }) {
  * Headline in two tones (navy, then sky), like "Discover / Amazing Places".
  * Urdu keeps one tone: Nastaliq needs its own line height and doesn't need the split.
  */
-export function TwoToneTitle({ first, second, size = 34 }: { first: string; second: string; size?: number }) {
+export function TwoToneTitle({ first, second, size = 28 }: { first: string; second: string; size?: number }) {
   const lh = Math.round(size * 1.15);
   if (isUrdu) {
     return (
@@ -165,27 +172,5 @@ export function TwoToneTitle({ first, second, size = 34 }: { first: string; seco
         {second}
       </Text>
     </Text>
-  );
-}
-
-/** Soft sky and sand waves along the bottom of the page, with leaf sprigs. */
-export function BottomWaves({ width, height = 120 }: { width: number; height?: number }) {
-  return (
-    <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height }}>
-      <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-        <Path
-          d={`M0 ${height * 0.55} C${width * 0.25} ${height * 0.35} ${width * 0.45} ${height * 0.8} ${width * 0.7} ${height * 0.6} S${width} ${height * 0.45} ${width} ${height * 0.45} L${width} ${height} L0 ${height} Z`}
-          fill={colors.primarySoft}
-        />
-        <Path
-          d={`M${width * 0.35} ${height} C${width * 0.55} ${height * 0.7} ${width * 0.8} ${height * 0.62} ${width} ${height * 0.5} L${width} ${height} Z`}
-          fill={colors.sand}
-          opacity={0.75}
-        />
-      </Svg>
-      <View style={{ position: 'absolute', left: -6, bottom: height * 0.35 }}>
-        <LeafSprig size={52} opacity={0.4} />
-      </View>
-    </View>
   );
 }

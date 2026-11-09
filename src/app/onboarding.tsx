@@ -21,7 +21,7 @@ import { AppButton } from '@/components/app-button';
 import { IconTile, type TileTone } from '@/components/brand';
 import { Text } from '@/components/text';
 import { HERO_PHOTOS, prefetchHeroPhotos, type HeroPhoto } from '@/features/brand/hero-photos';
-import { BottomWaves, FloatingCard, HandNote, PhotoHeader, StepPill, TwoToneTitle } from '@/features/brand/mood';
+import { FloatingCard, HandNote, heroHeight, PhotoHeader, StepPill, TwoToneTitle } from '@/features/brand/mood';
 import { haptics } from '@/lib/haptics';
 import { changeLanguage, language, tx } from '@/lib/i18n';
 import { LOCALES } from '@/lib/preferences';
@@ -53,18 +53,7 @@ const SLIDES: Slide[] = [
       { icon: Camera, label: tx('Photos & guides'), tone: 'mint' },
       { icon: MapIcon, label: tx('Offline maps'), tone: 'lemon' },
     ],
-    overlay: (w, h) => (
-      <>
-        <HandNote lines={[tx('New views,'), tx('new stories')]} style={{ end: 18, top: h * 0.2 }} />
-        <FloatingCard
-          icon={BellRing}
-          title={tx("You're near Badshahi Mosque")}
-          text={tx('Built in 1673 by Emperor Aurangzeb. Tap to learn why it matters.')}
-          style={{ start: 16, top: h * 0.52 }}
-          rotate={-2}
-        />
-      </>
-    ),
+    overlay: (w, h) => <HandNote lines={[tx('New views,'), tx('new stories')]} style={{ end: 18, top: h * 0.26 }} />,
   },
   {
     key: 'companion',
@@ -79,23 +68,7 @@ const SLIDES: Slide[] = [
       { icon: Navigation, label: tx('Journey mode'), tone: 'lemon' },
     ],
     overlay: (w, h) => (
-      <>
-        <FloatingCard
-          icon={ScanSearch}
-          title={tx('Visual Lens')}
-          text={tx('Point your camera at a place and get instant info.')}
-          tone="mint"
-          style={{ start: 16, top: h * 0.26 }}
-          rotate={-3}
-        />
-        <FloatingCard
-          icon={Sparkles}
-          title={tx('AI travel guide')}
-          text={tx('"What should I eat near Hunza?"')}
-          style={{ end: 16, top: h * 0.5 }}
-          rotate={2}
-        />
-      </>
+      <FloatingCard icon={Sparkles} title={tx('AI travel guide')} text={tx('"What should I eat near Hunza?"')} style={{ end: 16, top: h * 0.42 }} rotate={2} />
     ),
   },
   {
@@ -111,25 +84,15 @@ const SLIDES: Slide[] = [
       { icon: Navigation, label: tx('Safe journeys'), tone: 'lemon' },
     ],
     overlay: (w, h) => (
-      <>
-        <HandNote lines={[tx('Good people,'), tx('better journeys')]} style={{ end: 16, top: h * 0.2 }} rotate={-6} />
-        <FloatingCard
-          icon={MapPinned}
-          title={tx('Sharing with 3 friends')}
-          text={tx('Your live location, for as long as you choose.')}
-          style={{ start: 16, top: h * 0.47 }}
-          rotate={-2}
-        />
-        <FloatingCard
-          icon={ShieldAlert}
-          title={tx('SOS')}
-          text={tx('Hold to send your location to trusted contacts.')}
-          tone="peach"
-          iconColor={colors.destructive}
-          style={{ end: 16, top: h * 0.66 }}
-          rotate={3}
-        />
-      </>
+      <FloatingCard
+        icon={ShieldAlert}
+        title={tx('SOS')}
+        text={tx('Hold to send your location to trusted contacts.')}
+        tone="peach"
+        iconColor={colors.destructive}
+        style={{ end: 16, top: h * 0.42 }}
+        rotate={2}
+      />
     ),
   },
 ];
@@ -140,8 +103,8 @@ export default function Onboarding() {
   const insets = useSafeAreaInsets();
   const list = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
-  // About 44% of the screen for the photo; the rest scrolls on very short phones.
-  const photoHeight = Math.round(Math.min(440, Math.max(300, height * 0.44)));
+  // Same photo height on every step (and on the sign-in screens).
+  const photoHeight = heroHeight(height);
 
   useEffect(prefetchHeroPhotos, []);
 
@@ -154,7 +117,6 @@ export default function Onboarding() {
 
   return (
     <View className="flex-1 bg-background">
-      <BottomWaves width={width} height={130} />
       <FlatList
         ref={list}
         data={SLIDES}
@@ -170,13 +132,13 @@ export default function Onboarding() {
                 {item.overlay(width, photoHeight)}
               </PhotoHeader>
             </View>
-            <View className="-mt-2 gap-3 px-6">
+            <View className="-mt-2 gap-2.5 px-6">
               <StepPill label={tx('Step {0} of {1}', { 0: i + 1, 1: SLIDES.length })} />
               <TwoToneTitle first={item.first} second={item.second} />
-              <Text className="text-[15px] leading-[22px] text-muted-foreground">{item.body}</Text>
+              <Text className="text-[14px] leading-[21px] text-muted-foreground">{item.body}</Text>
               <View className="flex-row justify-between pt-2">
                 {item.features.map((f) => (
-                  <IconTile key={f.label} icon={f.icon} label={f.label} tone={f.tone} size={52} />
+                  <IconTile key={f.label} icon={f.icon} label={f.label} tone={f.tone} size={46} />
                 ))}
               </View>
             </View>

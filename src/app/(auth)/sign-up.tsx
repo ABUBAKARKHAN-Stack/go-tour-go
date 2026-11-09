@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { ArrowRight, AtSign, CheckCircle2, Lock, Mail, MailCheck, UserRound, XCircle } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
@@ -56,7 +56,7 @@ export default function SignUp() {
 
   if (confirmSent) {
     return (
-      <AuthShell back compact title={tx('Check your email')} subtitle={tx('We sent a confirmation link to {0}. Open it on this phone, then sign in.', { 0: confirmSent })}>
+      <AuthShell back title={tx('Check your email')} subtitle={tx('We sent a confirmation link to {0}. Open it on this phone, then sign in.', { 0: confirmSent })}>
         <View className="flex-row items-center gap-3 rounded-2xl bg-primary-soft p-4">
           <MailCheck color={colors.primary} size={22} />
           <Text className="flex-1 text-sm text-foreground">{tx('Did not get it? Check your spam folder, or sign up again in a few minutes.')}</Text>
@@ -67,14 +67,15 @@ export default function SignUp() {
   }
 
   return (
-    <AuthShell back compact photo={HERO_PHOTOS.signUp} title={tx('Create your account')} subtitle={tx('Join GoTourGo and start your journey today.')}>
+    <AuthShell back photo={HERO_PHOTOS.signUp} title={tx('Create your account')} subtitle={tx('Join GoTourGo and start your journey today.')}>
       {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
       <FormTextField
+        hideLabel
         control={control}
         name="fullName"
         label={tx('Full name')}
         autoComplete="name"
-        placeholder={tx('Ayesha Khan')}
+        placeholder={tx('Full name')}
         returnKeyType="next"
         onSubmitEditing={() => setFocus('email')}
         onValueChange={(name) => {
@@ -84,6 +85,7 @@ export default function SignUp() {
         left={<UserRound color={colors.primary} size={20} />}
       />
       <FormTextField
+        hideLabel
         control={control}
         name="username"
         label={tx('Username')}
@@ -91,7 +93,7 @@ export default function SignUp() {
         onValueChange={() => setEdited(true)}
         autoCapitalize="none"
         autoComplete="username"
-        placeholder="ayesha_travels"
+        placeholder={tx('Username')}
         returnKeyType="next"
         onSubmitEditing={() => setFocus('email')}
         errorOverride={status === 'taken' && edited ? tx('That username is taken. Try another.') : null}
@@ -100,32 +102,39 @@ export default function SignUp() {
         right={<StatusIcon status={status} />}
       />
       <FormTextField
+        hideLabel
         control={control}
         name="email"
         label={tx('Email')}
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
-        placeholder="you@example.com"
+        placeholder={tx('Email address')}
         returnKeyType="next"
         onSubmitEditing={() => setFocus('password')}
         left={<Mail color={colors.primary} size={20} />}
       />
       <FormTextField
+        hideLabel
         control={control}
         name="password"
         label={tx('Password')}
         secureTextEntry
         autoComplete="new-password"
-        placeholder={tx('At least 8 characters')}
+        placeholder={tx('Password (at least 8 characters)')}
         returnKeyType="go"
         onSubmitEditing={() => submit()}
         left={<Lock color={colors.primary} size={20} />}
       />
-      <View className="pt-2">
+      <View className="pt-1">
         <AppButton label={tx('Create account')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
       </View>
-      <AppButton label={tx('I already have an account')} variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} />
+      <View className="flex-row items-center justify-center gap-1.5">
+        <Text className="text-sm text-muted-foreground">{tx('Already have an account?')}</Text>
+        <Pressable accessibilityRole="link" hitSlop={10} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} className="min-h-10 justify-center">
+          <Text className="text-sm font-bold text-accent">{tx('Log in')}</Text>
+        </Pressable>
+      </View>
     </AuthShell>
   );
 }
@@ -141,7 +150,8 @@ function usernameHint(status: UsernameStatus, username: string, edited: boolean)
     case 'unknown':
       return tx('Could not check right now; we will check when you sign up.');
     default:
-      return tx('Friends find you by this name. Filled in from your name.');
+      // No standing hint: keeps the form short; messages appear only while checking.
+      return undefined;
   }
 }
 
