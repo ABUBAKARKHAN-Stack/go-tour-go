@@ -30,6 +30,8 @@ export const colors = {
   inverse: '#1A5372',
   heading: '#1A5372',
   sky: '#2E9FD9',
+  /** Sky for large headline words (3.6:1 on the background; not for body text). */
+  skyStrong: '#1E8BC8',
   sand: '#EFE0C9',
   mint: '#E4F4EE',
   peach: '#FCEBDD',

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { AtSign, CheckCircle2, Lock, Mail, MailCheck, UserRound, XCircle } from 'lucide-react-native';
+import { ArrowRight, AtSign, CheckCircle2, Lock, Mail, MailCheck, UserRound, XCircle } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import { ActivityIndicator, View } from 'react-native';
@@ -9,6 +9,7 @@ import { FormTextField } from '@/components/form-field';
 import { InlineError } from '@/components/states';
 import { Text } from '@/components/text';
 import { signUp } from '@/features/auth/api';
+import { HERO_PHOTOS } from '@/features/brand/hero-photos';
 import { AuthShell } from '@/features/auth/auth-shell';
 import { signUpSchema } from '@/features/auth/schemas';
 import { useUsernameAvailability, type UsernameStatus } from '@/features/auth/use-username-availability';
@@ -66,7 +67,7 @@ export default function SignUp() {
   }
 
   return (
-    <AuthShell back compact title={tx('Create your account')} subtitle={tx('Save places, plan journeys and travel with friends.')}>
+    <AuthShell back compact photo={HERO_PHOTOS.signUp} title={tx('Create your account')} subtitle={tx('Join GoTourGo and start your journey today.')}>
       {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
       <FormTextField
         control={control}
@@ -80,7 +81,7 @@ export default function SignUp() {
           if (edited) return;
           setValue('username', suggestUsername(name), { shouldValidate: Boolean(formState.touchedFields.username) });
         }}
-        left={<UserRound color={colors.faint} size={20} />}
+        left={<UserRound color={colors.primary} size={20} />}
       />
       <FormTextField
         control={control}
@@ -95,7 +96,7 @@ export default function SignUp() {
         onSubmitEditing={() => setFocus('email')}
         errorOverride={status === 'taken' && edited ? tx('That username is taken. Try another.') : null}
         hint={usernameHint(status, username, edited)}
-        left={<AtSign color={colors.faint} size={20} />}
+        left={<AtSign color={colors.primary} size={20} />}
         right={<StatusIcon status={status} />}
       />
       <FormTextField
@@ -108,7 +109,7 @@ export default function SignUp() {
         placeholder="you@example.com"
         returnKeyType="next"
         onSubmitEditing={() => setFocus('password')}
-        left={<Mail color={colors.faint} size={20} />}
+        left={<Mail color={colors.primary} size={20} />}
       />
       <FormTextField
         control={control}
@@ -119,10 +120,10 @@ export default function SignUp() {
         placeholder={tx('At least 8 characters')}
         returnKeyType="go"
         onSubmitEditing={() => submit()}
-        left={<Lock color={colors.faint} size={20} />}
+        left={<Lock color={colors.primary} size={20} />}
       />
       <View className="pt-2">
-        <AppButton label={tx('Create account')} onPress={submit} loading={formState.isSubmitting} />
+        <AppButton label={tx('Create account')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
       </View>
       <AppButton label={tx('I already have an account')} variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} />
     </AuthShell>

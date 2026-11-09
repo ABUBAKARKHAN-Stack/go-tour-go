@@ -1,74 +1,160 @@
-import { useRef, useState, type ComponentType } from 'react';
-import { FlatList, Pressable, useWindowDimensions, View } from 'react-native';
+import {
+  ArrowRight,
+  BellRing,
+  Camera,
+  Landmark,
+  Languages,
+  Map as MapIcon,
+  MapPinned,
+  Navigation,
+  ScanSearch,
+  ShieldAlert,
+  Sparkles,
+  Users,
+  type LucideIcon,
+} from 'lucide-react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
-import { ArrivalScene, SafetyScene, TravellerScene } from '@/components/illustrations';
+import { IconTile, type TileTone } from '@/components/brand';
 import { Text } from '@/components/text';
+import { HERO_PHOTOS, prefetchHeroPhotos, type HeroPhoto } from '@/features/brand/hero-photos';
+import { BottomWaves, FloatingCard, HandNote, PhotoHeader, StepPill, TwoToneTitle } from '@/features/brand/mood';
+import { haptics } from '@/lib/haptics';
 import { changeLanguage, language, tx } from '@/lib/i18n';
 import { LOCALES } from '@/lib/preferences';
 import { storage, StorageKeys } from '@/lib/storage';
+import { colors } from '@/lib/theme';
 
-type Slide = { key: string; overline: string; title: string; body: string; Art: ComponentType<{ size?: number }> };
+type Feature = { icon: LucideIcon; label: string; tone: TileTone };
+type Slide = {
+  key: string;
+  photo: HeroPhoto;
+  first: string;
+  second: string;
+  body: string;
+  features: Feature[];
+  /** What floats over the photo (notes and feature cards, as in the design guide). */
+  overlay: (w: number, h: number) => ReactNode;
+};
 
 const SLIDES: Slide[] = [
   {
     key: 'discover',
-    overline: tx('Discover'),
-    title: tx('Stories wait around every corner'),
+    photo: HERO_PHOTOS.discover,
+    first: tx('Discover'),
+    second: tx('Amazing places'),
     body: tx('GoTourGo notices the landmarks you pass and tells you why they matter: history, food and local tips, right when you arrive.'),
-    Art: TravellerScene,
+    features: [
+      { icon: BellRing, label: tx('Landmark alerts'), tone: 'ice' },
+      { icon: Landmark, label: tx('History & culture'), tone: 'peach' },
+      { icon: Camera, label: tx('Photos & guides'), tone: 'mint' },
+      { icon: MapIcon, label: tx('Offline maps'), tone: 'lemon' },
+    ],
+    overlay: (w, h) => (
+      <>
+        <HandNote lines={[tx('New views,'), tx('new stories')]} style={{ end: 18, top: h * 0.2 }} />
+        <FloatingCard
+          icon={BellRing}
+          title={tx("You're near Badshahi Mosque")}
+          text={tx('Built in 1673 by Emperor Aurangzeb. Tap to learn why it matters.')}
+          style={{ start: 16, top: h * 0.52 }}
+          rotate={-2}
+        />
+      </>
+    ),
   },
   {
-    key: 'journey',
-    overline: tx('On the way'),
-    title: tx('Landmarks speak up as you travel'),
-    body: tx('Plan a journey anywhere in Pakistan. Famous places and road alerts along your route reach you as you get close, even offline.'),
-    Art: ArrivalScene,
+    key: 'companion',
+    photo: HERO_PHOTOS.companion,
+    first: tx('Your AI travel'),
+    second: tx('companion'),
+    body: tx('Ask about any place in English or Urdu, get food, shopping and culture tips, and point your camera at a landmark to know what it is.'),
+    features: [
+      { icon: Sparkles, label: tx('AI travel guide'), tone: 'ice' },
+      { icon: Languages, label: tx('Urdu & English'), tone: 'peach' },
+      { icon: ScanSearch, label: tx('Visual Lens'), tone: 'mint' },
+      { icon: Navigation, label: tx('Journey mode'), tone: 'lemon' },
+    ],
+    overlay: (w, h) => (
+      <>
+        <FloatingCard
+          icon={ScanSearch}
+          title={tx('Visual Lens')}
+          text={tx('Point your camera at a place and get instant info.')}
+          tone="mint"
+          style={{ start: 16, top: h * 0.26 }}
+          rotate={-3}
+        />
+        <FloatingCard
+          icon={Sparkles}
+          title={tx('AI travel guide')}
+          text={tx('"What should I eat near Hunza?"')}
+          style={{ end: 16, top: h * 0.5 }}
+          rotate={2}
+        />
+      </>
+    ),
   },
   {
-    key: 'safe',
-    overline: tx('Travel safe'),
-    title: tx('Your people, one tap away'),
-    body: tx('Share your live location for as long as you choose, and send an SOS with your position to the people you trust.'),
-    Art: SafetyScene,
+    key: 'connect',
+    photo: HERO_PHOTOS.connect,
+    first: tx('Explore, connect &'),
+    second: tx('stay safe'),
+    body: tx('Share travel moments with the community, show your live location to the friends you choose, and send an SOS with your position.'),
+    features: [
+      { icon: Users, label: tx('Travel community'), tone: 'ice' },
+      { icon: MapPinned, label: tx('Live location'), tone: 'peach' },
+      { icon: ShieldAlert, label: tx('SOS alert'), tone: 'mint' },
+      { icon: Navigation, label: tx('Safe journeys'), tone: 'lemon' },
+    ],
+    overlay: (w, h) => (
+      <>
+        <HandNote lines={[tx('Good people,'), tx('better journeys')]} style={{ end: 16, top: h * 0.2 }} rotate={-6} />
+        <FloatingCard
+          icon={MapPinned}
+          title={tx('Sharing with 3 friends')}
+          text={tx('Your live location, for as long as you choose.')}
+          style={{ start: 16, top: h * 0.47 }}
+          rotate={-2}
+        />
+        <FloatingCard
+          icon={ShieldAlert}
+          title={tx('SOS')}
+          text={tx('Hold to send your location to trusted contacts.')}
+          tone="peach"
+          iconColor={colors.destructive}
+          style={{ end: 16, top: h * 0.66 }}
+          rotate={3}
+        />
+      </>
+    ),
   },
 ];
 
+/** Three-step welcome in the design guide's mood. Same content and controls as before. */
 export default function Onboarding() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const list = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
-  const art = Math.min(width - 32, 420);
+  // About 44% of the screen for the photo; the rest scrolls on very short phones.
+  const photoHeight = Math.round(Math.min(440, Math.max(300, height * 0.44)));
+
+  useEffect(prefetchHeroPhotos, []);
 
   const finish = () => storage.set(StorageKeys.onboardingDone, true);
   const next = () => {
+    haptics.select();
     if (index < SLIDES.length - 1) list.current?.scrollToIndex({ index: index + 1, animated: true });
     else finish();
   };
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}>
-      <View className="flex-row items-center justify-between px-5">
-        <View className="flex-row rounded-full bg-secondary p-1" accessibilityRole="radiogroup" accessibilityLabel="Language / زبان">
-          {LOCALES.map((l) => (
-            <Pressable
-              key={l.value}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: language === l.value }}
-              onPress={() => changeLanguage(l.value)}
-              className={`min-h-9 justify-center rounded-full px-3 ${language === l.value ? 'bg-card' : ''}`}
-            >
-              <Text className={`text-sm ${language === l.value ? 'font-semibold text-foreground' : 'text-faint'}`}>{l.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Pressable accessibilityRole="button" onPress={finish} hitSlop={12} className="min-h-11 justify-center px-2">
-          <Text className="text-sm font-semibold text-faint">{tx('Skip')}</Text>
-        </Pressable>
-      </View>
-
+    <View className="flex-1 bg-background">
+      <BottomWaves width={width} height={130} />
       <FlatList
         ref={list}
         data={SLIDES}
@@ -77,28 +163,57 @@ export default function Onboarding() {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(s) => s.key}
         onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
-        renderItem={({ item }) => (
-          <View style={{ width }} className="flex-1 gap-6 px-4">
-            <View className="self-center overflow-hidden rounded-[32px]" style={{ width: art, height: art * 0.94 }}>
-              <item.Art size={art} />
+        renderItem={({ item, index: i }) => (
+          <ScrollView style={{ width }} contentContainerStyle={{ paddingBottom: 12 }} showsVerticalScrollIndicator={false} bounces={false}>
+            <View style={{ paddingTop: insets.top }} className="bg-background">
+              <PhotoHeader photo={item.photo} width={width} height={photoHeight}>
+                {item.overlay(width, photoHeight)}
+              </PhotoHeader>
             </View>
-            <View className="gap-2 px-4">
-              <Text className="text-xs font-bold uppercase tracking-[2px] text-accent">{item.overline}</Text>
-              <Text className="font-display text-[34px] leading-[40px] text-foreground">{item.title}</Text>
-              <Text className="text-base leading-6 text-muted-foreground">{item.body}</Text>
+            <View className="-mt-2 gap-3 px-6">
+              <StepPill label={tx('Step {0} of {1}', { 0: i + 1, 1: SLIDES.length })} />
+              <TwoToneTitle first={item.first} second={item.second} />
+              <Text className="text-[15px] leading-[22px] text-muted-foreground">{item.body}</Text>
+              <View className="flex-row justify-between pt-2">
+                {item.features.map((f) => (
+                  <IconTile key={f.label} icon={f.icon} label={f.label} tone={f.tone} size={52} />
+                ))}
+              </View>
             </View>
-          </View>
+          </ScrollView>
         )}
       />
 
-      <View className="gap-4 px-6">
-        <View className="flex-row gap-1.5" accessibilityLabel={tx('Page {0} of {1}', { 0: index + 1, 1: SLIDES.length })}>
+      {/* Language and Skip stay on top of every slide. */}
+      <View className="absolute end-4 flex-row items-center gap-2" style={{ top: insets.top + 10 }}>
+        <View className="flex-row rounded-full bg-white/85 p-0.5" accessibilityRole="radiogroup" accessibilityLabel="Language / زبان">
+          {LOCALES.map((l) => (
+            <Pressable
+              key={l.value}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: language === l.value }}
+              onPress={() => changeLanguage(l.value)}
+              className={`min-h-8 justify-center rounded-full px-2.5 ${language === l.value ? 'bg-primary' : ''}`}
+            >
+              <Text className={`text-xs font-semibold ${language === l.value ? 'text-white' : 'text-heading'}`}>{l.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable accessibilityRole="button" onPress={finish} hitSlop={12} className="min-h-10 justify-center rounded-full bg-white/85 px-3">
+          <Text className="text-sm font-semibold text-accent">{tx('Skip')}</Text>
+        </Pressable>
+      </View>
+
+      <View className="gap-3 px-6" style={{ paddingBottom: insets.bottom + 12 }}>
+        <View className="flex-row justify-center gap-1.5" accessibilityLabel={tx('Page {0} of {1}', { 0: index + 1, 1: SLIDES.length })}>
           {SLIDES.map((s, i) => (
             <View key={s.key} className={`h-2 rounded-full ${i === index ? 'w-6 bg-primary' : 'w-2 bg-border-strong'}`} />
           ))}
         </View>
-        <AppButton label={index === SLIDES.length - 1 ? tx('Get started') : tx('Next')} onPress={next} />
-        <AppButton label={tx('I already have an account')} variant="ghost" onPress={finish} />
+        <AppButton label={index === SLIDES.length - 1 ? tx('Get started') : tx('Next')} trailingIcon={ArrowRight} onPress={next} />
+        <Pressable accessibilityRole="button" onPress={finish} hitSlop={6} className="min-h-10 items-center justify-center">
+          <Text className="text-sm font-semibold text-heading">{tx('I already have an account')}</Text>
+        </Pressable>
       </View>
     </View>
   );

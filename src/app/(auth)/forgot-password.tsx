@@ -51,7 +51,7 @@ export default function ForgotPassword() {
         autoComplete="email"
         placeholder="you@example.com"
         onSubmitEditing={() => submit()}
-        left={<Mail color={colors.faint} size={20} />}
+        left={<Mail color={colors.primary} size={20} />}
       />
       <AppButton label={tx('Send reset link')} onPress={submit} loading={formState.isSubmitting} />
     </AuthShell>

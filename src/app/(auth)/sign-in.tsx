@@ -1,14 +1,14 @@
 import { Link, router } from 'expo-router';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
 import { InlineError } from '@/components/states';
 import { signIn } from '@/features/auth/api';
-import { AuthShell, OrDivider } from '@/features/auth/auth-shell';
+import { AuthShell, AuthTagline, OrDivider } from '@/features/auth/auth-shell';
 import { signInSchema } from '@/features/auth/schemas';
 import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
@@ -29,9 +29,16 @@ export default function SignIn() {
 
   return (
     <AuthShell
-      title={tx('Welcome back')}
-      subtitle={tx('Sign in to pick up where your journey left off.')}
-      footer={<Text className="text-center text-xs text-faint">{tx('By continuing you agree to our Terms and Privacy Policy.')}</Text>}
+      title={tx('Ready to')}
+      scriptWord={tx('Explore?')}
+      subtitle={tx('Your next adventure starts here.')}
+      note={[tx('Good trips,'), tx('better stories')]}
+      footer={
+        <View className="gap-3">
+          <AuthTagline />
+          <Text className="text-center text-xs text-faint">{tx('By continuing you agree to our Terms and Privacy Policy.')}</Text>
+        </View>
+      }
     >
       {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
 
@@ -46,7 +53,7 @@ export default function SignIn() {
         placeholder="you@example.com"
         returnKeyType="next"
         onSubmitEditing={() => setFocus('password')}
-        left={<Mail color={colors.faint} size={20} />}
+        left={<Mail color={colors.primary} size={20} />}
       />
       <FormTextField
         control={control}
@@ -58,7 +65,7 @@ export default function SignIn() {
         placeholder={tx('Your password')}
         returnKeyType="go"
         onSubmitEditing={() => submit()}
-        left={<Lock color={colors.faint} size={20} />}
+        left={<Lock color={colors.primary} size={20} />}
         right={
           <Pressable accessibilityRole="button" accessibilityLabel={show ? tx('Hide password') : tx('Show password')} onPress={() => setShow((s) => !s)} hitSlop={10}>
             {show ? <EyeOff color={colors.faint} size={20} /> : <Eye color={colors.faint} size={20} />}
@@ -72,7 +79,7 @@ export default function SignIn() {
         </Pressable>
       </Link>
 
-      <AppButton label={tx('Sign in')} onPress={submit} loading={formState.isSubmitting} />
+      <AppButton label={tx('Sign in')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
       <OrDivider />
       <AppButton label={tx('Create an account')} variant="outline" onPress={() => router.push('/sign-up')} />
     </AuthShell>
