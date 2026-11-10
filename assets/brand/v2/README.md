@@ -21,7 +21,8 @@ Colours: pin gradient `#1EB9EF → #035591`, plane `#1C7DBF`, "Go…Go" navy `#1
 In the app the logo is drawn from `src/components/brand-paths.ts` (same outlines) by
 `BrandLogo` / `BrandSymbol` in `src/components/brand.tsx`.
 
-**Phase H (next APK build):** render these SVGs to the PNG sizes `app.json` uses
-(`assets/brand/*.png`) and switch the icon/splash. Not referenced yet on purpose:
-changing files `app.json` points at changes the native fingerprint, so OTA
-updates would stop reaching the installed APK.
+**Phase H (done):** `icon.svg`, `adaptive-foreground.svg`, `adaptive-background.svg`,
+`monochrome.svg` and `splash-icon.svg` were rendered at 1024 × 1024 to `assets/brand/*.png`
+(favicon 48 × 48), and `app.json` uses them with the brand page colour `#F6FAFC` for the splash
+and the adaptive-icon background image. This changed the native fingerprint, so it ships with a
+new APK.
