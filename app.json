@@ -15,14 +15,15 @@
     "icon": "./assets/brand/icon.png",
     "scheme": "gotourgodevelopment",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#FBF8F3",
+    "backgroundColor": "#F6FAFC",
     "ios": {
       "icon": "./assets/expo.icon"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/adaptive-foreground.png",
-        "backgroundColor": "#FBF8F3",
+        "backgroundImage": "./assets/brand/adaptive-background.png",
+        "backgroundColor": "#EEF7FC",
         "monochromeImage": "./assets/brand/monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -75,7 +76,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FBF8F3",
+          "backgroundColor": "#F6FAFC",
           "image": "./assets/brand/splash-icon.png",
           "imageWidth": 200
         }
@@ -95,7 +96,7 @@
         "expo-notifications",
         {
           "icon": "./assets/brand/monochrome.png",
-          "color": "#0F4C4A",
+          "color": "#19709B",
           "defaultChannel": "proximity",
           "enableRemoteNotifications": false
         }

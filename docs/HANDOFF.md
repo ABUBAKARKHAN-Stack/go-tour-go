@@ -196,6 +196,9 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
   EAS recorded runtime `3fe76e5c…` for the same code (computed on the owner's machine). Hashes differ
   between machines, so compare **before vs after on the same machine**: unchanged = OTA-safe. OTA updates
   published by the owner reach APK `4df88d41` (and later builds with the same native config), not older APKs.
+- The app icon and splash PR (phase H of the restyle: new icon, adaptive icon, monochrome and splash
+  PNGs, brand background colours in `app.json`) changes it again, to `ab8db1e4f9e65dc0a358c9c7ffcafd1862b751e8`
+  in this container. It ships with a new APK; after that build, OTA updates go to the new APK only.
 - JS-only PRs must keep the fingerprint unchanged. Anything that changes it (new native module, app.json
   plugins/icons, Android config) must go into a PR that is merged together with an APK build. Say so in the PR.
 - PR #18 was handled this way (draft until the owner approved the build). Do the same for future native changes.
