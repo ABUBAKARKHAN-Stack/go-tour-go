@@ -1,11 +1,13 @@
 import { Camera, GeoJSONSource, Layer, Map, ViewAnnotation } from '@maplibre/maplibre-react-native';
-import { Landmark, MapPin, Navigation2, TriangleAlert } from 'lucide-react-native';
+import { Landmark, MapPin, TriangleAlert } from 'lucide-react-native';
 import { memo, useMemo } from 'react';
 import { View } from 'react-native';
 
 import type { Fix } from '@/features/location/location-store';
 import type { Route } from '@/features/routing/osrm';
+import { NavArrow, validHeading } from '@/features/map/nav-arrow';
 import { useMapStyle } from '@/features/offline/use-map-style';
+import { bearingTo } from '@/features/proximity/heading';
 import { boundsOf } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 
@@ -46,7 +48,15 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
 
   const bounds = useMemo(() => (route ? boundsOf(route.coordinates) : null), [route]);
   const here = progress?.snapped ?? (fix ? ([fix.longitude, fix.latitude] as [number, number]) : null);
-  const bearing = progress?.bearing ?? fix?.heading ?? 0;
+  // Which way the traveller is going: along the route where they are, else
+  // their GPS course, else the route's first stretch (before moving).
+  const bearing = useMemo(() => {
+    if (progress) return progress.bearing;
+    const h = validHeading(fix?.heading);
+    if (h != null) return h;
+    const c = route?.coordinates;
+    return c && c.length > 1 ? bearingTo({ longitude: c[0][0], latitude: c[0][1] }, { longitude: c[1][0], latitude: c[1][1] }) : 0;
+  }, [progress, fix?.heading, route]);
 
   const cameraStop =
     follow && here
@@ -117,19 +127,8 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
 
       {here ? (
         <ViewAnnotation id="journey-user" lngLat={here}>
-          {follow ? (
-            <View
-              className="h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-primary"
-              style={{ boxShadow: '0 4px 12px rgba(21, 56, 79, 0.35)' }}
-            >
-              {/* The map rotates with the direction of travel, so the arrow points up. */}
-              <Navigation2 color="#FFFFFF" fill="#FFFFFF" size={20} />
-            </View>
-          ) : (
-            <View className="h-11 w-11 items-center justify-center rounded-full bg-primary/20">
-              <View className="h-[18px] w-[18px] rounded-full border-[3px] border-white bg-primary" />
-            </View>
-          )}
+          {/* Navigating, the map turns with the traveller so the arrow points up; in the preview the map faces north. */}
+          <NavArrow rotation={follow ? 0 : bearing} size={follow ? 52 : 44} />
         </ViewAnnotation>
       ) : null}
     </Map>

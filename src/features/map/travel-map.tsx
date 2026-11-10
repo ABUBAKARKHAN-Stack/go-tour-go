@@ -6,6 +6,7 @@ import {
   UserLocation,
   ViewAnnotation,
   type CameraRef,
+  type GeoJSONSourceRef,
 } from '@maplibre/maplibre-react-native';
 import { forwardRef, memo, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -17,6 +18,7 @@ import type { Route } from '@/features/routing/osrm';
 import type { FriendLocation } from '@/features/safety/friend-locations';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
+import { NavArrow } from '@/features/map/nav-arrow';
 import { useMapStyle } from '@/features/offline/use-map-style';
 import { boundsOf, circleRing } from '@/lib/geo';
 import { colors, severityColors } from '@/lib/theme';
@@ -41,6 +43,11 @@ type Props = {
   /** Simulated fix to render (real GPS uses the native user puck). */
   simulatedFix: Fix | null;
   showUser: boolean;
+  /**
+   * While a journey is on: where the traveller is and which way they are
+   * going. Drawn as a navigation arrow instead of the round location dot.
+   */
+  arrow?: { longitude: number; latitude: number; bearing: number } | null;
   initialCenter: [number, number];
   initialZoom: number;
   onSelectDestination: (id: string) => void;
@@ -56,14 +63,23 @@ const categoryColorExpression = [
   colors.accent,
 ];
 
+/** Landmarks merge into numbered bubbles up to this zoom (country and region views). */
+const CLUSTER_MAX_ZOOM = 12;
+/** Alert-radius rings show from street level, where they no longer pile up. */
+const RINGS_MIN_ZOOM = 13;
+const IS_CLUSTER = ['has', 'point_count'];
+const NOT_CLUSTER = ['!', ['has', 'point_count']];
+
 /**
  * MapLibre map. All landmarks are drawn by a few native layers from one
  * GeoJSON source (no per-marker React components), so it stays smooth with
- * many destinations and does not re-render on every GPS fix.
+ * many destinations and does not re-render on every GPS fix. Zoomed out,
+ * nearby landmarks merge into numbered clusters; tapping one zooms in.
  */
 function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
   const mapStyle = useMapStyle();
   const camera = useRef<CameraRef>(null);
+  const landmarkSource = useRef<GeoJSONSourceRef>(null);
   const [loaded, setLoaded] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -99,6 +115,15 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
     }),
     [props.destinations],
   );
+
+  // The tapped landmark's ring shows at any zoom, drawn stronger than the rest.
+  const selectedRing = useMemo<GeoJSON.FeatureCollection>(() => {
+    const d = props.selectedId ? props.destinations.find((x) => x.id === props.selectedId) : undefined;
+    return {
+      type: 'FeatureCollection',
+      features: d ? [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [circleRing(d, d.radius_m, 64)] }, properties: { category: d.category } }] : [],
+    };
+  }, [props.destinations, props.selectedId]);
 
   const alertPoints = useMemo<GeoJSON.FeatureCollection>(
     () => ({
@@ -142,22 +167,28 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
         trackUserLocation={props.navigating && !props.simulatedFix ? 'course' : undefined}
       />
 
-      {props.showUser && !props.simulatedFix ? <UserLocation animated accuracy heading /> : null}
+      {props.showUser && !props.simulatedFix && !props.arrow ? <UserLocation animated accuracy heading /> : null}
 
       {props.showRadius ? (
         <GeoJSONSource id="landmark-rings" data={rings}>
           <Layer
             type="fill"
             id="landmark-ring-fill"
-            minzoom={10}
-            paint={{ 'fill-color': categoryColorExpression as never, 'fill-opacity': 0.08 }}
+            minzoom={RINGS_MIN_ZOOM}
+            paint={{ 'fill-color': categoryColorExpression as never, 'fill-opacity': 0.05 }}
           />
           <Layer
             type="line"
             id="landmark-ring-line"
-            minzoom={10}
-            paint={{ 'line-color': categoryColorExpression as never, 'line-opacity': 0.5, 'line-width': 1, 'line-dasharray': [2, 2] }}
+            minzoom={RINGS_MIN_ZOOM}
+            paint={{ 'line-color': categoryColorExpression as never, 'line-opacity': 0.35, 'line-width': 1, 'line-dasharray': [2, 2] }}
           />
+        </GeoJSONSource>
+      ) : null}
+      {props.showRadius ? (
+        <GeoJSONSource id="selected-ring" data={selectedRing}>
+          <Layer type="fill" id="selected-ring-fill" paint={{ 'fill-color': colors.primary, 'fill-opacity': 0.1 }} />
+          <Layer type="line" id="selected-ring-line" paint={{ 'line-color': colors.primary, 'line-opacity': 0.8, 'line-width': 2, 'line-dasharray': [2, 1.5] }} />
         </GeoJSONSource>
       ) : null}
 
@@ -201,20 +232,59 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
       </GeoJSONSource>
 
       <GeoJSONSource
+        ref={landmarkSource}
         id="landmarks"
         data={points}
+        cluster
+        clusterRadius={44}
+        clusterMaxZoom={CLUSTER_MAX_ZOOM}
         hitbox={{ top: 14, right: 14, bottom: 14, left: 14 }}
         onPress={(e) => {
-          const id = e.nativeEvent.features?.[0]?.properties?.id;
-          if (id) {
-            e.stopPropagation();
-            props.onSelectDestination(String(id));
+          const feature = e.nativeEvent.features?.[0];
+          const p = feature?.properties;
+          if (!feature || !p) return;
+          e.stopPropagation();
+          if (p.cluster && feature.geometry.type === 'Point') {
+            // A cluster: zoom in until it splits.
+            const [lng, lat] = feature.geometry.coordinates;
+            void landmarkSource.current
+              ?.getClusterExpansionZoom(Number(p.cluster_id))
+              .then((zoom) => camera.current?.flyTo({ center: [lng, lat], zoom: zoom + 0.5, duration: 700 }))
+              .catch(() => camera.current?.flyTo({ center: [lng, lat], zoom: CLUSTER_MAX_ZOOM + 1, duration: 700 }));
+            return;
           }
+          if (p.id) props.onSelectDestination(String(p.id));
         }}
       >
         <Layer
           type="circle"
+          id="landmark-cluster"
+          filter={IS_CLUSTER as never}
+          paint={{
+            'circle-color': colors.primary,
+            'circle-opacity': 0.92,
+            'circle-radius': ['step', ['get', 'point_count'], 15, 10, 19, 50, 24, 200, 30] as never,
+            'circle-stroke-color': '#FFFFFF',
+            'circle-stroke-width': 3,
+          }}
+        />
+        <Layer
+          type="symbol"
+          id="landmark-cluster-count"
+          filter={IS_CLUSTER as never}
+          layout={{
+            'text-field': ['get', 'point_count_abbreviated'] as never,
+            'text-font': ['Noto Sans Regular'],
+            'text-size': 13,
+            'text-allow-overlap': true,
+            'text-ignore-placement': true,
+          }}
+          paint={{ 'text-color': '#FFFFFF' }}
+        />
+        <Layer
+          type="circle"
           id="landmark-dot"
+          filter={NOT_CLUSTER as never}
           paint={{
             'circle-radius': ['case', ['get', 'selected'], 11, 7] as never,
             'circle-color': categoryColorExpression as never,
@@ -225,6 +295,7 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
         <Layer
           type="symbol"
           id="landmark-label"
+          filter={NOT_CLUSTER as never}
           minzoom={11}
           layout={{
             'text-field': ['get', 'name'] as never,
@@ -238,7 +309,11 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
         />
       </GeoJSONSource>
 
-      {props.simulatedFix ? (
+      {props.arrow ? (
+        <ViewAnnotation id="journey-arrow" lngLat={[props.arrow.longitude, props.arrow.latitude]}>
+          <NavArrow rotation={props.arrow.bearing} />
+        </ViewAnnotation>
+      ) : props.simulatedFix ? (
         <ViewAnnotation id="simulated-user" lngLat={[props.simulatedFix.longitude, props.simulatedFix.latitude]}>
           <View className="h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-info">
             <View className="h-2 w-2 rounded-full bg-white" />
