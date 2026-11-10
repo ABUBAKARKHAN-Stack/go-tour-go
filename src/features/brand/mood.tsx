@@ -58,6 +58,7 @@ export function PhotoHeader({
   width,
   height,
   topInset,
+  leading,
   children,
 }: {
   photo: HeroPhoto;
@@ -66,6 +67,8 @@ export function PhotoHeader({
   height: number;
   /** Status bar height: the photo runs under it and the logo sits below it. */
   topInset: number;
+  /** Shown before the logo, e.g. a back button. */
+  leading?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -91,8 +94,11 @@ export function PhotoHeader({
           experimental_backgroundImage: 'linear-gradient(180deg, rgba(246,250,252,0.92), rgba(246,250,252,0.55) 60%, rgba(246,250,252,0))',
         }}
       />
-      <View pointerEvents="none" className="absolute start-5" style={{ top: topInset + 8 }}>
-        <BrandLogo height={52} />
+      <View pointerEvents="box-none" className="absolute start-5 flex-row items-center gap-3" style={{ top: topInset + 8 }}>
+        {leading}
+        <View pointerEvents="none">
+          <BrandLogo height={leading ? 44 : 52} />
+        </View>
       </View>
       {children}
       <View pointerEvents="none" className="absolute bottom-0 left-0 right-0">
