@@ -10,7 +10,7 @@ import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { useFriendships, useSocialActions, useUserSearch } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 type Tab = 'friends' | 'requests' | 'find';
@@ -52,7 +52,7 @@ export default function FriendsScreen() {
         )
       ) : tab === 'requests' ? (
         <View className="gap-4">
-          <Text className="text-sm font-semibold text-foreground">{tx('Received')}</Text>
+          <Text className="text-sm font-semibold text-heading">{tx('Received')}</Text>
           {friendships.incoming.length === 0 ? (
             <Text className="text-sm text-muted-foreground">{tx('No pending requests.')}</Text>
           ) : (
@@ -70,7 +70,7 @@ export default function FriendsScreen() {
               />
             ))
           )}
-          <Text className="text-sm font-semibold text-foreground">{tx('Sent')}</Text>
+          <Text className="text-sm font-semibold text-heading">{tx('Sent')}</Text>
           {friendships.outgoing.length === 0 ? (
             <Text className="text-sm text-muted-foreground">{tx('No sent requests.')}</Text>
           ) : (
@@ -86,7 +86,7 @@ export default function FriendsScreen() {
         </View>
       ) : (
         <View className="gap-3">
-          <View className="min-h-12 flex-row items-center gap-2 rounded-2xl border border-border bg-input px-4">
+          <View className="min-h-[52px] flex-row items-center gap-2 rounded-full bg-card px-4" style={cardShadow}>
             <Search color={colors.mutedForeground} size={18} />
             <TextInput
               autoFocus

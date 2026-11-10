@@ -15,7 +15,7 @@ import { PostCard } from '@/features/community/post-card';
 import { searchDestinations, useDestinationsByDistance, useRatings } from '@/features/destinations/api';
 import { useFriendships, useUserSearch } from '@/features/social/api';
 import { flipX, tx } from '@/lib/i18n';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import type { LucideIcon } from 'lucide-react-native';
 
 type Tab = 'people' | 'posts' | 'places';
@@ -120,9 +120,9 @@ export default function CommunitySearchScreen() {
 
 function ShortcutRow({ icon: Icon, label, detail, onPress }: { icon: LucideIcon; label: string; detail?: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} className="min-h-14 flex-row items-center gap-3 rounded-2xl bg-card px-4 active:bg-muted">
+    <Pressable accessibilityRole="button" onPress={onPress} className="min-h-14 flex-row items-center gap-3 rounded-[20px] bg-card px-4 active:bg-muted" style={cardShadow}>
       <Icon color={colors.primary} size={20} />
-      <Text className="flex-1 text-base font-semibold text-foreground">{label}</Text>
+      <Text className="flex-1 text-base font-semibold text-heading">{label}</Text>
       {detail ? <Text className="text-xs text-muted-foreground">{detail}</Text> : null}
       <ChevronRight color={colors.faint} size={18} style={flipX} />
     </Pressable>

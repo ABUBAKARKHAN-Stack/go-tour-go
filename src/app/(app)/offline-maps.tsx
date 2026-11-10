@@ -103,7 +103,7 @@ export default function OfflineMapsScreen() {
 
       {legacy.data?.length ? (
         <Card className="gap-3">
-          <Text className="text-base font-semibold text-foreground">{tx('Older city downloads')}</Text>
+          <Text className="text-base font-semibold text-heading">{tx('Older city downloads')}</Text>
           <Text className="text-xs text-muted-foreground">{tx('Small city maps from an earlier version of GoTourGo. The packs above replace them.')}</Text>
           <AppButton
             label={tx('Remove older downloads')}

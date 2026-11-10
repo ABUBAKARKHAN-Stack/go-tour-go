@@ -263,7 +263,7 @@ const FriendMarker = memo(function FriendMarker({ friend }: { friend: FriendLoca
         className={`rounded-xl px-2 py-1 ${friend.stale ? 'bg-muted' : 'bg-card'}`}
         style={{ borderWidth: 1, borderColor: friend.stale ? colors.mutedForeground : colors.friend }}
       >
-        <Text numberOfLines={1} className="max-w-28 text-[11px] font-semibold text-foreground">
+        <Text numberOfLines={1} className="max-w-28 text-[11px] font-semibold text-heading">
           {name}
         </Text>
         <Text className="text-[10px] text-muted-foreground">{friend.stale ? tx('Last seen {0}', { 0: timeAgo(friend.updated_at) }) : timeAgo(friend.updated_at)}</Text>

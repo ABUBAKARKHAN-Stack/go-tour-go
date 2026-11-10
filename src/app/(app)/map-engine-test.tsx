@@ -94,7 +94,7 @@ export default function MapEngineTest() {
         {tx('Draws central Karachi from the test map file built by the "Build offline map of Pakistan" workflow. If streets and water appear and the check passes, the full offline map will work on this phone.')}
       </Text>
 
-      <View className="h-72 overflow-hidden rounded-3xl border border-border bg-muted">
+      <View className="h-72 overflow-hidden rounded-[20px] bg-muted">
         {source ? (
           <Map
             key={source}
@@ -122,7 +122,7 @@ export default function MapEngineTest() {
         <Card className={`flex-row items-center gap-3 ${verdict.ok ? 'bg-success-soft' : 'bg-destructive-soft'}`}>
           {verdict.ok ? <CircleCheck color={colors.success} size={24} /> : <CircleX color={colors.destructive} size={24} />}
           <View className="flex-1">
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-base font-semibold text-heading">
               {verdict.ok ? tx('Passed') : tx('Nothing drawn')} · {verdict.mode === 'local' ? tx('downloaded file') : tx('streamed file')}
             </Text>
             <Text className="text-xs text-muted-foreground">

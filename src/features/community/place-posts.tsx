@@ -70,7 +70,7 @@ function PostTile({ post }: { post: CommunityPost }) {
       accessibilityLabel={tx('Post by {0}', { 0: displayName(post.author) })}
       onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
       style={{ width: TILE, height: TILE }}
-      className="overflow-hidden rounded-2xl bg-card active:opacity-90"
+      className="overflow-hidden rounded-[20px] bg-card active:opacity-90"
     >
       {post.image_url ? (
         <Image source={{ uri: post.image_url }} style={{ position: 'absolute', inset: 0 }} contentFit="cover" recyclingKey={post.id} cachePolicy="memory-disk" />
@@ -83,7 +83,7 @@ function PostTile({ post }: { post: CommunityPost }) {
       )}
       <View
         className="absolute bottom-0 left-0 right-0 flex-row items-center gap-1.5 px-2 pb-2 pt-6"
-        style={{ experimental_backgroundImage: post.image_url ? 'linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.6))' : undefined }}
+        style={{ experimental_backgroundImage: post.image_url ? 'linear-gradient(180deg, rgba(21,56,79,0), rgba(21,56,79,0.78))' : undefined }}
       >
         <Avatar profile={post.author} size={20} />
         <View className="flex-1" />

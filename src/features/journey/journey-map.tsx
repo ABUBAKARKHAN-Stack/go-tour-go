@@ -120,7 +120,7 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
           {follow ? (
             <View
               className="h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-primary"
-              style={{ boxShadow: '0 4px 12px rgba(15, 76, 74, 0.35)' }}
+              style={{ boxShadow: '0 4px 12px rgba(21, 56, 79, 0.35)' }}
             >
               {/* The map rotates with the direction of travel, so the arrow points up. */}
               <Navigation2 color="#FFFFFF" fill="#FFFFFF" size={20} />

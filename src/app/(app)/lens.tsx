@@ -70,7 +70,7 @@ export default function LensScreen() {
         {uri ? (
           <Image source={{ uri }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" />
         ) : (
-          <View className="w-full items-center justify-center gap-2 rounded-2xl bg-secondary py-12">
+          <View className="w-full items-center justify-center gap-2 rounded-2xl bg-primary-soft py-12">
             <ScanEye color={colors.primary} size={42} strokeWidth={1.5} />
             <Text className="text-center text-sm text-muted-foreground">{tx('Take or choose a photo of a landmark, sign or menu.')}</Text>
           </View>
@@ -94,12 +94,12 @@ export default function LensScreen() {
       {result ? (
         <Card className="gap-3">
           <View className="flex-row items-center justify-between gap-2">
-            <Text className="flex-1 text-lg font-bold text-foreground">{result.title}</Text>
+            <Text className="flex-1 font-display text-xl text-heading">{result.title}</Text>
             <Text className="text-xs uppercase text-muted-foreground">{tx('{0} confidence', { 0: result.confidence })}</Text>
           </View>
           <Text className="text-sm leading-5 text-foreground">{result.summary}</Text>
           {result.detected_text ? (
-            <View className="gap-1 rounded-2xl bg-secondary p-3">
+            <View className="gap-1 rounded-2xl bg-primary-soft p-3">
               <Text className="text-xs font-semibold uppercase text-muted-foreground">{tx('Detected text')}</Text>
               <Text className="text-sm text-foreground">{result.detected_text}</Text>
               {result.translated_text ? (

@@ -89,7 +89,7 @@ export default function ScanScreen() {
           {destination ? (
             <>
               <Text className="text-xs font-bold uppercase text-accent">{tx('GoTourGo destination')}</Text>
-              <Text className="text-xl font-bold text-foreground">{destination.name}</Text>
+              <Text className="text-xl font-bold text-heading">{destination.name}</Text>
               <Text className="text-sm text-muted-foreground">{destination.short_description}</Text>
               <AppButton
                 label={tx('Open destination')}

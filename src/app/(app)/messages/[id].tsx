@@ -13,7 +13,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { otherParticipant, useConversations, useMarkConversationRead, useMessages, useSendMessage } from '@/features/messaging/api';
 import { displayName } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
-import { colors } from '@/lib/theme';
+import { brandGradient, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 function formatTime(iso: string) {
@@ -82,7 +82,7 @@ export default function ChatScreen() {
               const mine = item.sender_id === userId;
               const pending = item.id.startsWith('temp-');
               return (
-                <View className={`max-w-[80%] rounded-3xl px-4 py-2 ${mine ? 'self-end rounded-br-md bg-primary' : 'self-start rounded-bl-md bg-card'}`}>
+                <View className={`max-w-[80%] rounded-[20px] px-4 py-2.5 ${mine ? 'self-end rounded-br-md bg-inverse' : 'self-start rounded-bl-md bg-primary-soft'}`}>
                   <Text className={`text-[15px] ${mine ? 'text-primary-foreground' : 'text-foreground'}`}>{item.body}</Text>
                   <Text className={`mt-0.5 text-[10px] ${mine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                     {pending ? tx('Sending...') : formatTime(item.created_at)}
@@ -100,7 +100,7 @@ export default function ChatScreen() {
             placeholderTextColor={`${colors.mutedForeground}99`}
             multiline
             maxLength={2000}
-            className="max-h-32 min-h-12 flex-1 rounded-3xl bg-input px-4 py-3 text-base text-foreground"
+            className="max-h-32 min-h-12 flex-1 rounded-[24px] border border-border-strong bg-card px-4 py-3 text-base text-foreground"
             accessibilityLabel={tx('Message')}
           />
           <Pressable
@@ -108,7 +108,8 @@ export default function ChatScreen() {
             accessibilityLabel={tx('Send')}
             onPress={submit}
             disabled={!text.trim()}
-            className={`h-12 w-12 items-center justify-center rounded-full ${text.trim() ? 'bg-accent' : 'bg-muted'}`}
+            className="h-12 w-12 items-center justify-center rounded-full"
+              style={text.trim() ? { experimental_backgroundImage: brandGradient } : { backgroundColor: colors.muted }}
           >
             <Send color={text.trim() ? colors.accentForeground : colors.mutedForeground} size={20} />
           </Pressable>

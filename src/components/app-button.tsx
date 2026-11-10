@@ -15,7 +15,7 @@ type Variant = 'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'destr
 const containerClass: Record<Variant, string> = {
   primary: 'bg-primary',
   accent: 'bg-primary',
-  secondary: 'border border-border bg-card',
+  secondary: 'bg-primary-soft',
   outline: 'border-[1.5px] border-border-strong bg-transparent',
   ghost: 'bg-transparent',
   destructive: 'bg-destructive',

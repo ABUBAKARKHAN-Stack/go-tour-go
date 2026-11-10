@@ -13,7 +13,7 @@ import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { proximityCard, useProximityCard } from '@/features/proximity/proximity-store';
 import { navigateTo } from '@/features/routing/navigate';
 import { distanceMeters, formatDistance } from '@/lib/geo';
-import { colors } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 import type { DestinationSummary } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 
@@ -108,7 +108,7 @@ function LandmarkCard({
   };
 
   return (
-    <View className="overflow-hidden rounded-3xl border border-border bg-card shadow-lg">
+    <View className="overflow-hidden rounded-[24px] bg-card" style={{ boxShadow: shadow(0.18, 8, 28) }}>
       <View className="flex-row">
         <DestinationImage uri={d.image_url} category={d.category} className="h-28 w-28" recyclingKey={d.id} />
         <View className="flex-1 gap-1 p-3">
@@ -119,12 +119,12 @@ function LandmarkCard({
               accessibilityLabel={tx('Dismiss')}
               hitSlop={12}
               onPress={() => proximityCard.dismiss()}
-              className="h-8 w-8 items-center justify-center rounded-full bg-secondary"
+              className="h-8 w-8 items-center justify-center rounded-full bg-primary-soft"
             >
               <X color={colors.foreground} size={16} />
             </Pressable>
           </View>
-          <Text numberOfLines={1} className="text-lg font-bold text-foreground">
+          <Text numberOfLines={1} className="font-display text-xl text-heading">
             {d.name}
           </Text>
           <View className="flex-row items-center gap-1">
@@ -139,13 +139,13 @@ function LandmarkCard({
       <View className="gap-3 px-3 pb-3">
         {significance ? (
           <Text numberOfLines={2} className="text-xs text-muted-foreground">
-            <Text className="font-semibold text-foreground">{tx('Why it matters:')}{' '}</Text>
+            <Text className="font-semibold text-heading">{tx('Why it matters:')}{' '}</Text>
             {significance}
           </Text>
         ) : null}
         {nearbyAttractions.length ? (
           <Text numberOfLines={1} className="text-xs text-muted-foreground">
-            <Text className="font-semibold text-foreground">{tx('Nearby:')}{' '}</Text>
+            <Text className="font-semibold text-heading">{tx('Nearby:')}{' '}</Text>
             {nearbyAttractions.map((n) => `${n.x.name} (${formatDistance(n.dist)})`).join(' · ')}
           </Text>
         ) : null}

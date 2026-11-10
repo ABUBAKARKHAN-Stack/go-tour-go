@@ -63,7 +63,7 @@ export function PlacePreview({ place, location, saved }: { place: DestinationSum
       <DestinationImage uri={place.image_url} category={place.category} className="h-24 w-24 rounded-2xl" recyclingKey={place.id} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-1.5">
-          <Text numberOfLines={1} className="shrink text-base font-bold text-foreground">
+          <Text numberOfLines={1} className="shrink text-base font-bold text-heading">
             {place.name}
           </Text>
           {saved ? <Bookmark color={colors.accent} fill={colors.accent} size={14} accessibilityLabel={tx('Saved')} /> : null}
@@ -76,7 +76,7 @@ export function PlacePreview({ place, location, saved }: { place: DestinationSum
           {rating ? (
             <View className="flex-row items-center gap-1">
               <Star color={colors.rating} fill={colors.rating} size={13} />
-              <Text className="text-xs font-semibold text-foreground">
+              <Text className="text-xs font-semibold text-heading">
                 {rating.average_rating.toFixed(1)} <Text className="text-xs font-normal text-muted-foreground">({rating.review_count})</Text>
               </Text>
             </View>

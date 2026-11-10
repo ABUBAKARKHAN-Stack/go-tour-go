@@ -37,7 +37,7 @@ function PendingCard({ job }: { job: UploadJob }) {
       className={`gap-2 rounded-2xl border bg-card p-3 ${failed ? 'border-destructive/50' : 'border-border'}`}
     >
       <View className="flex-row items-center gap-3">
-        <View className="h-12 w-12 overflow-hidden rounded-xl bg-secondary">
+        <View className="h-12 w-12 overflow-hidden rounded-xl bg-primary-soft">
           {thumb ? <Image source={{ uri: thumb }} style={{ width: '100%', height: '100%' }} contentFit="cover" /> : null}
           {first?.type === 'video' ? (
             <View className="absolute inset-0 items-center justify-center">
@@ -46,7 +46,7 @@ function PendingCard({ job }: { job: UploadJob }) {
           ) : null}
         </View>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
+          <Text numberOfLines={1} className="text-sm font-semibold text-heading">
             {title}
           </Text>
           <Text numberOfLines={1} className={`text-xs ${failed ? 'text-destructive' : 'text-muted-foreground'}`}>
@@ -65,7 +65,7 @@ function PendingCard({ job }: { job: UploadJob }) {
         ) : null}
       </View>
       {failed ? null : (
-        <View className="h-1.5 overflow-hidden rounded-full bg-secondary">
+        <View className="h-1.5 overflow-hidden rounded-full bg-primary-soft">
           {/* Childless, absolutely positioned fill: its width can change without re-laying-out anything else. */}
           <Animated.View
             className="absolute bottom-0 left-0 top-0 rounded-full bg-primary"

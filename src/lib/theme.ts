@@ -47,6 +47,9 @@ export const colors = {
 export const shadow = (alpha: number, y = 4, blur = 14) => `0 ${y}px ${blur}px rgba(${colors.shadow}, ${alpha})`;
 
 /** CSS gradient for the primary button and other branded fills. */
+/** The one card elevation: white cards on the page. */
+export const cardShadow = { boxShadow: shadow(0.08, 6, 20) } as const;
+
 export const brandGradient = 'linear-gradient(90deg, #19709B, #2381B6)';
 
 export const severityColors = {

@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
+import { cardShadow } from '@/lib/theme';
 
 type Variant = 'list' | 'cards' | 'feed' | 'profile' | 'detail';
 
@@ -12,7 +13,7 @@ function Block({ className }: { className: string }) {
 
 function Row() {
   return (
-    <View className="flex-row items-center gap-3 rounded-3xl border border-border bg-card p-2.5">
+    <View className="flex-row items-center gap-3 rounded-[20px] bg-card p-2.5" style={cardShadow}>
       <Block className="h-16 w-16 rounded-2xl" />
       <View className="flex-1 gap-2">
         <Block className="h-4 w-3/5" />
@@ -25,7 +26,7 @@ function Row() {
 function Tile() {
   return (
     <View className="w-60 gap-2.5">
-      <Block className="h-64 w-full rounded-3xl" />
+      <Block className="h-64 w-full rounded-[20px]" />
       <Block className="h-5 w-3/4" />
       <Block className="h-3 w-1/2" />
     </View>
@@ -34,7 +35,7 @@ function Tile() {
 
 function Post() {
   return (
-    <View className="gap-3 rounded-3xl border border-border bg-card p-4">
+    <View className="gap-3 rounded-[20px] bg-card p-4" style={cardShadow}>
       <View className="flex-row items-center gap-3">
         <Block className="h-10 w-10 rounded-full" />
         <View className="flex-1 gap-2">

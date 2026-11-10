@@ -14,7 +14,7 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { useLastLocation } from '@/features/location/location-store';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { distanceMeters, formatDistance } from '@/lib/geo';
-import { colors, severityColors } from '@/lib/theme';
+import { colors, severityColors, shadow } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 export default function AlertsScreen() {
@@ -47,12 +47,12 @@ export default function AlertsScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => hazardCard.show(a.id, location ? distanceMeters(location, a) : a.radius_m + 1)}
-              className="gap-2 rounded-3xl border bg-card p-4"
-              style={{ borderColor: `${severityColors[a.severity]}88` }}
+              className="gap-2 rounded-[20px] border-s-4 bg-card p-4 active:opacity-90"
+              style={{ borderColor: severityColors[a.severity], boxShadow: shadow(0.08, 6, 20) }}
             >
               <View className="flex-row items-center gap-2">
                 <TriangleAlert color={severityColors[a.severity]} size={18} />
-                <Text className="flex-1 text-base font-bold text-foreground">{a.title}</Text>
+                <Text className="flex-1 text-base font-bold text-heading">{a.title}</Text>
                 <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: `${severityColors[a.severity]}33` }}>
                   <Text className="text-[11px] font-bold uppercase" style={{ color: severityColors[a.severity] }}>
                     {a.severity}

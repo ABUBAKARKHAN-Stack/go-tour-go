@@ -30,7 +30,7 @@ import { navigateTo } from '@/features/routing/navigate';
 import { formatDistance } from '@/lib/geo';
 import { StorageKeys, useStorage } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 import { flipX, tx } from '@/lib/i18n';
 import { KIND_LABEL } from '@/features/data/place-kinds';
@@ -179,14 +179,15 @@ export default function SearchScreen() {
             accessibilityLabel={tx('Go back')}
             hitSlop={8}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
+            className="h-11 w-11 items-center justify-center rounded-full bg-card"
+            style={cardShadow}
           >
             <ArrowLeft color={colors.foreground} size={20} style={flipX} />
           </Pressable>
-          <Text className="font-display text-2xl text-foreground">{tx('Plan a journey')}</Text>
+          <Text className="font-display text-2xl text-heading">{tx('Plan a journey')}</Text>
         </View>
 
-        <View className="flex-row items-center gap-3 rounded-3xl border border-border bg-card px-4 py-1">
+        <View className="flex-row items-center gap-3 rounded-full bg-card px-4 py-1" style={cardShadow}>
           <View className="flex-1">
             <View className="min-h-14 flex-row items-center gap-3">
               <CircleDot color={colors.primary} size={20} />
@@ -208,7 +209,7 @@ export default function SearchScreen() {
                   onChangeText={setTerm}
                   placeholder={tx('City, area, landmark or address')}
                   placeholderTextColor={colors.faint}
-                  className="p-0 text-base font-semibold text-foreground"
+                  className="p-0 text-base font-semibold text-heading"
                   returnKeyType="search"
                   accessibilityLabel={tx('Destination')}
                 />
@@ -220,7 +221,7 @@ export default function SearchScreen() {
               ) : null}
             </View>
           </View>
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-secondary opacity-40" accessibilityElementsHidden>
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft opacity-40" accessibilityElementsHidden>
             <ArrowUpDown color={colors.foreground} size={18} />
           </View>
         </View>
@@ -339,7 +340,7 @@ function ResultRow({
   right?: string;
   onPress: () => void;
 }) {
-  const box = tint === 'primary' ? 'bg-primary-soft' : tint === 'accent' ? 'bg-accent-soft' : 'bg-secondary';
+  const box = tint === 'primary' ? 'bg-primary-soft' : tint === 'accent' ? 'bg-accent-soft' : 'bg-primary-soft';
   const color = tint === 'primary' ? colors.primary : tint === 'accent' ? colors.accent : colors.mutedForeground;
   return (
     <Pressable
@@ -352,7 +353,7 @@ function ResultRow({
         <Icon color={color} size={19} />
       </View>
       <View className="flex-1">
-        <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+        <Text numberOfLines={1} className="text-base font-semibold text-heading">
           {title}
         </Text>
         {subtitle ? (

@@ -21,7 +21,7 @@ import { useShareViewers } from '@/features/safety/viewers';
 import { displayName, useFriendships } from '@/features/social/api';
 import { haptics } from '@/lib/haptics';
 import { errorMessage } from '@/lib/errors';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 const EMERGENCY_NUMBERS = [
@@ -202,7 +202,7 @@ export default function SafetyScreen() {
 
       {sos ? (
         <Card className="gap-3 border-destructive/50">
-          <Text className="text-base font-bold text-foreground">{tx('Send your SOS')}</Text>
+          <Text className="text-base font-bold text-heading">{tx('Send your SOS')}</Text>
           {sos.lat != null ? (
             <Pressable
               disabled={!sos.token}
@@ -243,11 +243,12 @@ export default function SafetyScreen() {
               accessibilityRole="button"
               accessibilityLabel={tx('Call {0} {1}', { 0: n.label, 1: n.number })}
               onPress={() => Linking.openURL(`tel:${n.number}`)}
-              className="min-h-14 w-[48%] flex-row items-center gap-2 rounded-2xl bg-card px-3"
+              className="min-h-14 w-[48%] flex-row items-center gap-2 rounded-[20px] bg-card px-3"
+              style={cardShadow}
             >
               <Phone color={colors.destructive} size={18} />
               <View>
-                <Text className="text-base font-bold text-foreground">{n.number}</Text>
+                <Text className="text-base font-bold text-heading">{n.number}</Text>
                 <Text className="text-xs text-muted-foreground">{n.label}</Text>
               </View>
             </Pressable>
@@ -258,7 +259,7 @@ export default function SafetyScreen() {
       <Card className="gap-3">
         <View className="flex-row items-center gap-2">
           <Radio color={live ? colors.success : colors.accent} size={18} />
-          <Text className="flex-1 text-base font-semibold text-foreground">{tx('Live location sharing')}</Text>
+          <Text className="flex-1 text-base font-semibold text-heading">{tx('Live location sharing')}</Text>
           {live ? <Text className="text-xs font-bold text-success">{tx('ACTIVE')}</Text> : null}
         </View>
         {live ? (

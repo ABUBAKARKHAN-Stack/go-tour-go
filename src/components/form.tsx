@@ -155,7 +155,7 @@ export function Segmented<T extends string>({
 /** White card with a soft navy shadow (style tile). */
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <View className={`rounded-3xl bg-card p-4 ${className ?? ''}`} style={{ boxShadow: shadow(0.08, 6, 20) }}>
+    <View className={`rounded-[20px] bg-card p-4 ${className ?? ''}`} style={{ boxShadow: shadow(0.08, 6, 20) }}>
       {children}
     </View>
   );
