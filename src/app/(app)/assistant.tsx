@@ -1,7 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { Landmark, RotateCcw, Send, ShoppingBag, Sparkles, UtensilsCrossed, type LucideIcon } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, View } from 'react-native';
 import { Text, TextInput } from '@/components/text';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -12,14 +11,10 @@ import { AppHeader } from '@/components/screen';
 import { IconButton } from '@/components/app-button';
 import { Chip } from '@/components/form';
 import { InlineError } from '@/components/states';
-import { askAssistant, type ChatContext, type ChatTurn } from '@/features/ai/api';
+import { useChat, useChatContext, type ChatMessage } from '@/features/ai/use-chat';
 import { useDestinationsByDistance } from '@/features/destinations/api';
-import { describeWeather, type Weather } from '@/features/weather/api';
-import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
-
-type Msg = ChatTurn & { id: string };
 
 /**
  * One-tap guides from the client brief (3.2 culture, 3.3 shopping and
@@ -61,35 +56,15 @@ const markdownStyles = {
 export default function AssistantScreen() {
   const params = useLocalSearchParams<{ destination?: string; q?: string }>();
   const insets = useSafeAreaInsets();
-  const qc = useQueryClient();
-  const [prefs] = usePreferences();
   const { sorted, location } = useDestinationsByDistance();
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const context = useChatContext(params.destination);
+  const chat = useChat(context);
+  const { messages, loading, error } = chat;
   const [input, setInput] = useState(params.q ?? '');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const list = useRef<FlatList<Msg>>(null);
+  const list = useRef<FlatList<ChatMessage>>(null);
 
   const focused = params.destination ? sorted.find((d) => d.slug === params.destination) : undefined;
   const nearest = location ? sorted[0] : undefined;
-
-  /** Small, controlled context: location label, 5 nearest places, weather from cache. No extra API calls. */
-  const context = useMemo<ChatContext>(() => {
-    const weather =
-      location &&
-      qc.getQueryData<Weather>(['weather', Math.round(location.latitude * 100) / 100, Math.round(location.longitude * 100) / 100]);
-    return {
-      locale: prefs.aiLanguage,
-      destinationSlug: params.destination,
-      latitude: location?.latitude,
-      longitude: location?.longitude,
-      locationLabel: nearest && nearest.distance != null && nearest.distance < 30_000 ? `Near ${nearest.name}, ${nearest.city}` : undefined,
-      weather: weather ? `${describeWeather(weather.code)}, ${Math.round(weather.temperature)}°C` : undefined,
-      nearby: location
-        ? sorted.slice(0, 5).map((d) => ({ name: d.name, category: d.category, distanceKm: (d.distance ?? 0) / 1000 }))
-        : undefined,
-    };
-  }, [prefs.aiLanguage, params.destination, location, nearest, sorted, qc]);
 
   const area = focused ? `${focused.name}, ${focused.city}` : nearest?.city ?? context.locationLabel ?? 'Pakistan';
 
@@ -104,26 +79,10 @@ export default function AssistantScreen() {
     ];
   }, [focused, nearest]);
 
-  const send = useCallback(
-    async (text: string) => {
-      const content = text.trim();
-      if (!content || loading) return;
-      const next: Msg[] = [...messages, { id: `${Date.now()}`, role: 'user', content }];
-      setMessages(next);
-      setInput('');
-      setError(null);
-      setLoading(true);
-      try {
-        const reply = await askAssistant(next.map(({ role, content: c }) => ({ role, content: c })), context);
-        setMessages((m) => [...m, { id: `${Date.now()}-a`, role: 'assistant', content: reply }]);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'AI service unavailable.');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [messages, loading, context],
-  );
+  const send = async (text: string) => {
+    if (text.trim() && !loading) setInput('');
+    await chat.send(text);
+  };
 
   useEffect(() => {
     if (messages.length) setTimeout(() => list.current?.scrollToEnd({ animated: true }), 50);
@@ -135,7 +94,7 @@ export default function AssistantScreen() {
         back
         title={tx('AI travel guide')}
         subtitle={focused ? tx('About {0}', { 0: focused.name }) : context.locationLabel ?? tx('Powered by Gemini')}
-        right={messages.length ? <IconButton icon={RotateCcw} label={tx('New chat')} onPress={() => setMessages([])} /> : undefined}
+        right={messages.length ? <IconButton icon={RotateCcw} label={tx('New chat')} onPress={chat.reset} /> : undefined}
       />
       <KeyboardAvoidingView behavior="padding" className="flex-1" keyboardVerticalOffset={0}>
         <FlatList
