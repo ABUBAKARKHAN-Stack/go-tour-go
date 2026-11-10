@@ -65,11 +65,14 @@ export function Chip({
   selected,
   onPress,
   icon,
+  floating,
 }: {
   label: string;
   selected?: boolean;
   onPress?: () => void;
   icon?: ReactNode;
+  /** White with a shadow, for chips laid over a map or photo. */
+  floating?: boolean;
 }) {
   const press = usePressScale(0.95);
   return (
@@ -79,7 +82,8 @@ export function Chip({
         accessibilityState={{ selected }}
         onPress={onPress}
         {...press.handlers}
-        className={`min-h-10 flex-row items-center gap-1.5 rounded-full px-4 ${selected ? 'bg-inverse' : 'bg-primary-soft'}`}
+        className={`min-h-10 flex-row items-center gap-1.5 rounded-full px-4 ${selected ? 'bg-inverse' : floating ? 'bg-card' : 'bg-primary-soft'}`}
+        style={floating ? { boxShadow: shadow(0.12, 3, 10) } : undefined}
       >
         {icon}
         <Text className={`text-sm font-semibold ${selected ? 'text-white' : 'text-heading'}`}>{label}</Text>

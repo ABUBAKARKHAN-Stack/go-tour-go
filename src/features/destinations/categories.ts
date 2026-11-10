@@ -17,23 +17,32 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 
+import type { TileTone } from '@/components/brand';
 import type { DestinationCategory, ServiceCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 
 export const DESTINATION_CATEGORIES: Record<
   DestinationCategory,
-  { label: string; icon: LucideIcon; color: string; gradient: [string, string] }
+  {
+    label: string;
+    icon: LucideIcon;
+    /** Map marker colour. */
+    color: string;
+    /** Soft brand tint for tiles, badges and the photo placeholder. */
+    tone: TileTone;
+    gradient: [string, string];
+  }
 > = {
-  historical: { label: tx('Historical'), icon: Landmark, color: '#B5583A', gradient: ['#F6E3D9', '#EBCDBB'] },
-  religious: { label: tx('Religious'), icon: Building2, color: '#0F4C4A', gradient: ['#DCEBE8', '#C6DDD8'] },
-  attraction: { label: tx('Attraction'), icon: Star, color: '#C8643B', gradient: ['#F6E3D9', '#F0D5C4'] },
-  viewpoint: { label: tx('Viewpoint'), icon: Camera, color: '#2F6FA3', gradient: ['#DDE8F1', '#C9DAE8'] },
-  cultural: { label: tx('Cultural'), icon: Palette, color: '#A8552E', gradient: ['#F5E6D8', '#EBD3BE'] },
-  museum: { label: tx('Museum'), icon: Landmark, color: '#8A6A1E', gradient: ['#F4EBD6', '#E9DBBA'] },
-  food: { label: tx('Food'), icon: Utensils, color: '#B4382F', gradient: ['#F8E2DF', '#F0CCC6'] },
-  shopping: { label: tx('Shopping'), icon: ShoppingBag, color: '#7A4E8C', gradient: ['#EEE3F1', '#E0CFE6'] },
-  park: { label: tx('Park'), icon: Trees, color: '#2F7D5B', gradient: ['#DDEEE5', '#C8E2D4'] },
-  nature: { label: tx('Nature'), icon: Mountain, color: '#2F7D5B', gradient: ['#DCEBE8', '#C3DCD6'] },
+  historical: { label: tx('Historical'), icon: Landmark, color: '#B5583A', tone: 'sand', gradient: ['#EFE0C9', '#E4CFAE'] },
+  religious: { label: tx('Religious'), icon: Building2, color: '#0F4C4A', tone: 'ice', gradient: ['#E8F2F9', '#D5E7F3'] },
+  attraction: { label: tx('Attraction'), icon: Star, color: '#C8643B', tone: 'lemon', gradient: ['#FDF3DC', '#F7E6BC'] },
+  viewpoint: { label: tx('Viewpoint'), icon: Camera, color: '#2F6FA3', tone: 'ice', gradient: ['#E8F2F9', '#D5E7F3'] },
+  cultural: { label: tx('Cultural'), icon: Palette, color: '#A8552E', tone: 'peach', gradient: ['#FCEBDD', '#F6D9C2'] },
+  museum: { label: tx('Museum'), icon: Landmark, color: '#8A6A1E', tone: 'sand', gradient: ['#EFE0C9', '#E4CFAE'] },
+  food: { label: tx('Food'), icon: Utensils, color: '#B4382F', tone: 'peach', gradient: ['#FCEBDD', '#F6D9C2'] },
+  shopping: { label: tx('Shopping'), icon: ShoppingBag, color: '#7A4E8C', tone: 'lemon', gradient: ['#FDF3DC', '#F7E6BC'] },
+  park: { label: tx('Park'), icon: Trees, color: '#2F7D5B', tone: 'mint', gradient: ['#E4F4EE', '#CFEADF'] },
+  nature: { label: tx('Nature'), icon: Mountain, color: '#2F7D5B', tone: 'mint', gradient: ['#E4F4EE', '#CFEADF'] },
 };
 
 export const SERVICE_CATEGORIES: Record<ServiceCategory, { label: string; icon: LucideIcon; color: string }> = {

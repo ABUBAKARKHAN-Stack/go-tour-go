@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
+import { colors } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 
 type Props = {
@@ -42,7 +43,7 @@ export function DestinationImage({ uri, category, className, iconSize = 36, recy
         />
       ) : (
         <View className="flex-1 items-center justify-center">
-          <Icon color={meta.color} size={iconSize} strokeWidth={1.5} />
+          <Icon color={colors.primary} size={iconSize} strokeWidth={1.5} opacity={0.55} />
         </View>
       )}
     </View>

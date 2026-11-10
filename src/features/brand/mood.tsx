@@ -208,9 +208,16 @@ export function ScriptWord({ word }: { word: string }) {
   return (
     <View>
       <Text className="font-script text-[31px] leading-[34px] text-sky-strong">{word}</Text>
-      <Svg width="100%" height={8} viewBox="0 0 100 8" preserveAspectRatio="none" style={{ marginTop: -5 }} pointerEvents="none">
-        <Path d="M3 6 C30 1.5 70 0.5 97 3" stroke={colors.skyStrong} strokeWidth={2} fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      </Svg>
+      <Swash style={{ marginTop: -5 }} />
     </View>
+  );
+}
+
+/** Hand-drawn underline (design guide); stretches to its parent's width unless given one. */
+export function Swash({ width = '100%', color = colors.skyStrong, style }: { width?: number | `${number}%`; color?: string; style?: ViewStyle }) {
+  return (
+    <Svg width={width} height={8} viewBox="0 0 100 8" preserveAspectRatio="none" style={style} pointerEvents="none">
+      <Path d="M3 6 C30 1.5 70 0.5 97 3" stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </Svg>
   );
 }
