@@ -62,6 +62,8 @@ type ScreenProps = HeaderProps & {
   contentClassName?: string;
   refreshControl?: ScrollViewProps['refreshControl'];
   footer?: ReactNode;
+  /** Full-bleed header that runs under the status bar (e.g. BrandHeader); replaces the header row. */
+  hero?: ReactNode;
 };
 
 /** Standard screen scaffold: safe areas, header, offline banner, scroll and keyboard handling. */
@@ -74,6 +76,7 @@ export function Screen({
   contentClassName,
   refreshControl,
   footer,
+  hero,
   ...header
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
@@ -97,8 +100,8 @@ export function Screen({
   );
 
   const content = (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      {headerless ? null : <AppHeader {...header} />}
+    <View className="flex-1 bg-background" style={hero ? undefined : { paddingTop: insets.top }}>
+      {hero ?? (headerless ? null : <AppHeader {...header} />)}
       <OfflineBanner />
       {body}
       {footer ? (

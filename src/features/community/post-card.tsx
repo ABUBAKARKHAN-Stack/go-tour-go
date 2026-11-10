@@ -16,7 +16,7 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { haptics } from '@/lib/haptics';
 import { CSS_EASE_OUT } from '@/lib/motion';
-import { colors } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 import type { CommunityPost } from '@/lib/types';
 import { flipX, tx } from '@/lib/i18n';
 
@@ -107,20 +107,20 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
     ]);
 
   return (
-    <View className="gap-3 rounded-3xl border border-border bg-card p-4">
+    <View className="gap-3 rounded-[24px] bg-card p-4" style={{ boxShadow: shadow(0.08, 6, 20) }}>
       <View className="flex-row items-center gap-3">
         <Pressable onPress={() => router.push({ pathname: '/users/[id]', params: { id: post.author_id } })}>
-          <Avatar profile={post.author} size={40} />
+          <Avatar profile={post.author} size={44} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
+          <Text numberOfLines={1} className="text-[15px] font-semibold text-heading">
             {displayName(post.author)}
           </Text>
           <View className="flex-row items-center gap-1">
             {place ? (
               <Pressable disabled={!post.destination} onPress={openPlace} hitSlop={4} className="shrink flex-row items-center gap-1">
-                <MapPin color={colors.primary} size={12} />
-                <Text numberOfLines={1} className="shrink text-xs font-medium text-primary">
+                <MapPin color={colors.accent} size={12} />
+                <Text numberOfLines={1} className="shrink text-xs font-medium text-accent">
                   {place}
                   {post.destination?.city ? `, ${post.destination.city}` : ''}
                 </Text>
@@ -141,18 +141,18 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           hitSlop={8}
           className="h-10 w-9 items-center justify-center"
         >
-          <Bookmark size={20} color={saved ? colors.primary : colors.mutedForeground} fill={saved ? colors.primary : 'transparent'} />
+          <Bookmark size={20} color={saved ? colors.primary : colors.heading} fill={saved ? colors.primary : 'transparent'} />
         </Pressable>
         {mine ? (
           <Pressable accessibilityRole="button" accessibilityLabel={tx('More options')} onPress={menu} hitSlop={8} className="h-10 w-8 items-center justify-center">
-            <MoreVertical color={colors.mutedForeground} size={20} />
+            <MoreVertical color={colors.heading} size={20} />
           </Pressable>
         ) : null}
       </View>
 
       {post.body ? (
         <Pressable disabled={detail} onPress={open}>
-          <MentionText className="text-[15px] leading-6 text-foreground" numberOfLines={detail ? undefined : 6} text={post.body} />
+          <MentionText className="text-[15px] leading-6 text-heading" numberOfLines={detail ? undefined : 6} text={post.body} />
         </Pressable>
       ) : null}
       {(post.media?.length ?? 0) > 1 ? (
@@ -167,7 +167,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'longpress' ? like(true) : open())}
           onPress={onPhotoPress}
         >
-          <Image source={{ uri: post.image_url }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={post.id} />
+          <Image source={{ uri: post.image_url }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 16 }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={post.id} />
           {burst ? (
             <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
               <Animated.View
@@ -200,9 +200,9 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
             key={pops}
             style={liked && pops > 0 && !reduced ? { animationName: LIKE_POP, animationDuration: 300, animationTimingFunction: CSS_EASE_OUT } : undefined}
           >
-            <Heart size={20} color={liked ? colors.destructive : colors.mutedForeground} fill={liked ? colors.destructive : 'transparent'} />
+            <Heart size={21} color={liked ? colors.destructive : colors.heading} fill={liked ? colors.destructive : 'transparent'} />
           </Animated.View>
-          <Text className="text-sm text-muted-foreground">{formatCount(likes)}</Text>
+          <Text className="text-sm font-medium text-heading">{formatCount(likes)}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -211,8 +211,8 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           hitSlop={6}
           className="min-h-10 flex-row items-center gap-1.5"
         >
-          <MessageCircle size={20} color={colors.mutedForeground} />
-          <Text className="text-sm text-muted-foreground">{formatCount(comments)}</Text>
+          <MessageCircle size={21} color={colors.heading} />
+          <Text className="text-sm font-medium text-heading">{formatCount(comments)}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -221,8 +221,8 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           hitSlop={6}
           className="min-h-10 flex-row items-center gap-1.5"
         >
-          <Share2 size={19} color={colors.mutedForeground} />
-          {shares > 0 ? <Text className="text-sm text-muted-foreground">{formatCount(shares)}</Text> : null}
+          <Share2 size={20} color={colors.heading} />
+          {shares > 0 ? <Text className="text-sm font-medium text-heading">{formatCount(shares)}</Text> : null}
         </Pressable>
         <View className="flex-1" />
         {placeRating && placeRating.review_count > 0 ? (
@@ -230,7 +230,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
             accessibilityRole="button"
             accessibilityLabel={tx('{0} rating from {1} reviews', { 0: placeRating.average_rating.toFixed(1), 1: placeRating.review_count })}
             onPress={openPlace}
-            className="min-h-9 flex-row items-center gap-1 rounded-xl bg-secondary px-2.5"
+            className="min-h-9 flex-row items-center gap-1 rounded-full bg-primary-soft px-3"
           >
             <Star size={14} color={colors.primary} />
             <Text className="text-sm font-semibold text-primary">{Number(placeRating.average_rating).toFixed(1)}</Text>
@@ -243,22 +243,22 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           accessibilityRole="button"
           accessibilityLabel={tx('Comment by {0}: {1}', { 0: displayName(topComment.author), 1: topComment.body })}
           onPress={open}
-          className="flex-row items-center gap-3 rounded-2xl bg-secondary p-3"
+          className="flex-row items-center gap-3 rounded-2xl bg-primary-soft p-3"
         >
           <Avatar profile={topComment.author} size={32} />
           <View className="flex-1 gap-0.5">
             <View className="flex-row items-center gap-2">
-              <Text numberOfLines={1} className="shrink text-sm font-semibold text-foreground">
+              <Text numberOfLines={1} className="shrink text-sm font-semibold text-heading">
                 {displayName(topComment.author)}
               </Text>
               {commenterRating ? (
-                <View className="flex-row items-center gap-0.5 rounded-md bg-card px-1.5 py-0.5">
+                <View className="flex-row items-center gap-0.5 rounded-full bg-card px-2 py-0.5">
                   <Star size={11} color={colors.primary} fill={colors.primary} />
                   <Text className="text-xs font-semibold text-primary">{commenterRating.toFixed(1)}</Text>
                 </View>
               ) : null}
             </View>
-            <MentionText numberOfLines={1} className="text-sm text-muted-foreground" text={topComment.body} />
+            <MentionText numberOfLines={1} className="text-sm text-accent" text={topComment.body} />
           </View>
           <ChevronRight size={18} color={colors.mutedForeground} style={flipX} />
         </Pressable>

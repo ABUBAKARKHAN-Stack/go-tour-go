@@ -343,7 +343,7 @@ export default function Home() {
 
               {savedPlaces.length ? (
                 <Animated.View entering={enterAt(5)} className="gap-3">
-                  <SectionHeader title={tx('Saved places')} actionLabel={tx('See all')} onAction={() => router.push('/saved')} />
+                  <SectionHeader title={tx('Saved places')} actionLabel={tx('See all')} onAction={() => router.push({ pathname: '/saved', params: { tab: 'places' } })} />
                   <View className="gap-2.5">
                     {savedPlaces.slice(0, 3).map((d) => (
                       <DestinationCard key={d.id} variant="row" destination={d} distance={d.distance} />
