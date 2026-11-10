@@ -1,6 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   Bookmark,
+  ChevronDown,
+  ChevronUp,
   CircleDashed,
   Crosshair,
   Download,
@@ -11,11 +13,11 @@ import {
   Users,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/components/text';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
+import { DestinationCard } from '@/components/destination-card';
 import { Chip } from '@/components/form';
 import { OfflineBanner } from '@/components/offline-banner';
 import { ErrorState } from '@/components/states';
@@ -24,7 +26,8 @@ import { hazardCard } from '@/features/alerts/hazard-card-store';
 import { ReportHazardSheet } from '@/features/alerts/report-hazard-sheet';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { useAuth } from '@/features/auth/auth-provider';
-import { useDestinations } from '@/features/destinations/api';
+import { Text } from '@/components/text';
+import { useDestinations, useRatings } from '@/features/destinations/api';
 import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { getCurrentFix, requestLocationPermission } from '@/features/location/location-provider';
 import { useLastLocation, useLocationState } from '@/features/location/location-store';
@@ -37,7 +40,8 @@ import { useFriendLocations } from '@/features/safety/friend-locations';
 import { useSharingSession, isSessionLive } from '@/features/safety/sharing';
 import { useSimulator } from '@/features/proximity/simulator';
 import { distanceMeters, formatDistance } from '@/lib/geo';
-import { colors } from '@/lib/theme';
+import { storage, StorageKeys, useStorage } from '@/lib/storage';
+import { colors, shadow } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 
@@ -45,6 +49,7 @@ const PAKISTAN_CENTER: [number, number] = [70.5, 30.5];
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const tabSpace = useTabBarSpace();
   const params = useLocalSearchParams<{ focus?: string }>();
   const map = useRef<TravelMapHandle>(null);
@@ -69,6 +74,9 @@ export default function ExploreScreen() {
   const [showRadius, setShowRadius] = useState(true);
   const [showFriends, setShowFriends] = useState(true);
   const [mapError, setMapError] = useState(false);
+  const ratings = useRatings();
+  // Starts open on tall phones; on short ones it would sit under the map buttons.
+  const [nearbyOpen] = useStorage(StorageKeys.exploreNearbyOpen, height >= 720);
 
   // Initial camera: user's position if already known, else all of Pakistan.
   const [initial] = useState(() =>
@@ -82,6 +90,13 @@ export default function ExploreScreen() {
     [destinations.data, category, savedOnly, savedSet],
   );
   const selected = useMemo(() => destinations.data?.find((d) => d.id === selectedId) ?? null, [destinations.data, selectedId]);
+  // "Popular places nearby": the closest of the places on the map, or the most popular without a location.
+  const nearby = useMemo(() => {
+    const list = location
+      ? visible.map((d) => ({ d, dist: distanceMeters(location, d) as number | null })).sort((a, b) => (a.dist ?? 0) - (b.dist ?? 0))
+      : [...visible].sort((a, b) => b.popularity - a.popularity).map((d) => ({ d, dist: null as number | null }));
+    return list.slice(0, 10);
+  }, [visible, location]);
 
   // ?focus=<id> from details/search: select during render, move the camera in an effect.
   const [handledFocus, setHandledFocus] = useState<string | undefined>(undefined);
@@ -151,30 +166,50 @@ export default function ExploreScreen() {
 
       {/* Top overlay: search, filters, status */}
       <View className="absolute left-0 right-0 top-0 gap-2" style={{ paddingTop: insets.top + 8 }} pointerEvents="box-none">
-        <View className="flex-row items-center gap-2 px-3">
-          <Pressable
-            accessibilityRole="search"
-            onPress={() => router.push('/search')}
-            className="min-h-12 flex-1 flex-row items-center gap-2 rounded-2xl border border-border bg-card px-4"
-          >
-            <Search color={colors.mutedForeground} size={18} />
-            <Text className="text-base text-muted-foreground">{tx('Where to?')}</Text>
+        <View
+          className="mx-3 min-h-[52px] flex-row items-center gap-3 rounded-full bg-card pe-1.5 ps-4"
+          style={{ boxShadow: shadow(0.12, 6, 18) }}
+        >
+          <Pressable accessibilityRole="search" onPress={() => router.push('/search')} className="min-h-12 flex-1 flex-row items-center gap-3 active:opacity-70">
+            <Search color={colors.heading} size={20} />
+            <Text numberOfLines={1} className="flex-1 text-[15px] text-faint">
+              {tx('Search places, cities or attractions')}
+            </Text>
           </Pressable>
-          <IconButton icon={Download} label={tx('Offline maps')} onPress={() => router.push('/offline-maps')} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tx('Offline maps')}
+            onPress={() => router.push('/offline-maps')}
+            className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft active:opacity-70"
+          >
+            <Download color={colors.primary} size={18} />
+          </Pressable>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-3">
-          <Chip label={tx('All')} selected={!category && !savedOnly} onPress={() => { setCategory(null); setSavedOnly(false); }} />
+        {/* Vertical padding keeps the chips' shadows from being clipped. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-my-1.5" contentContainerClassName="gap-2 px-3 py-1.5">
+          <Chip floating label={tx('All')} selected={!category && !savedOnly} onPress={() => { setCategory(null); setSavedOnly(false); }} />
           {userId ? (
             <Chip
+              floating
               label={savedSet.size ? tx('Saved ({0})', { 0: savedSet.size }) : tx('Saved')}
-              icon={<Bookmark size={14} color={savedOnly ? colors.primaryForeground : colors.accent} fill={savedOnly ? colors.primaryForeground : colors.accent} />}
+              icon={<Bookmark size={15} color={savedOnly ? colors.primaryForeground : colors.primary} fill={savedOnly ? colors.primaryForeground : 'transparent'} />}
               selected={savedOnly}
               onPress={() => setSavedOnly((v) => !v)}
             />
           ) : null}
-          {CATEGORY_ORDER.map((c) => (
-            <Chip key={c} label={DESTINATION_CATEGORIES[c].label} selected={category === c} onPress={() => setCategory(category === c ? null : c)} />
-          ))}
+          {CATEGORY_ORDER.map((c) => {
+            const Icon = DESTINATION_CATEGORIES[c].icon;
+            return (
+              <Chip
+                floating
+                key={c}
+                label={DESTINATION_CATEGORIES[c].label}
+                icon={<Icon size={15} color={category === c ? colors.primaryForeground : colors.primary} />}
+                selected={category === c}
+                onPress={() => setCategory(category === c ? null : c)}
+              />
+            );
+          })}
         </ScrollView>
         <OfflineBanner />
         <View className="gap-2 px-3">
@@ -200,7 +235,7 @@ export default function ExploreScreen() {
       </View>
 
       {/* Right-side controls */}
-      <View className="absolute right-3 gap-2" style={{ top: insets.top + 190 }}>
+      <View className="absolute end-3 gap-2" style={{ top: insets.top + 196 }}>
         <IconButton icon={Crosshair} label={tx('Show my location')} onPress={locateMe} />
         {userId ? <IconButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => setReporting(true)} /> : null}
         <IconButton icon={CircleDashed} label={tx('Toggle geofence radius')} active={showRadius} onPress={() => setShowRadius((v) => !v)} />
@@ -209,10 +244,10 @@ export default function ExploreScreen() {
         ) : null}
       </View>
 
-      {/* Bottom panel: route > selection > alert */}
+      {/* Bottom: active journey > tapped place > popular places nearby. */}
       <View className="absolute left-3 right-3 gap-2" style={{ bottom: tabSpace - 12 }}>
         {journeyActive && journey.target ? (
-          <View className="flex-row items-center gap-3 rounded-3xl bg-primary p-3 pl-4" style={{ boxShadow: '0 6px 18px rgba(15,76,74,0.25)' }}>
+          <View className="flex-row items-center gap-3 rounded-[20px] bg-primary p-3 ps-4" style={{ boxShadow: shadow(0.25, 6, 18) }}>
             <Navigation color={colors.primaryForeground} size={20} />
             <View className="flex-1">
               <Text numberOfLines={1} className="text-base font-semibold text-white">{tx('Navigating to {0}', { 0: journey.target.name })}</Text>
@@ -224,6 +259,28 @@ export default function ExploreScreen() {
           </View>
         ) : selected ? (
           <PlacePreview place={selected} location={location} saved={savedSet.has(selected.id)} />
+        ) : nearby.length ? (
+          <View className="rounded-[28px] bg-background pt-1.5" style={{ boxShadow: shadow(0.14, 6, 24) }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: nearbyOpen }}
+              onPress={() => storage.set(StorageKeys.exploreNearbyOpen, !nearbyOpen)}
+              className="min-h-11 flex-row items-center justify-between px-4 active:opacity-70"
+            >
+              <Text className="font-display text-[18px] text-heading">{location ? tx('Popular places nearby') : tx('Popular destinations')}</Text>
+              <View className="flex-row items-center gap-0.5">
+                <Text className="text-sm font-semibold text-accent">{nearbyOpen ? tx('Hide') : tx('Show')}</Text>
+                {nearbyOpen ? <ChevronDown color={colors.accent} size={16} /> : <ChevronUp color={colors.accent} size={16} />}
+              </View>
+            </Pressable>
+            {nearbyOpen ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 px-4 pb-4 pt-1.5">
+                {nearby.map(({ d, dist }) => (
+                  <DestinationCard key={d.id} destination={d} distance={dist} rating={ratings.data?.[d.id]?.average_rating} width={156} />
+                ))}
+              </ScrollView>
+            ) : null}
+          </View>
         ) : null}
       </View>
       <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />

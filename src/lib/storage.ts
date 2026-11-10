@@ -85,4 +85,5 @@ export const StorageKeys = {
   recentSearches: 'gtg.search.recent',
   activeJourney: 'gtg.journey.active',
   storiesSeen: 'gtg.stories.seen',
+  exploreNearbyOpen: 'gtg.explore.nearbyOpen',
 } as const;

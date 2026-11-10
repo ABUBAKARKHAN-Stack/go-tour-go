@@ -14,7 +14,7 @@ import { navigateTo } from '@/features/routing/navigate';
 import { distanceMeters, formatDistance, formatDuration, type LatLng } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
 import { usePreferences } from '@/lib/preferences';
-import { colors } from '@/lib/theme';
+import { colors, shadow } from '@/lib/theme';
 import type { DestinationSummary } from '@/lib/types';
 
 /** Rough speeds for a straight-line estimate when no route can be fetched (offline). */
@@ -59,7 +59,7 @@ export function PlacePreview({ place, location, saved }: { place: DestinationSum
   const time = useTravelTime(location, place, prefs.travelMode);
 
   return (
-    <View className="flex-row gap-3 rounded-3xl border border-border bg-card p-3">
+    <View className="flex-row gap-3 rounded-[20px] bg-card p-3" style={{ boxShadow: shadow(0.14, 6, 20) }}>
       <DestinationImage uri={place.image_url} category={place.category} className="h-24 w-24 rounded-2xl" recyclingKey={place.id} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-1.5">

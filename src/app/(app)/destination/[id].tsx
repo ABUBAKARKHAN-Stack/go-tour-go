@@ -392,7 +392,8 @@ export default function DestinationDetails() {
           {nearby.length ? (
             <View className="gap-3">
               <SectionHeader title={tx('Nearby attractions')} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
+              {/* Vertical padding keeps the cards' shadows from being clipped. */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-my-3" contentContainerClassName="gap-3 py-3">
                 {nearby.map((n) => (
                   <DestinationCard key={n.x.id} destination={n.x} distance={n.dist} />
                 ))}
