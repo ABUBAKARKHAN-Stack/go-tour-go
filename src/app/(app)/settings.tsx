@@ -20,7 +20,7 @@ import { simulator, useSimulator } from '@/features/proximity/simulator';
 import { crashReport, useLastError } from '@/lib/crash-log';
 import { formatDistance } from '@/lib/geo';
 import { AI_LANGUAGES, LOCALES, usePreferences } from '@/lib/preferences';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import { changeLanguage, tx } from '@/lib/i18n';
 
 export default function SettingsScreen() {
@@ -84,7 +84,7 @@ export default function SettingsScreen() {
   return (
     <Screen back title={tx('Settings')}>
       <Card className="gap-1">
-        <Text className="text-base font-semibold text-foreground">{tx('Landmark alerts')}</Text>
+        <Text className="text-base font-semibold text-heading">{tx('Landmark alerts')}</Text>
         <ToggleRow
           title={tx('Alerts when the app is closed')}
           description={
@@ -111,7 +111,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Card className="gap-3">
-        <Text className="text-base font-semibold text-foreground">{tx('App language')}</Text>
+        <Text className="text-base font-semibold text-heading">{tx('App language')}</Text>
         <View className="flex-row flex-wrap gap-2">
           {LOCALES.map((l) => (
             <Chip
@@ -132,7 +132,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Card className="gap-3">
-        <Text className="text-base font-semibold text-foreground">{tx('AI guide reply language')}</Text>
+        <Text className="text-base font-semibold text-heading">{tx('AI guide reply language')}</Text>
         <View className="flex-row flex-wrap gap-2">
           {AI_LANGUAGES.map((l) => (
             <Chip key={l.value} label={l.label} selected={prefs.aiLanguage === l.value} onPress={() => setPrefs({ aiLanguage: l.value })} />
@@ -142,7 +142,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Card className="gap-3">
-        <Text className="text-base font-semibold text-foreground">{tx('Default travel mode')}</Text>
+        <Text className="text-base font-semibold text-heading">{tx('Default travel mode')}</Text>
         <Segmented
           value={prefs.travelMode}
           onChange={(v) => setPrefs({ travelMode: v })}
@@ -157,7 +157,7 @@ export default function SettingsScreen() {
       <Card className="gap-3">
         <View className="flex-row items-center gap-2">
           <Database color={colors.primary} size={18} />
-          <Text className="flex-1 text-base font-semibold text-foreground">{tx('Offline data')}</Text>
+          <Text className="flex-1 text-base font-semibold text-heading">{tx('Offline data')}</Text>
         </View>
         <Text className="text-xs text-muted-foreground">{tx('{0} landmarks and {1} places are saved on this phone for offline search, the map and landmark alerts. {2}', { 0: dataSync.counts.destinations.toLocaleString(), 1: dataSync.counts.places.toLocaleString(), 2: dataSync.lastSyncAt ? tx(' Checked {0}.', { 0: new Date(dataSync.lastSyncAt).toLocaleString() }) : '' })}</Text>
         {dataSync.status === 'syncing' ? (
@@ -178,7 +178,7 @@ export default function SettingsScreen() {
       <Card className="gap-3">
         <View className="flex-row items-center gap-2">
           <FlaskConical color={colors.primary} size={18} />
-          <Text className="flex-1 text-base font-semibold text-foreground">{tx('Demo tools')}</Text>
+          <Text className="flex-1 text-base font-semibold text-heading">{tx('Demo tools')}</Text>
         </View>
         <Text className="text-xs text-muted-foreground">
           {tx('Simulate travelling towards a landmark to test geofencing, notifications, the contextual card and navigation without moving. Real GPS is paused while it runs.')}
@@ -220,7 +220,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Card className="gap-2">
-        <Text className="text-base font-semibold text-foreground">{tx('Photo credits')}</Text>
+        <Text className="text-base font-semibold text-heading">{tx('Photo credits')}</Text>
         <Text className="text-xs text-muted-foreground">{tx('Welcome and sign-in photos from Wikimedia Commons, used under their free licences.')}</Text>
         {Object.values(HERO_PHOTOS).map((p) => (
           <Text key={p.uri} className="text-xs text-foreground">
@@ -234,7 +234,7 @@ export default function SettingsScreen() {
       <Modal visible={picking} animationType="slide" onRequestClose={() => setPicking(false)}>
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
           <View className="flex-row items-center gap-2 px-4 py-3">
-            <Text className="flex-1 text-xl font-bold text-foreground">{tx('Choose a landmark')}</Text>
+            <Text className="flex-1 text-xl font-bold text-heading">{tx('Choose a landmark')}</Text>
             <IconButton icon={X} label={tx('Close')} onPress={() => setPicking(false)} />
           </View>
           <FlatList
@@ -249,10 +249,11 @@ export default function SettingsScreen() {
                   await requestNotificationPermission();
                   simulator.start({ latitude: item.latitude, longitude: item.longitude, name: item.name, radius: item.radius_m });
                 }}
-                className="min-h-14 flex-row items-center gap-3 rounded-2xl bg-card px-4 py-3"
+                className="min-h-14 flex-row items-center gap-3 rounded-[20px] bg-card px-4 py-3"
+                style={cardShadow}
               >
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-foreground">{item.name}</Text>
+                  <Text className="text-base font-semibold text-heading">{item.name}</Text>
                   <Text className="text-xs text-muted-foreground">{tx('{0} · radius {1}', { 0: item.city, 1: formatDistance(item.radius_m) })}</Text>
                 </View>
                 <Play color={colors.primary} size={18} />

@@ -9,7 +9,7 @@ import { Screen } from '@/components/screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { useInbox, useMarkAllRead, useUnreadCount } from '@/features/inbox/api';
 import { timeAgo } from '@/features/safety/friend-locations';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import type { AppNotification } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 import { navigateTo } from '@/features/routing/navigate';
@@ -58,12 +58,12 @@ export default function NotificationsScreen() {
             const Icon = ICONS[item.type as keyof typeof ICONS] ?? Bell;
             const sos = item.type === 'sos';
             return (
-              <Pressable onPress={() => open(item)} className={`flex-row gap-3 rounded-2xl p-3 ${item.read_at ? 'bg-card' : 'bg-secondary'}`}>
+              <Pressable onPress={() => open(item)} className={`flex-row gap-3 rounded-[20px] p-3 active:opacity-80 ${item.read_at ? 'bg-card' : 'bg-primary-soft'}`} style={item.read_at ? cardShadow : undefined}>
                 <View className={`h-10 w-10 items-center justify-center rounded-full ${sos ? 'bg-destructive/20' : 'bg-muted'}`}>
                   <Icon color={sos ? colors.destructive : colors.accent} size={18} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-semibold text-foreground">{item.title}</Text>
+                  <Text className="text-sm font-semibold text-heading">{item.title}</Text>
                   <Text className="text-sm text-muted-foreground">{item.body}</Text>
                   {sos && item.data?.latitude != null ? (
                     <View className="flex-row items-center gap-1 pt-1">

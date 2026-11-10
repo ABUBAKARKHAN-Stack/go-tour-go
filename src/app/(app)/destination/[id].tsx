@@ -500,9 +500,9 @@ export default function DestinationDetails() {
 
       <Modal visible={qrOpen} transparent animationType="fade" onRequestClose={() => setQrOpen(false)}>
         <Pressable className="flex-1 items-center justify-center bg-black/70 px-6" onPress={() => setQrOpen(false)}>
-          <View className="items-center gap-4 rounded-3xl bg-card p-6">
+          <View className="items-center gap-4 rounded-[28px] bg-card p-6">
             <View className="w-full flex-row items-center justify-between">
-              <Text className="text-lg font-bold text-foreground">{d.name}</Text>
+              <Text className="font-display text-xl text-heading">{d.name}</Text>
               <IconButton icon={X} label={tx('Close')} onPress={() => setQrOpen(false)} />
             </View>
             <View className="rounded-2xl bg-white p-4">

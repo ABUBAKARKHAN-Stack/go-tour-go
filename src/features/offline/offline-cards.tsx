@@ -6,7 +6,7 @@ import { Text } from '@/components/text';
 import { requestNotificationPermission } from '@/features/notifications/local-notifications';
 import { formatDistance } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 
 import { offlineMap, type OfflineMapId } from './catalog';
 import { checkBeforeDownload, formatBytes, hasUpdate, offlineDownloads, WIFI_ONLY_ABOVE_BYTES, type DownloadItem } from './downloads';
@@ -118,9 +118,9 @@ export function MapPackCard({ id, item, featured, includedInCountry }: { id: Off
   const toneClass = { muted: 'text-muted-foreground', success: 'text-success', danger: 'text-destructive', accent: 'text-accent' } as const;
 
   return (
-    <View className={`gap-3 rounded-3xl border p-4 ${featured ? 'border-primary bg-primary-soft' : 'border-border bg-card'}`}>
+    <View className={`gap-3 rounded-[20px] p-4 ${featured ? 'border-[1.5px] border-primary bg-primary-soft' : 'bg-card'}`} style={featured ? undefined : cardShadow}>
       <View className="flex-row items-start gap-3">
-        <View className={`h-11 w-11 items-center justify-center rounded-2xl ${featured ? 'bg-primary' : 'bg-secondary'}`}>
+        <View className={`h-11 w-11 items-center justify-center rounded-2xl ${featured ? 'bg-primary' : 'bg-primary-soft'}`}>
           <Icon color={featured ? colors.primaryForeground : colors.primary} size={20} />
         </View>
         <View className="flex-1 gap-0.5">
@@ -177,8 +177,8 @@ export function MapPackCard({ id, item, featured, includedInCountry }: { id: Off
 
 function IconAction({ icon: Icon, label, onPress }: { icon: LucideIcon; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={6} className="h-11 w-11 items-center justify-center rounded-full border border-border bg-card">
-      <Icon color={colors.mutedForeground} size={18} />
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={6} className="h-11 w-11 items-center justify-center rounded-full bg-primary-soft active:opacity-70">
+      <Icon color={colors.primary} size={18} />
     </Pressable>
   );
 }
@@ -196,13 +196,13 @@ export function SavedRouteRow({ saved }: { saved: SavedRoute }) {
           : tx('Saving the map along the route · {0}%', { 0: saved.percent })
         : tx('Route only. Download this area to see the map offline.');
   return (
-    <View className="gap-3 rounded-3xl border border-border bg-card p-4">
+    <View className="gap-3 rounded-[20px] bg-card p-4" style={cardShadow}>
       <View className="flex-row items-center gap-3">
-        <View className="h-11 w-11 items-center justify-center rounded-2xl bg-secondary">
+        <View className="h-11 w-11 items-center justify-center rounded-2xl bg-primary-soft">
           <ModeIcon color={colors.primary} size={20} />
         </View>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+          <Text numberOfLines={1} className="text-base font-semibold text-heading">
             {saved.target.name}
           </Text>
           <Text className="text-xs text-faint">

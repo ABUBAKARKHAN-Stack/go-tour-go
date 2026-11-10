@@ -38,7 +38,7 @@ export default function TrustedContactsScreen() {
         contacts.data!.map((c) => (
           <Card key={c.id} className="flex-row items-center gap-3">
             <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground">{c.name}</Text>
+              <Text className="text-base font-semibold text-heading">{c.name}</Text>
               <Text className="text-sm text-muted-foreground">
                 {c.phone}
                 {c.relationship ? ` · ${c.relationship}` : ''}
@@ -76,7 +76,7 @@ function ContactForm({ contact, saving, onSave, onClose }: { contact: Partial<Tr
 
   return (
     <Card className="gap-3">
-      <Text className="text-base font-semibold text-foreground">{contact.id ? tx('Edit contact') : tx('New contact')}</Text>
+      <Text className="text-base font-semibold text-heading">{contact.id ? tx('Edit contact') : tx('New contact')}</Text>
       {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
       <FormTextField control={control} name="name" label={tx('Name')} placeholder={tx('Ammi')} returnKeyType="next" onSubmitEditing={() => setFocus('phone')} />
       <FormTextField

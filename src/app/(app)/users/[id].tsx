@@ -59,7 +59,7 @@ export default function UserProfileScreen() {
         <>
           <View className="items-center gap-2">
             <Avatar profile={profile.data} size={92} />
-            <Text className="text-2xl font-bold text-foreground">{displayName(profile.data)}</Text>
+            <Text className="text-2xl font-bold text-heading">{displayName(profile.data)}</Text>
             <Text className="text-sm text-muted-foreground">@{profile.data.username}</Text>
             {profile.data.home_city ? (
               <View className="flex-row items-center gap-1">
@@ -75,7 +75,7 @@ export default function UserProfileScreen() {
                 onPress={() => router.push({ pathname: '/follows/[id]', params: { id, tab: 'followers' } })}
               >
                 <Text className="text-sm text-muted-foreground">
-                  <Text className="font-bold text-foreground">{follows.data?.followers ?? 0}</Text>{' '}{tx('followers')}
+                  <Text className="font-bold text-heading">{follows.data?.followers ?? 0}</Text>{' '}{tx('followers')}
                 </Text>
               </Pressable>
               <Pressable
@@ -84,7 +84,7 @@ export default function UserProfileScreen() {
                 onPress={() => router.push({ pathname: '/follows/[id]', params: { id, tab: 'following' } })}
               >
                 <Text className="text-sm text-muted-foreground">
-                  <Text className="font-bold text-foreground">{follows.data?.following ?? 0}</Text>{' '}{tx('following')}
+                  <Text className="font-bold text-heading">{follows.data?.following ?? 0}</Text>{' '}{tx('following')}
                 </Text>
               </Pressable>
             </View>
@@ -135,7 +135,7 @@ export default function UserProfileScreen() {
             </Card>
           ) : null}
 
-          <Text className="text-lg font-bold text-foreground">{tx('Posts')}</Text>
+          <Text className="font-display text-xl text-heading">{tx('Posts')}</Text>
           {feed.isLoading ? (
             <LoadingState variant="feed" />
           ) : posts.length === 0 ? (

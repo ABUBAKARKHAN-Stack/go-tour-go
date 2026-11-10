@@ -81,7 +81,7 @@ export function PlacePicker({ visible, onClose, onPick }: { visible: boolean; on
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View className="flex-1 bg-background" style={{ paddingTop: insets.top + 8 }}>
         <View className="flex-row items-center gap-2 px-4 pb-2">
-          <Text className="flex-1 text-xl font-bold text-foreground">{tx('Add location')}</Text>
+          <Text className="flex-1 text-xl font-bold text-heading">{tx('Add location')}</Text>
           <Pressable accessibilityRole="button" accessibilityLabel={tx('Close')} onPress={onClose} hitSlop={8} className="h-11 w-11 items-center justify-center">
             <X color={colors.foreground} size={22} />
           </Pressable>
@@ -115,11 +115,11 @@ export function PlacePicker({ visible, onClose, onPick }: { visible: boolean; on
               onPress={() => pick(item.tag)}
               className="min-h-14 flex-row items-center gap-3 rounded-2xl px-2 py-2 active:bg-muted"
             >
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
                 {item.landmark ? <Landmark color={colors.primary} size={18} /> : <MapPin color={colors.primary} size={18} />}
               </View>
               <View className="flex-1">
-                <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+                <Text numberOfLines={1} className="text-base font-semibold text-heading">
                   {item.title}
                 </Text>
                 {item.subtitle ? (
@@ -145,7 +145,7 @@ export function PlaceField({ value, onChange }: { value: PlaceTag | null; onChan
   return (
     <View className="gap-2">
       {value ? (
-        <View className="min-h-14 flex-row items-center gap-3 rounded-2xl bg-secondary px-4">
+        <View className="min-h-14 flex-row items-center gap-3 rounded-2xl bg-primary-soft px-4">
           <MapPin color={colors.primary} size={18} />
           <Pressable accessibilityRole="button" accessibilityHint={tx('Change location')} onPress={() => setOpen(true)} className="flex-1 py-3">
             <Text numberOfLines={1} className="text-base font-semibold text-primary">
@@ -161,7 +161,7 @@ export function PlaceField({ value, onChange }: { value: PlaceTag | null; onChan
           <Pressable
             accessibilityRole="button"
             onPress={() => setOpen(true)}
-            className="min-h-14 flex-row items-center gap-3 rounded-2xl border border-border bg-card px-4 active:bg-muted"
+            className="min-h-14 flex-row items-center gap-3 rounded-full bg-primary-soft px-4 active:opacity-80"
           >
             <MapPin color={colors.primary} size={18} />
             <Text className="flex-1 text-base text-foreground">{tx('Add location')}</Text>
@@ -174,7 +174,7 @@ export function PlaceField({ value, onChange }: { value: PlaceTag | null; onChan
                   key={d.id}
                   accessibilityRole="button"
                   onPress={() => onChange({ destinationId: d.id, name: d.name, latitude: d.latitude, longitude: d.longitude })}
-                  className="min-h-9 justify-center rounded-full border border-border bg-card px-3"
+                  className="min-h-9 justify-center rounded-full bg-primary-soft px-3"
                 >
                   <Text numberOfLines={1} className="max-w-48 text-sm text-foreground">
                     {d.name}

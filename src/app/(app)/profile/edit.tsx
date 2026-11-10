@@ -73,7 +73,7 @@ function EditForm({ profile }: { profile: Profile }) {
       <FormTextField control={control} name="bio" label={tx('Bio')} multiline maxLength={280} placeholder={tx('Where have you been? Where next?')} />
       <FormTextField control={control} name="homeCity" label={tx('Home city')} maxLength={80} placeholder={tx('Lahore')} />
       <Card className="gap-3">
-        <Text className="text-base font-semibold text-foreground">{tx('Privacy')}</Text>
+        <Text className="text-base font-semibold text-heading">{tx('Privacy')}</Text>
         <Text className="text-xs text-muted-foreground">{tx('Who can see your profile and posts list')}</Text>
         <Controller
           control={control}

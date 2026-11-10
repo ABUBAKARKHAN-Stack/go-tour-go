@@ -47,7 +47,7 @@ export function EmptyState({
       <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-soft">
         <Icon color={colors.primary} size={28} />
       </View>
-      <Text className="text-center font-display text-xl text-foreground">{title}</Text>
+      <Text className="text-center font-display text-xl text-heading">{title}</Text>
       {message ? <Text className="text-center text-sm text-muted-foreground">{message}</Text> : null}
       {actionLabel && onAction ? <AppButton label={actionLabel} onPress={onAction} variant="secondary" /> : null}
     </View>
@@ -68,7 +68,7 @@ export function ErrorState({
       <View className="h-16 w-16 items-center justify-center rounded-full bg-destructive-soft">
         <AlertTriangle color={colors.destructive} size={26} />
       </View>
-      <Text className="text-center text-base font-semibold text-foreground">{title}</Text>
+      <Text className="text-center text-base font-semibold text-heading">{title}</Text>
       <Text className="text-center text-sm text-muted-foreground">{errorMessage(error)}</Text>
       {onRetry ? <AppButton label={tx('Try again')} onPress={onRetry} variant="secondary" /> : null}
     </View>

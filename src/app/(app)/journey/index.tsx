@@ -183,12 +183,12 @@ export default function JourneyPreview() {
         padding={{ top: insets.top + 84, bottom: sheetHeight }}
       />
 
-      <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-3xl bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(21,56,79,0.10)' }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
+      <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-[20px] bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(21,56,79,0.10)' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
           <ArrowLeft color={colors.foreground} size={20} style={flipX} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-base font-semibold text-foreground">{tx('Your location → {0}', { 0: target.name })}</Text>
+          <Text numberOfLines={1} className="text-base font-semibold text-heading">{tx('Your location → {0}', { 0: target.name })}</Text>
           <Text numberOfLines={1} className="text-xs text-faint">
             {via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}
           </Text>
@@ -229,7 +229,7 @@ export default function JourneyPreview() {
                         journeyStore.selectMode(mode);
                         setPrefs({ travelMode: mode });
                       }}
-                      className={`min-h-10 flex-row items-center gap-1.5 rounded-full px-3.5 ${selected ? 'bg-primary' : 'bg-secondary'} ${disabled ? 'opacity-40' : ''}`}
+                      className={`min-h-10 flex-row items-center gap-1.5 rounded-full px-3.5 ${selected ? 'bg-primary' : 'bg-primary-soft'} ${disabled ? 'opacity-40' : ''}`}
                     >
                       <Icon color={selected ? colors.primaryForeground : colors.mutedForeground} size={16} />
                       <Text className={`text-sm font-semibold ${selected ? 'text-white' : 'text-muted-foreground'}`}>
@@ -247,7 +247,7 @@ export default function JourneyPreview() {
                 </View>
               ) : !route ? (
                 <View className="gap-3 py-2">
-                  <Text className="font-display text-2xl text-foreground">{tx('No route found')}</Text>
+                  <Text className="font-display text-2xl text-heading">{tx('No route found')}</Text>
                   <Text className="text-sm text-muted-foreground">{journey.error ?? tx('Check your internet connection and try again.')}</Text>
                   <AppButton
                     label={tx('Try again')}
@@ -321,7 +321,7 @@ function ItemRow({ item }: { item: JourneyItem }) {
         {hazard ? <TriangleAlert color={colors.destructive} size={18} /> : <Landmark color={colors.primary} size={18} />}
       </View>
       <View className="flex-1">
-        <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+        <Text numberOfLines={1} className="text-base font-semibold text-heading">
           {item.name}
         </Text>
         <Text numberOfLines={1} className="text-xs text-faint">

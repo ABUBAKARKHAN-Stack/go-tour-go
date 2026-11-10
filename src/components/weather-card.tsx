@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { describeWeather, useWeather } from '@/features/weather/api';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 function Stat({ icon: Icon, label, value }: { icon: typeof Sun; label: string; value: string }) {
@@ -12,7 +12,7 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Sun; label: string; v
       <Icon color={colors.primary} size={16} />
       <View>
         <Text className="text-[10px] uppercase text-muted-foreground">{label}</Text>
-        <Text className="text-sm font-semibold text-foreground">{value}</Text>
+        <Text className="text-sm font-semibold text-heading">{value}</Text>
       </View>
     </View>
   );
@@ -23,11 +23,11 @@ export function WeatherCard({ point, title = 'Weather' }: { point: { latitude: n
   const { data, isLoading, isError } = useWeather(point);
 
   return (
-    <View className="gap-3 rounded-3xl border border-border bg-card p-4">
+    <View className="gap-3 rounded-[20px] bg-card p-4" style={cardShadow}>
       <View className="flex-row items-center gap-2">
         <CloudSun color={colors.primary} size={18} />
-        <Text className="flex-1 text-base font-semibold text-foreground">{title}</Text>
-        {data ? <Text className="text-2xl font-bold text-foreground">{Math.round(data.temperature)}°C</Text> : null}
+        <Text className="flex-1 text-base font-semibold text-heading">{title}</Text>
+        {data ? <Text className="text-2xl font-bold text-heading">{Math.round(data.temperature)}°C</Text> : null}
       </View>
       {!point ? (
         <Text className="text-sm text-muted-foreground">{tx('Turn on location to see local weather.')}</Text>

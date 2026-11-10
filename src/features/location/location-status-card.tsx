@@ -10,7 +10,7 @@ import {
 } from '@/features/location/location-provider';
 import { useLocationState } from '@/features/location/location-store';
 import { requestNotificationPermission } from '@/features/notifications/local-notifications';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 /**
@@ -57,10 +57,10 @@ export function LocationStatusCard({ compact }: { compact?: boolean }) {
   }
 
   return (
-    <View className="gap-2 rounded-3xl border border-border bg-card p-4" accessibilityRole="alert">
+    <View className="gap-2 rounded-[20px] bg-card p-4" style={cardShadow} accessibilityRole="alert">
       <View className="flex-row items-center gap-2">
         <MapPinOff color={colors.primary} size={18} />
-        <Text className="flex-1 text-base font-semibold text-foreground">{title}</Text>
+        <Text className="flex-1 text-base font-semibold text-heading">{title}</Text>
       </View>
       <Text className="text-sm text-muted-foreground">{message}</Text>
       {action ? <AppButton label={action.label} icon={action.icon} onPress={action.onPress} size="sm" variant="secondary" /> : null}

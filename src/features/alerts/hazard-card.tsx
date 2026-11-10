@@ -129,7 +129,7 @@ export function HazardCardOverlay() {
 
 function Pill({ label, icon, tone }: { label: string; icon?: React.ReactNode; tone?: 'danger' }) {
   return (
-    <View className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${tone === 'danger' ? 'bg-destructive-soft' : 'bg-secondary'}`}>
+    <View className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${tone === 'danger' ? 'bg-destructive-soft' : 'bg-primary-soft'}`}>
       {icon}
       <Text className={`text-xs font-semibold ${tone === 'danger' ? 'text-destructive' : 'text-muted-foreground'}`}>{label}</Text>
     </View>

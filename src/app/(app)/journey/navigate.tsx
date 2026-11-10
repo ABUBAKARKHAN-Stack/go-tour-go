@@ -92,7 +92,7 @@ export default function JourneyNavigate() {
   if (phase === 'idle' || !route) {
     return (
       <View className="flex-1 items-center justify-center gap-4 bg-background px-8">
-        <Text className="text-center font-display text-2xl text-foreground">{tx('No journey in progress')}</Text>
+        <Text className="text-center font-display text-2xl text-heading">{tx('No journey in progress')}</Text>
         <AppButton label={tx('Plan a journey')} onPress={() => router.replace('/search')} />
       </View>
     );
@@ -178,7 +178,7 @@ export default function JourneyNavigate() {
         padding={{ top: insets.top + 190, bottom: insets.bottom + 120 }}
       />
 
-      <View className="absolute left-3 right-3 overflow-hidden rounded-3xl bg-primary" style={{ top: insets.top + 8, boxShadow: '0 8px 24px rgba(15,76,74,0.30)' }}>
+      <View className="absolute left-3 right-3 overflow-hidden rounded-[20px] bg-primary" style={{ top: insets.top + 8, boxShadow: '0 8px 24px rgba(21,56,79,0.30)' }}>
         <View className="flex-row items-center gap-4 px-4 py-4">
           <ManeuverIcon step={next} />
           <View className="flex-1">
@@ -207,7 +207,7 @@ export default function JourneyNavigate() {
             style={{ boxShadow: '0 2px 8px rgba(21,56,79,0.10)' }}
           >
             {upcoming.kind === 'hazard' ? <TriangleAlert color={colors.destructive} size={15} /> : <Landmark color={colors.accent} size={15} />}
-            <Text className="text-xs font-semibold text-foreground">
+            <Text className="text-xs font-semibold text-heading">
               {upcoming.name} {upcoming.along > along ? tx('ahead · {0}', { 0: formatDistance(upcoming.along - along) }) : 'nearby'}
             </Text>
           </View>

@@ -16,7 +16,7 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { tx } from '@/lib/i18n';
-import { colors } from '@/lib/theme';
+import { brandGradient, colors } from '@/lib/theme';
 import type { PostComment } from '@/lib/types';
 
 export default function PostDetail() {
@@ -81,7 +81,7 @@ export default function PostDetail() {
             ListHeaderComponent={
               <View className="gap-3 pb-1">
                 <PostCard post={post.data} userId={userId} detail />
-                <Text className="text-base font-bold text-foreground">{count ? tx('Comments ({0})', { 0: count }) : tx('Comments')}</Text>
+                <Text className="text-base font-bold text-heading">{count ? tx('Comments ({0})', { 0: count }) : tx('Comments')}</Text>
               </View>
             }
             ListEmptyComponent={
@@ -104,9 +104,9 @@ export default function PostDetail() {
                 >
                   <Avatar profile={item.author} size={32} />
                   <View className="flex-1 gap-1">
-                    <View className="rounded-2xl bg-card px-3 py-2">
+                    <View className="rounded-[18px] rounded-tl-md bg-primary-soft px-3 py-2">
                       <View className="flex-row items-center gap-1.5">
-                        <Text numberOfLines={1} className="shrink text-xs font-semibold text-foreground">
+                        <Text numberOfLines={1} className="shrink text-xs font-semibold text-heading">
                           {displayName(item.author)}
                         </Text>
                         {isAuthor ? (
@@ -155,14 +155,15 @@ export default function PostDetail() {
               placeholderTextColor={`${colors.mutedForeground}99`}
               multiline
               maxLength={500}
-              className="max-h-28 min-h-12 flex-1 rounded-3xl bg-input px-4 py-3 text-base text-foreground"
+              className="max-h-28 min-h-12 flex-1 rounded-[24px] border border-border-strong bg-card px-4 py-3 text-base text-foreground"
             />
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={tx('Send comment')}
               onPress={send}
               disabled={!text.trim()}
-              className={`h-12 w-12 items-center justify-center rounded-full ${text.trim() ? 'bg-accent' : 'bg-muted'}`}
+              className="h-12 w-12 items-center justify-center rounded-full"
+              style={text.trim() ? { experimental_backgroundImage: brandGradient } : { backgroundColor: colors.muted }}
             >
               <Send color={text.trim() ? colors.accentForeground : colors.mutedForeground} size={18} />
             </Pressable>

@@ -11,7 +11,7 @@ import { useUnreadConversations } from '@/features/inbox/api';
 import { otherParticipant, useConversations } from '@/features/messaging/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
 export default function ConversationsScreen() {
@@ -46,7 +46,8 @@ export default function ConversationsScreen() {
             return (
               <Pressable
                 onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
-                className="min-h-16 flex-row items-center gap-3 rounded-2xl bg-card p-3"
+                className="min-h-16 flex-row items-center gap-3 rounded-[20px] bg-card p-3 active:bg-muted"
+                style={cardShadow}
               >
                 <Avatar profile={other} size={46} />
                 <View className="flex-1">
@@ -57,7 +58,7 @@ export default function ConversationsScreen() {
                     {isUnread ? <View accessibilityLabel={tx('Unread')} className="h-2.5 w-2.5 rounded-full bg-accent" /> : null}
                     {item.last_message_at ? <Text className="text-xs text-muted-foreground">{timeAgo(item.last_message_at)}</Text> : null}
                   </View>
-                  <Text numberOfLines={1} className={`text-sm ${isUnread ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                  <Text numberOfLines={1} className={`text-sm ${isUnread ? 'font-semibold text-heading' : 'text-muted-foreground'}`}>
                     {item.last_message_preview ?? tx('Say hello 👋')}
                   </Text>
                 </View>

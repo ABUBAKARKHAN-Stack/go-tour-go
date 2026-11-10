@@ -73,10 +73,10 @@ export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onCl
         </View>
         <View className="flex-row items-start gap-3">
           <View className="flex-1 gap-1">
-            <Text className="font-display text-2xl text-foreground">{tx('Report a hazard')}</Text>
+            <Text className="font-display text-2xl text-heading">{tx('Report a hazard')}</Text>
             <Text className="text-sm text-muted-foreground">{tx('At your current location. Reports expire on their own.')}</Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={tx('Close')} hitSlop={10} onPress={close} className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
+          <Pressable accessibilityRole="button" accessibilityLabel={tx('Close')} hitSlop={10} onPress={close} className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
             <X color={colors.foreground} size={18} />
           </Pressable>
         </View>

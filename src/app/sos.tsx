@@ -16,7 +16,7 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { endShareLink, isShareToken, shareUrl, useSharedLocation, type SharedLocation } from '@/features/safety/share-links';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { flipX, tx } from '@/lib/i18n';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 
 const EMERGENCY = [
   { number: '15', label: tx('Police') },
@@ -38,10 +38,10 @@ export default function SharedLocationScreen() {
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const header = (title: string) => (
     <View className="flex-row items-center gap-3 px-4 pb-2" style={{ paddingTop: insets.top + 8 }}>
-      <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-secondary">
+      <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
         <ArrowLeft color={colors.foreground} size={20} style={flipX} />
       </Pressable>
-      <Text numberOfLines={1} className="flex-1 font-display text-2xl text-foreground">
+      <Text numberOfLines={1} className="flex-1 font-display text-2xl text-heading">
         {title}
       </Text>
     </View>
@@ -132,7 +132,7 @@ function ActiveLocation({ token, data, header }: { token: string; data: SharedLo
   return (
     <View className="flex-1 bg-background">
       {header(sos ? tx('SOS from {0}', { 0: data.name }) : tx("{0}'s location", { 0: data.name }))}
-      <View className="mx-4 h-72 overflow-hidden rounded-3xl border border-border bg-muted">
+      <View className="mx-4 h-72 overflow-hidden rounded-[20px] bg-muted">
         <Map style={{ flex: 1 }} mapStyle={mapStyle as never} logo={false} attributionPosition={{ bottom: 8, left: 8 }}>
           <Camera center={[position.longitude, position.latitude]} zoom={15} />
           <ViewAnnotation id="shared-person" lngLat={[position.longitude, position.latitude]}>
@@ -149,7 +149,7 @@ function ActiveLocation({ token, data, header }: { token: string; data: SharedLo
       </View>
 
       <ScrollView contentContainerClassName="gap-4 px-4 pt-4" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
-        <View className={`gap-1 rounded-3xl p-4 ${sos ? 'bg-destructive-soft' : 'bg-primary-soft'}`}>
+        <View className={`gap-1 rounded-[20px] p-4 ${sos ? 'bg-destructive-soft' : 'bg-primary-soft'}`}>
           <View className="flex-row items-center gap-2">
             {data.live ? <Radio color={sos ? colors.destructive : colors.primary} size={16} /> : <Clock color={colors.mutedForeground} size={16} />}
             <Text className={`flex-1 text-sm font-semibold ${sos ? 'text-destructive' : 'text-primary'}`}>
@@ -205,7 +205,8 @@ function EmergencyRow() {
           accessibilityRole="button"
           accessibilityLabel={tx('Call {0} {1}', { 0: n.label, 1: n.number })}
           onPress={() => Linking.openURL(`tel:${n.number}`)}
-          className="min-h-16 flex-1 items-center justify-center rounded-2xl border border-border bg-card"
+          className="min-h-16 flex-1 items-center justify-center rounded-[20px] bg-card"
+          style={cardShadow}
         >
           <Text className="text-lg font-bold text-destructive">{n.number}</Text>
           <Text className="text-[11px] text-muted-foreground">{n.label}</Text>

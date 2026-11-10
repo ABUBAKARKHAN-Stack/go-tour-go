@@ -13,7 +13,7 @@ import { LocationStatusCard } from '@/features/location/location-status-card';
 import { useNearbyServices } from '@/features/nearby/api';
 import { navigateTo } from '@/features/routing/navigate';
 import { formatDistance } from '@/lib/geo';
-import { colors } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import type { ServiceCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 
@@ -67,12 +67,12 @@ export default function NearbyScreen() {
           renderItem={({ item }) => {
             const Icon = SERVICE_CATEGORIES[item.category].icon;
             return (
-              <View className="flex-row items-center gap-3 rounded-3xl border border-border bg-card p-3">
-                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-secondary">
+              <View className="flex-row items-center gap-3 rounded-[20px] bg-card p-3" style={cardShadow}>
+                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-primary-soft">
                   <Icon color={SERVICE_CATEGORIES[item.category].color} size={20} />
                 </View>
                 <View className="flex-1">
-                  <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+                  <Text numberOfLines={1} className="text-base font-semibold text-heading">
                     {item.name}
                   </Text>
                   <View className="flex-row items-center gap-2">
@@ -91,7 +91,7 @@ export default function NearbyScreen() {
                   </View>
                 </View>
                 {item.phone ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={tx('Call {0}', { 0: item.name })} onPress={() => Linking.openURL(`tel:${item.phone}`)} className="h-11 w-11 items-center justify-center rounded-full bg-secondary">
+                  <Pressable accessibilityRole="button" accessibilityLabel={tx('Call {0}', { 0: item.name })} onPress={() => Linking.openURL(`tel:${item.phone}`)} className="h-11 w-11 items-center justify-center rounded-full bg-primary-soft">
                     <Phone color={colors.foreground} size={18} />
                   </Pressable>
                 ) : null}

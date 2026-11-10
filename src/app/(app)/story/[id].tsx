@@ -15,6 +15,7 @@ import { markStorySeen, orderStoryAuthors, useSeenStories } from '@/features/com
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { tx } from '@/lib/i18n';
+import { colors } from '@/lib/theme';
 
 const STORY_MS = 6000;
 const MAX_VIDEO_MS = 60_000;
@@ -185,7 +186,7 @@ export default function StoryViewer() {
               onPress={() => story.destination_id && router.replace({ pathname: '/destination/[id]', params: { id: story.destination_id } })}
               className="flex-row items-center gap-1 self-start"
             >
-              <MapPin color="#EDB158" size={14} />
+              <MapPin color={colors.sky} size={14} />
               <Text className="text-sm text-accent">{story.place_name}</Text>
             </Pressable>
           ) : null}
