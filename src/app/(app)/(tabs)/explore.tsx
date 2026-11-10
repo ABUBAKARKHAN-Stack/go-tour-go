@@ -32,12 +32,14 @@ import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/
 import { getCurrentFix, requestLocationPermission } from '@/features/location/location-provider';
 import { useLastLocation, useLocationState } from '@/features/location/location-store';
 import { LocationStatusCard } from '@/features/location/location-status-card';
+import { validHeading } from '@/features/map/nav-arrow';
 import { PlacePreview } from '@/features/map/place-preview';
 import { TravelMap, type TravelMapHandle } from '@/features/map/travel-map';
 import { useJourney } from '@/features/journey/journey-store';
 import { useSavedIds } from '@/features/saved/api';
 import { useFriendLocations } from '@/features/safety/friend-locations';
 import { useSharingSession, isSessionLive } from '@/features/safety/sharing';
+import { bearingTo } from '@/features/proximity/heading';
 import { useSimulator } from '@/features/proximity/simulator';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { storage, StorageKeys, useStorage } from '@/lib/storage';
@@ -132,6 +134,16 @@ export default function ExploreScreen() {
   }
 
   const showFriendMarkers = showFriends && Boolean(userId);
+  // During a journey you are an arrow pointing along the route (the route's
+  // direction where you are, else your GPS course, else towards the destination).
+  const arrow =
+    journeyActive && journey.route && location
+      ? {
+          longitude: location.longitude,
+          latitude: location.latitude,
+          bearing: journey.progress?.bearing ?? validHeading(location.heading) ?? bearingTo(location, journey.route.to),
+        }
+      : null;
   const sharingLive = isSessionLive(sharing);
 
   return (
@@ -148,6 +160,7 @@ export default function ExploreScreen() {
         navigating={false}
         simulatedFix={location?.simulated ? location : null}
         showUser={locationState.permission === 'granted'}
+        arrow={arrow}
         initialCenter={initial.center}
         initialZoom={initial.zoom}
         onSelectDestination={(id) => {
