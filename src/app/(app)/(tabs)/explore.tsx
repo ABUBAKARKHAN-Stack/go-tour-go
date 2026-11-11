@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   Bookmark,
   ChevronDown,
-  ChevronUp,
   CircleDashed,
   Crosshair,
   Download,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
@@ -22,7 +22,7 @@ import { Chip } from '@/components/form';
 import { OfflineBanner } from '@/components/offline-banner';
 import { ErrorState } from '@/components/states';
 import { useRoadAlerts } from '@/features/alerts/api';
-import { hazardCard } from '@/features/alerts/hazard-card-store';
+import { hazardCard, useHazardCard } from '@/features/alerts/hazard-card-store';
 import { ReportHazardSheet } from '@/features/alerts/report-hazard-sheet';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { useAuth } from '@/features/auth/auth-provider';
@@ -40,12 +40,21 @@ import { useSavedIds } from '@/features/saved/api';
 import { useFriendLocations } from '@/features/safety/friend-locations';
 import { useSharingSession, isSessionLive } from '@/features/safety/sharing';
 import { bearingTo } from '@/features/proximity/heading';
+import { useProximityCard } from '@/features/proximity/proximity-store';
 import { useSimulator } from '@/features/proximity/simulator';
 import { distanceMeters, formatDistance } from '@/lib/geo';
+import { CSS_EASE_OUT, EASE_OUT } from '@/lib/motion';
 import { storage, StorageKeys, useStorage } from '@/lib/storage';
 import { colors, shadow } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
+
+// Panel motion: the height follows Hide / Show, the cards fade; it slides away for an alert card.
+const PANEL_LAYOUT = LinearTransition.duration(240).easing(EASE_OUT).reduceMotion(ReduceMotion.System);
+const PANEL_IN = FadeInDown.duration(220).easing(EASE_OUT).reduceMotion(ReduceMotion.System);
+const PANEL_OUT = FadeOutDown.duration(160).reduceMotion(ReduceMotion.System);
+const CARDS_IN = FadeIn.duration(200).delay(60).reduceMotion(ReduceMotion.System);
+const CARDS_OUT = FadeOut.duration(120).reduceMotion(ReduceMotion.System);
 
 const PAKISTAN_CENTER: [number, number] = [70.5, 30.5];
 
@@ -77,6 +86,8 @@ export default function ExploreScreen() {
   const [showFriends, setShowFriends] = useState(true);
   const [mapError, setMapError] = useState(false);
   const ratings = useRatings();
+  const proximityVisible = useProximityCard().visible;
+  const hazardVisible = useHazardCard().visible;
   // Starts open on tall phones; on short ones it would sit under the map buttons.
   const [nearbyOpen] = useStorage(StorageKeys.exploreNearbyOpen, height >= 720);
 
@@ -134,6 +145,7 @@ export default function ExploreScreen() {
   }
 
   const showFriendMarkers = showFriends && Boolean(userId);
+  const alertCardUp = proximityVisible || hazardVisible;
   // During a journey you are an arrow pointing along the route (the route's
   // direction where you are, else your GPS course, else towards the destination).
   const arrow =
@@ -272,28 +284,39 @@ export default function ExploreScreen() {
           </View>
         ) : selected ? (
           <PlacePreview place={selected} location={location} saved={savedSet.has(selected.id)} />
-        ) : nearby.length ? (
-          <View className="rounded-[28px] bg-background pt-1.5" style={{ boxShadow: shadow(0.14, 6, 24) }}>
+        ) : nearby.length && !alertCardUp ? (
+          // Steps aside while a landmark or hazard card is up (they share the bottom of the screen).
+          <Animated.View
+            entering={PANEL_IN}
+            exiting={PANEL_OUT}
+            layout={PANEL_LAYOUT}
+            className="overflow-hidden rounded-[28px] bg-background pt-1.5"
+            style={{ boxShadow: shadow(0.14, 6, 24) }}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ expanded: nearbyOpen }}
               onPress={() => storage.set(StorageKeys.exploreNearbyOpen, !nearbyOpen)}
               className="min-h-11 flex-row items-center justify-between px-4 active:opacity-70"
             >
-              <Text className="font-display text-[18px] text-heading">{location ? tx('Popular places nearby') : tx('Popular destinations')}</Text>
-              <View className="flex-row items-center gap-0.5">
-                <Text className="text-sm font-semibold text-accent">{nearbyOpen ? tx('Hide') : tx('Show')}</Text>
-                {nearbyOpen ? <ChevronDown color={colors.accent} size={16} /> : <ChevronUp color={colors.accent} size={16} />}
+              <Text className="font-display text-[17px] leading-6 text-heading">{location ? tx('Popular places nearby') : tx('Popular destinations')}</Text>
+              <View className="flex-row items-center gap-1">
+                <Text className="text-[13px] font-semibold text-accent">{nearbyOpen ? tx('Hide') : tx('Show')}</Text>
+                <Animated.View style={{ transform: [{ rotate: nearbyOpen ? '0deg' : '180deg' }], transitionProperty: 'transform', transitionDuration: 220, transitionTimingFunction: CSS_EASE_OUT }}>
+                  <ChevronDown color={colors.accent} size={16} />
+                </Animated.View>
               </View>
             </Pressable>
             {nearbyOpen ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 px-4 pb-4 pt-1.5">
-                {nearby.map(({ d, dist }) => (
-                  <DestinationCard key={d.id} destination={d} distance={dist} rating={ratings.data?.[d.id]?.average_rating} width={156} />
-                ))}
-              </ScrollView>
+              <Animated.View entering={CARDS_IN} exiting={CARDS_OUT}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 px-4 pb-4 pt-1.5">
+                  {nearby.map(({ d, dist }) => (
+                    <DestinationCard key={d.id} destination={d} distance={dist} rating={ratings.data?.[d.id]?.average_rating} width={156} />
+                  ))}
+                </ScrollView>
+              </Animated.View>
             ) : null}
-          </View>
+          </Animated.View>
         ) : null}
       </View>
       <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />

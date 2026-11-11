@@ -8,12 +8,12 @@ import type { Route } from '@/features/routing/osrm';
 import { NavArrow, validHeading } from '@/features/map/nav-arrow';
 import { useMapStyle } from '@/features/offline/use-map-style';
 import { bearingTo } from '@/features/proximity/heading';
-import { boundsOf } from '@/lib/geo';
+import { boundsOf, distanceMeters } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 
 import type { JourneyItem } from './journey-items';
 import type { NavProgress } from './navigation';
-import { remainingLine, type RouteIndex } from './route-geometry';
+import { pointAlong, remainingLine, type RouteIndex } from './route-geometry';
 
 type Props = {
   route: Route | null;
@@ -57,6 +57,50 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
     const c = route?.coordinates;
     return c && c.length > 1 ? bearingTo({ longitude: c[0][0], latitude: c[0][1] }, { longitude: c[1][0], latitude: c[1][1] }) : 0;
   }, [progress, fix?.heading, route]);
+
+  // Each pin sits beside the route, on the side where the place is (right of
+  // the road when it is on the road), so the route line stays visible; a small
+  // dot marks the exact spot on the map.
+  const placed = useMemo(
+    () =>
+      items.map((item) => {
+        if (!index) return { item, perp: null as number | null };
+        const at = pointAlong(index, item.along);
+        const side =
+          distanceMeters(at, item) < 25 ? 1 : Math.sin(((bearingTo(at, item) - at.bearing) * Math.PI) / 180) >= 0 ? 1 : -1;
+        return { item, perp: (at.bearing + 90 * side + 360) % 360 };
+      }),
+    [items, index],
+  );
+  // The destination pin sits just past the end of the route, in the direction of arrival.
+  const arrival = useMemo(() => {
+    const c = route?.coordinates;
+    if (!c || c.length < 2) return 0;
+    const [a, b] = [c[c.length - 2], c[c.length - 1]];
+    return bearingTo({ longitude: a[0], latitude: a[1] }, { longitude: b[0], latitude: b[1] });
+  }, [route]);
+  const dots = useMemo<GeoJSON.FeatureCollection>(
+    () => ({
+      type: 'FeatureCollection',
+      features: [
+        ...items.map((item) => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [item.longitude, item.latitude] },
+          properties: { color: item.kind === 'hazard' ? colors.destructive : colors.primary, passed: Boolean(progress && item.along < progress.along) },
+        })),
+        ...(route
+          ? [{ type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [route.to.longitude, route.to.latitude] }, properties: { color: colors.accent, passed: false } }]
+          : []),
+      ],
+    }),
+    [items, route, progress],
+  );
+  // Screen offset for a direction on the map: the map turns with the traveller while navigating.
+  const camBearing = follow ? bearing : 0;
+  const offsetToward = (mapBearing: number, r: number): [number, number] => {
+    const t = ((mapBearing - camBearing) * Math.PI) / 180;
+    return [Math.round(Math.sin(t) * r), Math.round(-Math.cos(t) * r)];
+  };
 
   const cameraStop =
     follow && here
@@ -105,10 +149,29 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
         </GeoJSONSource>
       ) : null}
 
-      {/* Pins stand on their tip, so the head sits above the route instead of covering it. */}
-      {items.map((item) => (
-        <ViewAnnotation key={item.id} id={`journey-${item.id}`} lngLat={[item.longitude, item.latitude]} anchor="bottom">
-          <Pin
+      <GeoJSONSource id="journey-dots" data={dots}>
+        <Layer
+          type="circle"
+          id="journey-dot"
+          paint={{
+            'circle-radius': 4.5,
+            'circle-color': ['get', 'color'] as never,
+            'circle-stroke-color': '#FFFFFF',
+            'circle-stroke-width': 2,
+            'circle-opacity': ['case', ['get', 'passed'], 0.5, 1] as never,
+            'circle-stroke-opacity': ['case', ['get', 'passed'], 0.5, 1] as never,
+          }}
+        />
+      </GeoJSONSource>
+
+      {placed.map(({ item, perp }) => (
+        <ViewAnnotation
+          key={item.id}
+          id={`journey-${item.id}`}
+          lngLat={[item.longitude, item.latitude]}
+          offset={perp == null ? [0, -PIN_GAP] : offsetToward(perp, PIN_GAP)}
+        >
+          <PinHead
             color={item.kind === 'hazard' ? colors.destructive : colors.primary}
             icon={item.kind === 'hazard' ? TriangleAlert : Landmark}
             faded={Boolean(progress && item.along < progress.along)}
@@ -117,8 +180,8 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
       ))}
 
       {route ? (
-        <ViewAnnotation id="journey-destination" lngLat={[route.to.longitude, route.to.latitude]} anchor="bottom">
-          <Pin color={colors.accent} icon={MapPin} size={32} />
+        <ViewAnnotation id="journey-destination" lngLat={[route.to.longitude, route.to.latitude]} offset={offsetToward(arrival, PIN_GAP + 3)}>
+          <PinHead color={colors.accent} icon={MapPin} size={36} />
         </ViewAnnotation>
       ) : null}
 
@@ -139,18 +202,19 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
 const ROUTE_WIDTH = ['interpolate', ['linear'], ['zoom'], 8, 2.5, 12, 3.5, 15, 5, 18, 7.5];
 const ROUTE_CASING_WIDTH = ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 5.5, 15, 7.5, 18, 10.5];
 
-/** Small map pin: a round head with an icon over a short stem whose tip marks the spot. */
-function Pin({ color, icon: Icon, size = 24, faded }: { color: string; icon: LucideIcon; size?: number; faded?: boolean }) {
+/** Distance in px from the spot on the map to the centre of its pin. */
+const PIN_GAP = 26;
+
+/** Round marker with an icon, drawn beside the route (its spot is the small dot on the line). */
+function PinHead({ color, icon: Icon, size = 32, faded }: { color: string; icon: LucideIcon; size?: number; faded?: boolean }) {
   return (
-    <View className="items-center" style={{ opacity: faded ? 0.5 : 1 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View
-        className="items-center justify-center rounded-full border-2 border-white"
-        style={{ width: size, height: size, backgroundColor: color, boxShadow: '0 2px 6px rgba(21, 56, 79, 0.3)' }}
-      >
-        <Icon color="#FFFFFF" size={Math.round(size * 0.5)} />
-      </View>
-      <View style={{ width: 2, height: 7, backgroundColor: color, marginTop: -1 }} />
-      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: color, marginTop: -2, borderWidth: 1, borderColor: '#FFFFFF' }} />
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      className="items-center justify-center rounded-full border-[2.5px] border-white"
+      style={{ width: size, height: size, backgroundColor: color, opacity: faded ? 0.5 : 1, boxShadow: '0 2px 8px rgba(21, 56, 79, 0.3)' }}
+    >
+      <Icon color="#FFFFFF" size={Math.round(size * 0.5)} />
     </View>
   );
 }
