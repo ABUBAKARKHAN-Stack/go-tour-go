@@ -137,7 +137,7 @@ function RootNavigator() {
       </Stack.Protected>
       {/* Reachable from the password-reset email deep link in any state. */}
       <Stack.Screen name="reset-password" />
-      {/* SOS and live-location links (go-tour-go-development.expo.app/sos?t=…), viewable signed in or not. */}
+      {/* SOS and live-location links (go-tour-go.expo.app/sos?t=…), viewable signed in or not. */}
       <Stack.Screen name="sos" />
       <Stack.Screen name="live" />
     </Stack>

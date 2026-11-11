@@ -15,7 +15,7 @@ test('builds an encoded wa.me link', () => {
 });
 
 test('SOS message uses the GoTourGo link, never Google Maps', () => {
-  const link = 'https://go-tour-go-development.expo.app/sos?t=' + 'a'.repeat(32);
+  const link = 'https://go-tour-go.expo.app/sos?t=' + 'a'.repeat(32);
   const withLink = sosMessage('Ayesha', link, 24.86, 67.03);
   expect(withLink).toContain(link);
   expect(withLink).not.toContain('google');

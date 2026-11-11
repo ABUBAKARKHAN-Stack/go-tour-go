@@ -282,7 +282,9 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 - Pages in `site/`; build with `node scripts/build-share-site.mjs` (writes `site-dist/`, including
   `.well-known/assetlinks.json` for App Links).
 - Deploy (owner's step, tell them first): `bunx eas-cli deploy --export-dir site-dist --prod`.
-- Deployed at https://go-tour-go-development.expo.app (`SHARE_SITE` in `src/features/safety/share-links.ts`).
+- Deployed at https://go-tour-go.expo.app (`SHARE_SITE` in `src/features/safety/share-links.ts`). It moved there
+  from go-tour-go-development.expo.app (Nov 2026); links already sent keep the old address. The Android App
+  Links filter in `app.json` lists both hosts, so either opens the app (needs an APK built after that change).
   The SHA-256 cert fingerprint in assetlinks was confirmed by the owner.
 - Links: `/sos?t=<token>` and `/live?t=<token>`; in the app they open `src/app/sos.tsx` / `live.tsx`.
 - Shared posts: `/p?id=<post id>` (`site/post.html`, `site/assets/post.js`, RPC `get_shared_post`: only posts by
@@ -333,7 +335,7 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 | Step | State |
 |---|---|
 | OTA publish + offline tests of PR 5 | Done (Lahore offline, Karachi land, offline sign-in passed) |
-| EAS Hosting deploy of the share site | Done: go-tour-go-development.expo.app (assetlinks confirmed) |
+| EAS Hosting deploy of the share site | Done: go-tour-go.expo.app (assetlinks confirmed) |
 | APK build for PR 6 | Done by the owner: build `4df88d41` (5 Nov) |
 | OTA update with #28 + tests | Done, all working (6 Nov) |
 | OTA update with #29 (community) + tests | **Pending** (owner: `bunx eas-cli update --channel preview`) |
@@ -349,7 +351,7 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
    - comments: appear instantly, Reply prefills @username, Delete asks first, counts stay right;
    - stories: progress bar fills, hold pauses, seen authors turn grey and move last, the viewer continues
      to the next person, own story is the first bubble with +.
-   Also PR 6: SOS from Safety (WhatsApp message carries `https://go-tour-go-development.expo.app/sos?t=…`,
+   Also PR 6: SOS from Safety (WhatsApp message carries `https://go-tour-go.expo.app/sos?t=…`,
    which opens the in-app SOS screen on the phone and the web page on a desktop); "I'm safe" ends it;
    Share live link. Add the passing checks to `docs/TESTING.md`.
 2. Then section 0 "Remaining work" in order.
