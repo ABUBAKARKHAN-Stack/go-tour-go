@@ -53,6 +53,18 @@ mkdirSync(out, { recursive: true });
 writeFileSync(join(out, '.gitignore'), '*\n');
 cpSync(src, out, { recursive: true });
 
+// The app's fonts, served with the site (no third-party font requests).
+const fonts = join(out, 'assets', 'fonts');
+mkdirSync(fonts, { recursive: true });
+for (const [pkg, file] of [
+  ['outfit', '700Bold/Outfit_700Bold.ttf'],
+  ['plus-jakarta-sans', '400Regular/PlusJakartaSans_400Regular.ttf'],
+  ['plus-jakarta-sans', '600SemiBold/PlusJakartaSans_600SemiBold.ttf'],
+  ['plus-jakarta-sans', '700Bold/PlusJakartaSans_700Bold.ttf'],
+]) {
+  cpSync(join(root, 'node_modules', '@expo-google-fonts', pkg, file), join(fonts, file.split('/').pop()));
+}
+
 // One page serves both link kinds; both URL shapes resolve on static hosting.
 const share = readFileSync(join(src, 'share.html'), 'utf8');
 for (const kind of ['sos', 'live']) {
