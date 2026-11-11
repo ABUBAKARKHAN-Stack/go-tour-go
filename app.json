@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "GoTourGo",
-    "slug": "go-tour-go-development",
+    "slug": "go-tour-go",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "fingerprint"
@@ -13,7 +13,7 @@
     },
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
-    "scheme": "gotourgodevelopment",
+    "scheme": "gotourgo",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F6FAFC",
     "ios": {
@@ -27,7 +27,7 @@
         "monochromeImage": "./assets/brand/monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.abubakaraijaz.gotourgodevelopment",
+      "package": "com.abubakaraijaz.gotourgo",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -51,12 +51,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "go-tour-go-development.expo.app",
+              "host": "go-tour-go.expo.app",
               "pathPrefix": "/sos"
             },
             {
               "scheme": "https",
-              "host": "go-tour-go-development.expo.app",
+              "host": "go-tour-go.expo.app",
               "pathPrefix": "/live"
             }
           ],

@@ -80,7 +80,7 @@ Set the `GEMINI_API_KEY` secret under *Edge Functions → Secrets* and deploy th
 
 Then in the dashboard:
 
-- **Authentication → URL Configuration → Redirect URLs:** add `gotourgodevelopment://reset-password` (password reset) and `gotourgodevelopment://` (email confirmation).
+- **Authentication → URL Configuration → Redirect URLs:** add `gotourgo://reset-password` (password reset) and `gotourgo://` (email confirmation).
 - **Authentication → Providers → Email:** enabled. Disable "Confirm email" if you want instant sign-up for demos.
 
 The migrations were validated on PostgreSQL 16 with stubbed Supabase schemas, plus 35 behavioural RLS checks

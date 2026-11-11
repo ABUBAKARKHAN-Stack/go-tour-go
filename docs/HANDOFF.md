@@ -199,6 +199,8 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
 - The app icon and splash PR (phase H of the restyle: new icon, adaptive icon, monochrome and splash
   PNGs, brand background colours in `app.json`) changes it again, to `ab8db1e4f9e65dc0a358c9c7ffcafd1862b751e8`
   in this container. It ships with a new APK; after that build, OTA updates go to the new APK only.
+- The rename to `com.abubakaraijaz.gotourgo` / `gotourgo://` (section on the share site) changes it to
+  `7aeebfa4217193b5a9db9ff36ba2a7b3d9bb6b97`. That build is a new app id, so it installs next to the old one.
 - JS-only PRs must keep the fingerprint unchanged. Anything that changes it (new native module, app.json
   plugins/icons, Android config) must go into a PR that is merged together with an APK build. Say so in the PR.
 - PR #18 was handled this way (draft until the owner approved the build). Do the same for future native changes.
@@ -283,12 +285,26 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
   `.well-known/assetlinks.json` for App Links).
 - Deploy (owner's step, tell them first): `bunx eas-cli deploy --export-dir site-dist --prod`.
 - Deployed at https://go-tour-go.expo.app (`SHARE_SITE` in `src/features/safety/share-links.ts`). It moved there
-  from go-tour-go-development.expo.app (Nov 2026); links already sent keep the old address. The Android App
-  Links filter in `app.json` lists both hosts, so either opens the app (needs an APK built after that change).
+  from go-tour-go-development.expo.app (Nov 2026). The Android App Links filter in `app.json` lists the new host.
+
+### Rename: no more "development" (Nov 2026)
+
+The app dropped its "development" names: EAS slug `go-tour-go`, URL scheme `gotourgo://`, Android package
+`com.abubakaraijaz.gotourgo` (was `…gotourgodevelopment`), npm name `go-tour-go`. The EAS project id is unchanged,
+so EAS Update keeps working. A new package id is a **new app** on the phone: install it fresh (sign in again,
+download offline maps again); the old app can be uninstalled. Owner steps:
+1. expo.dev → project settings → rename the project slug to `go-tour-go` (EAS refuses a slug mismatch).
+2. Build: `bunx eas-cli build -p android --profile preview`. When asked for credentials for the new package,
+   reuse the existing keystore to keep the same signing fingerprint; otherwise read the new SHA-256 with
+   `bunx eas-cli credentials -p android` and set `ANDROID_CERT_SHA256` before building the share site.
+3. Supabase → Authentication → URL Configuration: Site URL `gotourgo://`, Redirect URLs add
+   `gotourgo://reset-password` (and `gotourgo://`).
+4. Redeploy the share site so `/.well-known/assetlinks.json` names the new package.
+QR codes made before the rename (`gotourgodevelopment://destination/…`) still scan.
   The SHA-256 cert fingerprint in assetlinks was confirmed by the owner.
 - Links: `/sos?t=<token>` and `/live?t=<token>`; in the app they open `src/app/sos.tsx` / `live.tsx`.
 - Shared posts: `/p?id=<post id>` (`site/post.html`, `site/assets/post.js`, RPC `get_shared_post`: only posts by
-  public profiles). "Open in GoTourGo" uses an Android intent on the custom scheme (`gotourgodevelopment://post/<id>`),
+  public profiles). "Open in GoTourGo" uses an Android intent on the custom scheme (`gotourgo://post/<id>`),
   so no App Link change (and no APK) was needed. **Redeploy the site after changing `site/`.**
 
 ## 12. Internationalisation

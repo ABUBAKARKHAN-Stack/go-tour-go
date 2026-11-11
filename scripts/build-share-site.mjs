@@ -23,8 +23,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'site');
 const out = join(root, 'site-dist');
 
-/** SHA-256 of the certificates that sign the app (eas credentials -p android). */
-const ANDROID_CERT_SHA256 = ['79:7B:FB:FB:5E:D5:6E:A1:AF:8B:D5:8D:8B:76:7A:78:A6:7A:1B:CA:E7:8E:09:90:4B:8A:25:4E:11:FD:89:3B'];
+/**
+ * SHA-256 of the certificates that sign the app (eas credentials -p android).
+ * Default: the keystore used so far. If the app gets a new key (for example
+ * after the package rename to com.abubakaraijaz.gotourgo), set
+ * ANDROID_CERT_SHA256 (comma-separated) in the environment or .env.local.
+ */
+const DEFAULT_CERT_SHA256 = ['79:7B:FB:FB:5E:D5:6E:A1:AF:8B:D5:8D:8B:76:7A:78:A6:7A:1B:CA:E7:8E:09:90:4B:8A:25:4E:11:FD:89:3B'];
 
 function readEnvFile(file) {
   if (!existsSync(file)) return {};
@@ -43,6 +48,9 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or add them to .env.local).');
   process.exit(1);
 }
+const ANDROID_CERT_SHA256 = env.ANDROID_CERT_SHA256
+  ? env.ANDROID_CERT_SHA256.split(',').map((x) => x.trim().toUpperCase()).filter(Boolean)
+  : DEFAULT_CERT_SHA256;
 const appJson = JSON.parse(readFileSync(join(root, 'app.json'), 'utf8')).expo;
 const androidPackage = appJson.android.package;
 const appScheme = Array.isArray(appJson.scheme) ? appJson.scheme[0] : appJson.scheme;

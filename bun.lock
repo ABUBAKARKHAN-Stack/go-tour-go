@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "go-tour-go-development",
+      "name": "go-tour-go",
       "dependencies": {
         "@expo-google-fonts/caveat": "^0.4.2",
         "@expo-google-fonts/fraunces": "^0.4.1",
