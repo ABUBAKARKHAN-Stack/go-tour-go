@@ -84,7 +84,7 @@
       [
         el('article', { class: 'card post' }, [
           head,
-          data.place ? el('div', { class: 'pill', text: '📍 ' + data.place }) : null,
+          data.place ? el('div', { class: 'pill place', text: data.place }) : null,
           el('p', { class: 'body', text: data.body || '' }),
         ].concat(media(data)).concat([el('p', { class: 'muted small', text: data.likes + ' likes · ' + data.comments + ' comments' })])),
       ].concat(openButtons()),
