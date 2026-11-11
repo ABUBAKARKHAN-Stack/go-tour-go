@@ -264,9 +264,9 @@ Profile → Settings → Offline maps (or the Offline shortcut on Home):
 - Maps switch to the downloaded files automatically when the phone is offline and they cover where the traveller is; "Use downloaded maps with internet too" saves data.
 - **Save route offline** (journey preview): keeps the route and its turn-by-turn steps, plus the map along it (MapLibre tile packs about 1 km either side) unless a downloaded map already covers it. Saved routes start from Offline maps with no signal.
 
-### SOS and live-location links (go-tour-go-development.expo.app)
+### SOS and live-location links (go-tour-go.expo.app)
 
-- **SOS** (Safety → hold SOS) starts 1 h of live sharing and creates a link `https://go-tour-go-development.expo.app/sos?t=<token>` that goes in the WhatsApp message to trusted contacts. Friends get an in-app alert that opens the same screen.
+- **SOS** (Safety → hold SOS) starts 1 h of live sharing and creates a link `https://go-tour-go.expo.app/sos?t=<token>` that goes in the WhatsApp message to trusted contacts. Friends get an in-app alert that opens the same screen.
 - **Live link** (Safety → Live location sharing → Share live link) creates `/live?t=<token>` for anyone, not only friends.
 - With GoTourGo installed the link opens the in-app screen (Android App Links): live position, distance, **Navigate to them**, **Call** (if the sender added their number), 15 / 1122 / 115, and for the sender "I'm safe". Without the app, a small web page shows the same on an OpenStreetMap map. Never Google Maps.
 - Links last **24 hours** at most and end early when the sender taps "I'm safe" or stops sharing. Tokens are 122-bit random; `public.get_shared_location(token)` is the only public read.
@@ -278,7 +278,7 @@ node scripts/build-share-site.mjs
 bunx eas-cli deploy --export-dir site-dist --prod
 ```
 
-The project's EAS Hosting address is `go-tour-go-development.expo.app` (chosen on the first deploy). Check `https://go-tour-go-development.expo.app/.well-known/assetlinks.json` after deploying. If the address ever changes, update `SHARE_SITE` in `src/features/safety/share-links.ts` and the host in `app.json` `android.intentFilters` (a native change: needs a new APK). Set `GOTOURGO_INSTALL_URL` when building the site to show a "Get the app" button.
+The project's EAS Hosting address is `go-tour-go.expo.app` (chosen on the first deploy). Check `https://go-tour-go.expo.app/.well-known/assetlinks.json` after deploying. If the address ever changes, update `SHARE_SITE` in `src/features/safety/share-links.ts` and the host in `app.json` `android.intentFilters` (a native change: needs a new APK). Set `GOTOURGO_INSTALL_URL` when building the site to show a "Get the app" button.
 
 ### Exploring without a journey, and hazard reports
 

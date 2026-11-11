@@ -1,6 +1,6 @@
 /**
  * Builds the small website behind GoTourGo SOS and live-location links
- * (https://go-tour-go-development.expo.app) into site-dist/, ready for EAS Hosting:
+ * (https://go-tour-go.expo.app) into site-dist/, ready for EAS Hosting:
  *
  *   node scripts/build-share-site.mjs
  *   bunx eas-cli deploy --export-dir site-dist --prod

@@ -25,7 +25,7 @@ const EMERGENCY = [
 ];
 
 /**
- * Opened from an SOS or live-location link (go-tour-go-development.expo.app/sos?t=… or
+ * Opened from an SOS or live-location link (go-tour-go.expo.app/sos?t=… or
  * /live?t=…), an in-app SOS alert or a WhatsApp message. Shows where the
  * person is (live while they share), and how to reach them: navigate there
  * in GoTourGo, call them, or call emergency services. Works signed out.
