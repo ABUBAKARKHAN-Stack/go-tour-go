@@ -19,8 +19,9 @@ import { chooseImageSource } from '@/lib/pick-image';
 import { colors } from '@/lib/theme';
 import type { Profile } from '@/lib/types';
 import { tx } from '@/lib/i18n';
+import { AccountRequired } from '@/features/auth/guest-gate';
 
-export default function EditProfile() {
+function EditProfileContent() {
   const { profile } = useAuth();
   if (!profile) return <LoadingState variant="profile" />;
   return <EditForm profile={profile} />;
@@ -100,5 +101,14 @@ function EditForm({ profile }: { profile: Profile }) {
       </Card>
       <AppButton label={tx('Save changes')} icon={Save} variant="accent" loading={update.isPending} onPress={save} />
     </Screen>
+  );
+}
+
+/** Needs an account; guests see why instead (guest mode). */
+export default function EditProfile() {
+  return (
+    <AccountRequired reason={tx('edit your profile')}>
+      <EditProfileContent />
+    </AccountRequired>
   );
 }

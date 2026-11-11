@@ -12,11 +12,11 @@ import { useFriendships, useSocialActions, useUserSearch } from '@/features/soci
 import { errorMessage } from '@/lib/errors';
 import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
-import { useRequireAccount } from '@/features/auth/guest-gate';
+import { AccountRequired, useRequireAccount } from '@/features/auth/guest-gate';
 
 type Tab = 'friends' | 'requests' | 'find';
 
-export default function FriendsScreen() {
+function FriendsScreenContent() {
   const requireAccount = useRequireAccount();
   const [tab, setTab] = useState<Tab>('friends');
   const [term, setTerm] = useState('');
@@ -130,5 +130,14 @@ export default function FriendsScreen() {
         </View>
       )}
     </Screen>
+  );
+}
+
+/** Needs an account; guests see why instead (guest mode). */
+export default function FriendsScreen() {
+  return (
+    <AccountRequired reason={tx('add friends')}>
+      <FriendsScreenContent />
+    </AccountRequired>
   );
 }

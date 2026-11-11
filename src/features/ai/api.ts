@@ -1,6 +1,9 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
+import { useQuery } from '@tanstack/react-query';
+
 import type { AiLanguage } from '@/lib/preferences';
+import { queryClient } from '@/lib/query-client';
 import type { DestinationTranslation } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 
@@ -31,16 +34,38 @@ export type LensResult = {
   tips: string[];
 };
 
+/** Today's AI questions: used and allowed (guests get fewer). Resets daily (00:00 UTC, 5 am in Pakistan). */
+export type AiUsage = { used: number; limit: number; guest: boolean };
+
+const USAGE_KEY = ['ai-usage'] as const;
+
+function rememberUsage(usage: unknown) {
+  const u = usage as AiUsage | undefined;
+  if (u && typeof u.used === 'number' && typeof u.limit === 'number') queryClient.setQueryData(USAGE_KEY, u);
+}
+
 async function invoke<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke('ai', { body });
   if (error) {
     if (error instanceof FunctionsHttpError) {
       const payload = await error.context.json().catch(() => null);
+      rememberUsage(payload?.usage);
       throw new Error(payload?.error ?? 'AI service unavailable.');
     }
     throw new Error('AI service unavailable. Check your connection and try again.');
   }
+  rememberUsage((data as { usage?: unknown } | null)?.usage);
   return data as T;
+}
+
+/** How many AI questions are left today; refreshed by every answer. */
+export function useAiUsage() {
+  return useQuery({
+    queryKey: USAGE_KEY,
+    queryFn: async () => (await invoke<{ usage: AiUsage }>({ mode: 'usage' })).usage,
+    staleTime: 60_000,
+    retry: 0,
+  });
 }
 
 /** Urdu guide for a landmark: stored translation, or made once by the AI service and stored for everyone. */

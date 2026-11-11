@@ -427,4 +427,10 @@ in); added on the owner's request.
   same user, the email link confirms it, the guest chooses a password, then the profile gets the chosen name
   and username (a taken username keeps the automatic one). Saved places and trips are kept. Signing in to
   another account from guest mode leaves the guest data behind (warned).
-- AI function: guests get `AI_DAILY_LIMIT_GUEST` (default 10) questions a day.
+- Whole members-only screens (`post/new`, `story/new`, `review/new`, `profile/edit`, `friends`, `messages`,
+  `messages/[id]`) are wrapped in `AccountRequired`: a guest arriving from a link or notification sees why and
+  "Create account" instead of a screen that cannot work.
+- AI function (v6, deployed): guests get `AI_DAILY_LIMIT_GUEST` (default 10) questions a day, members
+  `AI_DAILY_LIMIT` (50). Every chat/lens answer returns `usage: { used, limit, guest }` and `{ mode: 'usage' }`
+  reads it for free; `useAiUsage()` keeps it in the query cache and `AiQuota` shows "7 of 10 AI questions left
+  today" (with a bar) on the AI guide, the place chat sheet and Lens. The day resets at 00:00 UTC (5 am PKT).

@@ -44,6 +44,10 @@ type TranslateRequest = {
   locale: 'ur';
 };
 
+/** Today's AI use, so the app can show "7 of 10 questions left today". */
+type UsageRequest = { mode: 'usage' };
+type Usage = { used: number; limit: number; guest: boolean };
+
 type GeminiPart = { text?: string; inline_data?: { mime_type: string; data: string } };
 
 const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-flash-latest';
@@ -105,7 +109,7 @@ async function callGemini(body: Record<string, unknown>): Promise<string> {
 }
 
 class HttpError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public usage?: Usage) {
     super(message);
   }
 }
@@ -117,19 +121,21 @@ export default {
       const userId = ctx.userClaims?.id;
       if (!userId) return json({ error: 'Sign in to use the AI assistant.' }, 401);
 
-      const payload = (await req.json()) as ChatRequest | LensRequest | TranslateRequest;
+      const payload = (await req.json()) as ChatRequest | LensRequest | TranslateRequest | UsageRequest;
+      const guest = (ctx.jwtClaims as Record<string, unknown> | null)?.is_anonymous === true;
+
+      // Reading the allowance is free.
+      if (payload.mode === 'usage') return json({ usage: await readUsage(ctx.supabaseAdmin, userId, guest) });
 
       // Translations already stored are free; only a new translation uses quota.
-      if (payload.mode === 'translate') return json(await handleTranslate(payload, ctx.supabaseAdmin, userId));
+      if (payload.mode === 'translate') return json(await handleTranslate(payload, ctx.supabaseAdmin, userId, guest));
 
-      const guest = (ctx.jwtClaims as Record<string, unknown> | null)?.is_anonymous === true;
-      await consumeQuota(ctx.supabaseAdmin, userId, guest);
-
-      if (payload.mode === 'chat') return json(await handleChat(payload, ctx.supabase));
-      if (payload.mode === 'lens') return json(await handleLens(payload, ctx.supabase));
-      return json({ error: 'Unknown mode' }, 400);
+      if (payload.mode !== 'chat' && payload.mode !== 'lens') return json({ error: 'Unknown mode' }, 400);
+      const usage = await consumeQuota(ctx.supabaseAdmin, userId, guest);
+      if (payload.mode === 'chat') return json({ ...(await handleChat(payload, ctx.supabase)), usage });
+      return json({ ...(await handleLens(payload, ctx.supabase)), usage });
     } catch (error) {
-      if (error instanceof HttpError) return json({ error: error.message }, error.status);
+      if (error instanceof HttpError) return json({ error: error.message, ...(error.usage ? { usage: error.usage } : {}) }, error.status);
       console.error(error);
       return json({ error: 'AI service unavailable.' }, 500);
     }
@@ -140,21 +146,41 @@ export default {
 type Db = any;
 
 /** Per-user daily quota (service role only; clients cannot touch ai_usage). */
-async function consumeQuota(admin: Db, userId: string, guest: boolean) {
+async function consumeQuota(admin: Db, userId: string, guest: boolean): Promise<Usage> {
   const { data: used, error } = await admin.rpc('increment_ai_usage', { uid: userId });
   if (error) {
     console.error('quota error', error);
     throw new HttpError(503, 'AI service unavailable.');
   }
-  const limit = guest ? GUEST_DAILY_LIMIT : DAILY_LIMIT;
-  if (typeof used === 'number' && used > limit) {
+  const limit = limitFor(guest);
+  const count = typeof used === 'number' ? used : 0;
+  if (count > limit) {
     throw new HttpError(
       429,
       guest
         ? `Guests can ask ${limit} questions a day. Create a free account for more, or try again tomorrow.`
         : `Daily AI limit reached (${limit}). Try again tomorrow.`,
+      { used: limit, limit, guest },
     );
   }
+  return { used: count, limit, guest };
+}
+
+function limitFor(guest: boolean) {
+  return guest ? GUEST_DAILY_LIMIT : DAILY_LIMIT;
+}
+
+/** Questions used today (the same UTC day increment_ai_usage counts). */
+async function readUsage(admin: Db, userId: string, guest: boolean): Promise<Usage> {
+  const limit = limitFor(guest);
+  const { data, error } = await admin
+    .from('ai_usage')
+    .select('request_count')
+    .eq('user_id', userId)
+    .eq('day', new Date().toISOString().slice(0, 10))
+    .maybeSingle();
+  if (error) console.error('usage read', error);
+  return { used: Math.min(data?.request_count ?? 0, limit), limit, guest };
 }
 
 const GUIDE_FIELDS = [
@@ -174,7 +200,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * Urdu guide for a landmark: returns the stored translation, filling any
  * missing sections once with Gemini. Human/sourced text is never replaced.
  */
-async function handleTranslate(payload: TranslateRequest, admin: Db, userId: string) {
+async function handleTranslate(payload: TranslateRequest, admin: Db, userId: string, guest: boolean) {
   if (payload.locale !== 'ur' || !UUID.test(payload.destinationId ?? '')) throw new HttpError(400, 'Invalid request.');
 
   const { data: d, error } = await admin
@@ -200,7 +226,7 @@ async function handleTranslate(payload: TranslateRequest, admin: Db, userId: str
   if (needName) source.name = d.name;
   if (Object.keys(source).length === 0) return { translation: existing };
 
-  await consumeQuota(admin, userId);
+  await consumeQuota(admin, userId, guest);
   const text = await callGemini({
     system_instruction: {
       parts: [

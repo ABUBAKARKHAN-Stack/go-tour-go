@@ -1,12 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { UserPlus } from 'lucide-react-native';
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, ReduceMotion, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
+import { Screen } from '@/components/screen';
+import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
 import { signOut } from '@/features/auth/api';
 import { useAuth } from '@/features/auth/auth-provider';
@@ -130,5 +132,26 @@ export function GuestGateOverlay() {
         </Animated.View>
       </View>
     </Modal>
+  );
+}
+
+/**
+ * Whole screens that only make sense with an account (messages, friends,
+ * edit profile, new post / story / review). A guest who reaches one, from a
+ * link or a notification, sees why and the way to an account instead.
+ */
+export function AccountRequired({ reason, children }: { reason: string; children: ReactNode }) {
+  const { isGuest } = useAuth();
+  if (!isGuest) return <>{children}</>;
+  return (
+    <Screen back title={tx('Create a free account')}>
+      <EmptyState
+        icon={UserPlus}
+        title={tx('This needs an account')}
+        message={tx('You need an account to {0}. Your saved places and trips come with you.', { 0: reason })}
+        actionLabel={tx('Create account')}
+        onAction={() => router.replace('/create-account')}
+      />
+    </Screen>
   );
 }

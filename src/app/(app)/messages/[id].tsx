@@ -15,6 +15,7 @@ import { displayName } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { brandGradient, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { AccountRequired } from '@/features/auth/guest-gate';
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -24,7 +25,7 @@ function formatTime(iso: string) {
     : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-export default function ChatScreen() {
+function ChatScreenContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { userId } = useAuth();
@@ -116,5 +117,14 @@ export default function ChatScreen() {
         </View>
       </KeyboardAvoidingView>
     </View>
+  );
+}
+
+/** Needs an account; guests see why instead (guest mode). */
+export default function ChatScreen() {
+  return (
+    <AccountRequired reason={tx('send messages')}>
+      <ChatScreenContent />
+    </AccountRequired>
   );
 }
