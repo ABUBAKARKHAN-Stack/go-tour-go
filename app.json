@@ -37,7 +37,8 @@
         "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.CAMERA",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
       ],
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
@@ -149,6 +150,7 @@
       "eas": {
         "projectId": "f6b6835c-9888-4059-9edb-219333d67453"
       }
-    }
+    },
+    "owner": "abubakaraijaz"
   }
 }
