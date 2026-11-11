@@ -15,13 +15,14 @@ import { startUpload } from '@/features/community/upload-queue';
 import { useDestinations } from '@/features/destinations/api';
 import { useZodForm } from '@/lib/forms';
 import { tx } from '@/lib/i18n';
+import { AccountRequired } from '@/features/auth/guest-gate';
 
 /**
  * New post, Instagram style: up to 10 photos and videos, a caption and any
  * place. "Share" hands the post to the upload queue and closes at once; the
  * Community feed shows its progress.
  */
-export default function NewPostScreen() {
+function NewPostScreenContent() {
   const params = useLocalSearchParams<{ destination?: string }>();
   const { userId } = useAuth();
   const all = useDestinations();
@@ -60,5 +61,14 @@ export default function NewPostScreen() {
       <PlaceField value={place} onChange={setPlaceChoice} />
       <AppButton label={tx('Share')} icon={Send} variant="accent" onPress={submit} />
     </Screen>
+  );
+}
+
+/** Needs an account; guests see why instead (guest mode). */
+export default function NewPostScreen() {
+  return (
+    <AccountRequired reason={tx('post travel moments')}>
+      <NewPostScreenContent />
+    </AccountRequired>
   );
 }

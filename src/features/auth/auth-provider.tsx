@@ -16,6 +16,8 @@ type AuthState = {
   session: Session | null;
   userId: string | null;
   email: string | null;
+  /** Exploring without an account (anonymous sign-in): can browse and save, not post or share. */
+  isGuest: boolean;
   profile: Profile | null;
   profileLoading: boolean;
   refreshProfile: () => Promise<unknown>;
@@ -120,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       userId,
       email: session?.user.email ?? null,
+      isGuest: session?.user.is_anonymous === true,
       profile: profileQuery.data ?? null,
       profileLoading: profileQuery.isLoading,
       refreshProfile: profileQuery.refetch,

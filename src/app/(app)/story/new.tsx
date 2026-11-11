@@ -14,12 +14,13 @@ import type { DraftMedia, PlaceTag } from '@/features/community/upload-plan';
 import { startUpload } from '@/features/community/upload-queue';
 import { useZodForm } from '@/lib/forms';
 import { tx } from '@/lib/i18n';
+import { AccountRequired } from '@/features/auth/guest-gate';
 
 /**
  * 24-hour story: one or more photos and videos (each becomes a story, in the
  * order chosen), a caption and a place. Uploads in the background like posts.
  */
-export default function NewStory() {
+function NewStoryContent() {
   const { userId } = useAuth();
   const [media, setMedia] = useState<DraftMedia[]>([]);
   const [place, setPlace] = useState<PlaceTag | null>(null);
@@ -42,5 +43,14 @@ export default function NewStory() {
       <PlaceField value={place} onChange={setPlace} />
       <AppButton label={media.length > 1 ? tx('Share {0} stories', { 0: media.length }) : tx('Share story')} icon={Send} variant="accent" onPress={share} />
     </Screen>
+  );
+}
+
+/** Needs an account; guests see why instead (guest mode). */
+export default function NewStory() {
+  return (
+    <AccountRequired reason={tx('post stories')}>
+      <NewStoryContent />
+    </AccountRequired>
   );
 }

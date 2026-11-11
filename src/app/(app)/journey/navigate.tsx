@@ -37,6 +37,7 @@ import type { RouteStep } from '@/features/routing/osrm';
 import { formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 function ManeuverIcon({ step }: { step: RouteStep | undefined }) {
   const props = { color: '#FFFFFF', size: 40, strokeWidth: 2.4 };
@@ -66,6 +67,7 @@ function ManeuverIcon({ step }: { step: RouteStep | undefined }) {
  * the route, time left, voice guidance, re-routing and arrival.
  */
 export default function JourneyNavigate() {
+  const requireAccount = useRequireAccount();
   useKeepAwake();
   const params = useLocalSearchParams<{ background?: string }>();
   const insets = useSafeAreaInsets();
@@ -231,7 +233,7 @@ export default function JourneyNavigate() {
           onPress={() => journeyStore.setVoice(!journey.voice)}
         />
         <MapButton icon={overview ? LocateFixed : RouteIcon} label={overview ? tx('Follow me') : tx('Show whole route')} onPress={() => setOverview((v) => !v)} />
-        <MapButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => setReporting(true)} />
+        <MapButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => requireAccount(tx('report hazards')) && setReporting(true)} />
       </View>
 
       <View

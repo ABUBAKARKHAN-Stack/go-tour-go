@@ -49,6 +49,7 @@ import { colors, shadow } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 import { COUNTRY } from '@/constants/app.constants';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 // Panel motion: the height follows Hide / Show, the cards fade; it slides away for an alert card.
 const PANEL_LAYOUT = LinearTransition.duration(240).easing(EASE_OUT).reduceMotion(ReduceMotion.System);
@@ -66,6 +67,7 @@ export default function ExploreScreen() {
   const params = useLocalSearchParams<{ focus?: string }>();
   const map = useRef<TravelMapHandle>(null);
   const { userId } = useAuth();
+  const requireAccount = useRequireAccount();
 
   const destinations = useDestinations();
   const alerts = useRoadAlerts();
@@ -263,7 +265,7 @@ export default function ExploreScreen() {
       {/* Right-side controls */}
       <View className="absolute end-3 gap-2" style={{ top: insets.top + 196 }}>
         <IconButton icon={Crosshair} label={tx('Show my location')} onPress={locateMe} />
-        {userId ? <IconButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => setReporting(true)} /> : null}
+        {userId ? <IconButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => requireAccount(tx('report hazards')) && setReporting(true)} /> : null}
         <IconButton icon={CircleDashed} label={tx('Toggle geofence radius')} active={showRadius} onPress={() => setShowRadius((v) => !v)} />
         {userId ? (
           <IconButton icon={Users} label={tx('Toggle friends on map')} active={showFriends} onPress={() => setShowFriends((v) => !v)} />

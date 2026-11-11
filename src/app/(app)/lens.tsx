@@ -16,6 +16,7 @@ import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
 import { compressImage } from '@/lib/upload';
 import { tx } from '@/lib/i18n';
+import { AiQuota } from '@/features/ai/ai-quota';
 
 /**
  * Visual Lens (FYP demo): photograph a landmark, sign or menu and get travel
@@ -66,6 +67,7 @@ export default function LensScreen() {
 
   return (
     <Screen back title={tx('Visual Lens')} subtitle={tx('Identify landmarks, signs and text')} keyboard>
+      <AiQuota />
       <Card className="items-center gap-3">
         {uri ? (
           <Image source={{ uri }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" />

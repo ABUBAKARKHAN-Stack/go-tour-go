@@ -24,12 +24,14 @@ import { errorMessage } from '@/lib/errors';
 import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 import { emergencyNumbers } from '@/features/safety/emergency';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 const EMERGENCY_NUMBERS = emergencyNumbers;
 
 type SosState = { message: string; lat: number | null; lng: number | null; token: string | null } | null;
 
 export default function SafetyScreen() {
+  const requireAccount = useRequireAccount();
   const { profile } = useAuth();
   const contacts = useTrustedContacts();
   const session = useSharingSession();
@@ -114,6 +116,7 @@ export default function SafetyScreen() {
   };
 
   const toggleSharing = async (durationMs: number | null) => {
+    if (!live && !requireAccount(tx('share your live location'))) return;
     setSharingBusy(true);
     try {
       if (live) {
@@ -144,6 +147,7 @@ export default function SafetyScreen() {
   };
 
   const shareLiveLink = async () => {
+    if (!requireAccount(tx('share your live location'))) return;
     setLinkBusy(true);
     try {
       const fix = await getCurrentFix();

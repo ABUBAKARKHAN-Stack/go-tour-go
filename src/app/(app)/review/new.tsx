@@ -20,9 +20,10 @@ import { serverError, useZodForm } from '@/lib/forms';
 import { chooseImageSource } from '@/lib/pick-image';
 import { tx } from '@/lib/i18n';
 import type { Review } from '@/lib/types';
+import { AccountRequired } from '@/features/auth/guest-gate';
 
 /** Write or edit your single review for a destination (duplicates are prevented by the DB). */
-export default function ReviewEditor() {
+function ReviewEditorContent() {
   const { destinationId } = useLocalSearchParams<{ destinationId: string }>();
   const { userId } = useAuth();
   const { destination } = useDestination(destinationId);
@@ -123,5 +124,14 @@ function ReviewForm({ destinationId, existing }: { destinationId: string; existi
         />
       ) : null}
     </>
+  );
+}
+
+/** Needs an account; guests see why instead (guest mode). */
+export default function ReviewEditor() {
+  return (
+    <AccountRequired reason={tx('write reviews')}>
+      <ReviewEditorContent />
+    </AccountRequired>
   );
 }

@@ -39,6 +39,7 @@ import { useDestinationsByDistance } from '@/features/destinations/api';
 import { flipX, tx } from '@/lib/i18n';
 import { usePressScale } from '@/lib/motion';
 import { brandGradient, colors, shadow } from '@/lib/theme';
+import { AiQuota } from '@/features/ai/ai-quota';
 
 /**
  * Quick travel options (design guide). Most ask the AI about the place in
@@ -191,6 +192,7 @@ export default function AssistantScreen() {
                 </Text>
                 <Text className="text-base font-semibold text-heading">{tx("I'm your AI travel assistant.")}</Text>
                 <Text className="text-sm leading-5 text-muted-foreground">{tx('Ask me anything about your trip, from places and food to routes, weather and culture.')}</Text>
+                <AiQuota className="mt-2" />
               </View>
 
               <View className="gap-3 px-4 pt-6">
@@ -233,6 +235,7 @@ export default function AssistantScreen() {
           }
         />
 
+        {chatting ? <AiQuota className="mx-4 mt-1" /> : null}
         {chatting ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" className="max-h-14 grow-0" contentContainerClassName="gap-2 px-4 py-2">
             {OPTIONS.filter((o) => 'prompt' in o).map((o) => (

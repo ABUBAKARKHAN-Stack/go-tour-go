@@ -64,6 +64,7 @@ import { EASE_OUT, usePressScale } from '@/lib/motion';
 import { usePreferences } from '@/lib/preferences';
 import { colors, shadow } from '@/lib/theme';
 import { flipX, isUrdu, tx } from '@/lib/i18n';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 const SPEECH_LANG: Record<string, string> = { en: 'en-US', ur: 'ur-PK', ar: 'ar-SA', zh: 'zh-CN' };
 
@@ -116,6 +117,7 @@ export default function DestinationDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { userId } = useAuth();
+  const requireAccount = useRequireAccount();
   const [prefs] = usePreferences();
   const { destination: d, isLoading, isError, error, refetch, isFallback } = useDestinationDetail(id);
   const all = useDestinations();
@@ -424,7 +426,7 @@ export default function DestinationDetails() {
             <SectionHeader
               title={tx('Reviews')}
               actionLabel={myReview ? tx('Edit your review') : tx('Write a review')}
-              onAction={() => router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
+              onAction={() => requireAccount(tx('write reviews')) && router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
             />
             {reviews.isLoading ? (
               <LoadingState label={tx('Loading reviews...')} />
@@ -436,7 +438,7 @@ export default function DestinationDetails() {
                 title={tx('No reviews yet')}
                 message={tx('Be the first to share your experience.')}
                 actionLabel={tx('Write a review')}
-                onAction={() => router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
+                onAction={() => requireAccount(tx('write reviews')) && router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
               />
             ) : (
               reviews.data!.map((r) => (

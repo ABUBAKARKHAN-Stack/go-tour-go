@@ -14,6 +14,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { Text } from '@/components/text';
 import { useAuth } from '@/features/auth/auth-provider';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 import { useCommenterRatings, useFeed, useStories } from '@/features/community/api';
 import { useUnreadConversations } from '@/features/inbox/api';
 import { requestLocationPermission } from '@/features/location/location-provider';
@@ -38,6 +39,7 @@ const FEED_TABS = [
 ] as const;
 
 export default function CommunityScreen() {
+  const requireAccount = useRequireAccount();
   const insets = useSafeAreaInsets();
   const { userId } = useAuth();
   const [tab, setTab] = useState<FeedTab>('all');
@@ -147,7 +149,7 @@ export default function CommunityScreen() {
               title={tx('No posts nearby yet')}
               message={tx('Nobody has posted within {0} km of you. Share the first one.', { 0: NEARBY_KM })}
               actionLabel={tx('Create post')}
-              onAction={() => router.push('/post/new')}
+              onAction={() => requireAccount(tx('post travel moments')) && router.push('/post/new')}
             />
           ) : tab === 'following' ? (
             <EmptyState
@@ -158,7 +160,7 @@ export default function CommunityScreen() {
               onAction={() => router.push('/friends')}
             />
           ) : (
-            <EmptyState icon={PenSquare} title={tx('No posts yet')} message={tx('Be the first to share a travel moment.')} actionLabel={tx('Create post')} onAction={() => router.push('/post/new')} />
+            <EmptyState icon={PenSquare} title={tx('No posts yet')} message={tx('Be the first to share a travel moment.')} actionLabel={tx('Create post')} onAction={() => requireAccount(tx('post travel moments')) && router.push('/post/new')} />
           )
         }
         ListFooterComponent={feed.isFetchingNextPage ? <ActivityIndicator color={colors.primary} /> : undefined}
@@ -177,13 +179,14 @@ export default function CommunityScreen() {
 
 /** Floating "new post" button above the tab bar. */
 function ComposeButton({ bottom }: { bottom: number }) {
+  const requireAccount = useRequireAccount();
   const press = usePressScale(0.94);
   return (
     <Animated.View style={[press.style, { position: 'absolute', end: 20, bottom }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={tx('Share a travel moment')}
-        onPress={() => router.push('/post/new')}
+        onPress={() => requireAccount(tx('post travel moments')) && router.push('/post/new')}
         {...press.handlers}
         className="h-14 w-14 items-center justify-center rounded-full"
         style={{ experimental_backgroundImage: brandGradient, boxShadow: shadow(0.3, 6, 16) }}
@@ -196,12 +199,13 @@ function ComposeButton({ bottom }: { bottom: number }) {
 
 /** Your bubble: your latest story with a + to add another, or a dashed + when you have none. */
 function OwnStoryBubble({ group }: { group: StoryGroup | undefined }) {
+  const requireAccount = useRequireAccount();
   return (
     <View className="w-20 items-center gap-1">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={group ? tx('View your story') : tx('Add story')}
-        onPress={() => (group ? router.push({ pathname: '/story/[id]', params: { id: group.authorId } }) : router.push('/story/new'))}
+        onPress={() => (group ? router.push({ pathname: '/story/[id]', params: { id: group.authorId } }) : requireAccount(tx('post stories')) && router.push('/story/new'))}
       >
         {group ? (
           <View className="h-[68px] w-[68px] overflow-hidden rounded-full border-[2.5px] border-border-strong bg-card p-0.5">
@@ -218,7 +222,7 @@ function OwnStoryBubble({ group }: { group: StoryGroup | undefined }) {
           accessibilityRole="button"
           accessibilityLabel={tx('Add story')}
           hitSlop={8}
-          onPress={() => router.push('/story/new')}
+          onPress={() => requireAccount(tx('post stories')) && router.push('/story/new')}
           className="absolute end-0.5 top-12 h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary"
         >
           <Plus color="#fff" size={13} strokeWidth={3} />

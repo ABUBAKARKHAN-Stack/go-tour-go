@@ -12,6 +12,7 @@ import { ChatBubble, ThinkingBubble } from '@/features/ai/chat-bubbles';
 import { useChat, useChatContext, type ChatMessage } from '@/features/ai/use-chat';
 import { tx } from '@/lib/i18n';
 import { brandGradient, colors } from '@/lib/theme';
+import { AiQuota } from '@/features/ai/ai-quota';
 
 type Place = { name: string; slug: string; city: string };
 
@@ -115,6 +116,7 @@ export function PlaceChatSheet({
               <X color={colors.heading} size={18} />
             </Pressable>
           </View>
+          <AiQuota className="mx-5 mb-3" />
           <View className="h-px bg-border" />
 
           <FlatList

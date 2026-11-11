@@ -13,8 +13,9 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
 import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { AccountRequired } from '@/features/auth/guest-gate';
 
-export default function ConversationsScreen() {
+function ConversationsScreenContent() {
   const { userId } = useAuth();
   const q = useConversations();
   const unread = useUnreadConversations();
@@ -76,5 +77,14 @@ export default function ConversationsScreen() {
         />
       )}
     </Screen>
+  );
+}
+
+/** Needs an account; guests see why instead (guest mode). */
+export default function ConversationsScreen() {
+  return (
+    <AccountRequired reason={tx('send messages')}>
+      <ConversationsScreenContent />
+    </AccountRequired>
   );
 }

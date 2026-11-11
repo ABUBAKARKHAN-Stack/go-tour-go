@@ -11,14 +11,16 @@ import { useFeed } from '@/features/community/api';
 import { PostCard } from '@/features/community/post-card';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 /** Every post tagged at one landmark, newest first (client brief 6.2). */
 export default function PlacePostsScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const { userId } = useAuth();
+  const requireAccount = useRequireAccount();
   const feed = useFeed({ destinationId: id });
   const posts = useMemo(() => feed.data?.pages.flat() ?? [], [feed.data]);
-  const postHere = () => router.push({ pathname: '/post/new', params: { destination: id } });
+  const postHere = () => requireAccount(tx('post travel moments')) && router.push({ pathname: '/post/new', params: { destination: id } });
 
   return (
     <Screen back title={tx('Traveller posts')} subtitle={name} scroll={false}>

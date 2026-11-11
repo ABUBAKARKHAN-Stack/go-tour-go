@@ -147,6 +147,8 @@ export type Profile = {
   home_city: string | null;
   visibility: 'public' | 'friends';
   allow_friend_requests: boolean;
+  /** Exploring as a guest (anonymous sign-in); hidden from people search. */
+  is_guest?: boolean;
   created_at: string;
 };
 

@@ -71,7 +71,7 @@ step: new APK**). B–G and the sweep are OTA. Brand: `assets/brand/v2/README.md
 5. **Next APK build**: #39 added `expo-video` + `expo-haptics` and removed `expo-device` + `expo-web-browser`.
    Owner runs `bunx eas-cli build -p android --profile preview` from their own login.
 6. **Duplicates:** cleaned on 6 Nov (14 hidden); re-run the near-duplicate query in LANDMARKS-IMPORT.md after big imports.
-7. **PR 7 guest mode**: plan in section 17. Not in the client brief, so last unless the owner asks.
+7. **PR 7 guest mode**: built (section 17); goes live when the owner enables anonymous sign-ins and manual linking.
 
 ## 1. What the project is
 
@@ -160,7 +160,7 @@ differ from plan numbers.
 | 4 Exploring + hazards | Done |
 | 5 Offline maps | Done; tested on a Pixel 3 (Android 12): engine test, Karachi land fix, Lahore offline |
 | 6 SOS links + App Links + icon | Merged (#18). Site deployed. **APK built** 5 Nov (build `4df88d41`, from #25); owner device test of SOS links / App Links pending |
-| 7 Guest mode | Not started; Supabase "Allow anonymous sign-ins" must stay **off** until this PR. Not in the client brief (it says users log in), so it ranks below the client gaps in CLIENT-REQUIREMENTS.md |
+| 7 Guest mode | Built: guest rules in the database (`20261111154858_guest_mode`), "Continue as guest", account prompt, guest profile, upgrade keeping saved data, smaller AI quota. Live once the owner turns on anonymous sign-ins and manual linking and deploys the `ai` function |
 
 **APK build (5 Nov):** the build started through the Expo MCP connector (`fbb72c6e`) failed: that token
 has scopes `VIEW,RUN` and cannot read the Android keystore. The owner then built from their own login:
@@ -371,7 +371,7 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
 | OTA update with #28 + tests | Done, all working (6 Nov) |
 | OTA update with #29 (community) + tests | **Pending** (owner: `bunx eas-cli update --channel preview`) |
 | Test PR 6 on the new APK (SOS links, App Links) | Pending |
-| Supabase anonymous sign-ins | **Not enabled**, on purpose, until PR 7 |
+| Supabase anonymous sign-ins | Owner turns on with PR 7 (plus **Allow manual linking** for the upgrade) |
 
 ## 16. Next steps
 
@@ -387,48 +387,50 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
    Share live link. Add the passing checks to `docs/TESTING.md`.
 2. Then section 0 "Remaining work" in order.
 
-## 17. PR 7: guest mode (plan, not started)
+## 17. PR 7: guest mode
 
-**Status:** not started. Not in the client brief (it says users log in), so do it after the client gaps
-unless the owner asks. JavaScript + SQL only (OTA-safe); no native change.
+**Status:** built (JavaScript + SQL, OTA-safe; no native change). Not in the client brief (it says users log
+in); added on the owner's request.
 
-**Owner step (tell them first, do not do it for them):** Supabase dashboard → Authentication → Sign In /
-Providers → enable **Allow anonymous sign-ins**. It is **off on purpose** until this PR is ready. Turning it
-on early lets anyone create anonymous users that pass the current `to authenticated` policies.
+**Owner steps to switch it on**
+1. Supabase → Authentication → Sign In / Providers: turn on **Allow anonymous sign-ins** and **Allow manual
+   linking** (manual linking lets a guest add an email and keep their data). Consider CAPTCHA (Supabase rate
+   limits anonymous sign-ins to 30 per hour per IP).
+2. Deploy the `ai` Edge Function (guest daily limit). Optional secret `AI_DAILY_LIMIT_GUEST` (default 10).
+3. Publish the OTA update.
 
-**What already exists**
-- `private.handle_new_user` already gives an anonymous user a profile (`traveler_<id>`), so sign-in works.
-- Hazard report policies already refuse anonymous users:
-  `coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false) = false`
-  (`supabase/migrations/20261105075033_hazard_reports.sql`). Reuse that check.
+**Database** (`supabase/migrations/20261111154858_guest_mode.sql`, applied)
+- `private.is_guest()` reads the JWT's `is_anonymous` claim.
+- **Restrictive** policies stop guests from: posting, editing posts, post media, comments, likes, stories,
+  reviews, follows, messages, editing their profile, live location sharing and viewers, live links
+  (`sos_events.kind = 'live'`) and storage uploads. Hazard reports and votes already refused guests.
+- Guests **can**: save places and posts, trips, trusted contacts, and **SOS links** (safety).
+- `send_friend_request`, `respond_friend_request` and `start_conversation` refuse guests themselves (security
+  definer skips table policies); friend requests to a guest are refused too.
+- `profiles.is_guest` is set by `handle_new_user` and kept in sync by a trigger on `auth.users.is_anonymous`;
+  people search filters `is_guest = false`.
+- `private.delete_stale_guests(interval default '30 days')` removes inactive guests; not scheduled (ask the
+  owner before adding a pg_cron job).
+- Verified in a rolled-back transaction as a guest and a member (every allowed/blocked case above), then
+  `get_advisors` (no new findings).
 
-**Plan**
-1. **Auth:** "Explore as guest" on onboarding and sign-in → `supabase.auth.signInAnonymously()`.
-   `AuthProvider` exposes `isGuest` from `session.user.is_anonymous`; the route guard lets guests into `(app)`.
-   Guests stay signed in offline like everyone else.
-2. **What guests can do:** Home, Explore, landmark alerts, search, details, nearby, weather, offline maps,
-   journey mode, AI guide (lower daily limit), Lens, Scan, saved places and trips (tied to their anonymous id),
-   SOS with WhatsApp to contacts.
-3. **What guests cannot do** (enforce in **RLS**, not only the UI): post, comment, like, story, review,
-   follow, friend, message, share live location / links, report hazards. Add a migration with
-   **restrictive** policies (`as restrictive for insert/update/delete`) on `community_posts`,
-   `post_comments`, `post_likes`, `stories`, `reviews`, `follows`, `friendships`, `messages`,
-   `conversations` and `location_shares` (share links live on `location_shares` and `sos_events`; check
-   the share-link RPCs too), using the `is_anonymous` check above. `hazard_reports` / `hazard_votes`
-   already refuse guests.
-   Verify with SQL as an anonymous JWT, then `get_advisors`.
-4. **Hide guests from people search:** filter profiles of anonymous users out of `useUserSearch` (add a
-   `is_guest` column filled by the trigger from `new.is_anonymous`, or a view). Guests never appear in
-   friends/follow lists because they cannot follow or befriend.
-5. **UI gate:** a `GuestGate` helper/sheet: tapping a blocked action shows "Create a free account to …"
-   with Create account / Sign in / Not now. Profile tab for guests: a guest card instead of stats.
-6. **Upgrade path:** "Create account" from guest converts the same user with
-   `supabase.auth.updateUser({ email, password, data: { username, full_name } })` so saved places and
-   trips are kept (email confirmation applies). Update the profile's username/full name after confirmation.
-   Signing in to an existing account from guest mode drops the guest data (warn first).
-7. **AI quota:** in `supabase/functions/ai`, read the `is_anonymous` claim and apply a smaller limit
-   (e.g. a new optional secret `AI_DAILY_LIMIT_GUEST`, default 10).
-8. **Housekeeping (optional):** anonymous users pile up; a scheduled SQL job (pg_cron) can delete those
-   older than 30 days with no activity. Ask the owner before enabling pg_cron.
-9. **Translations, tests, checks** as in section 7; the welcome/guest screens are not in Figma (designed in
-   code, see ui-figma-gaps.md).
+**App**
+- Sign-in: **Continue as guest** (`signInAsGuest`). `useAuth().isGuest` comes from `session.user.is_anonymous`;
+  the route guards treat guests as signed in.
+- `src/features/auth/guest-gate.tsx`: `useRequireAccount()` gates actions ("You need an account to …" sheet:
+  Create account / I already have an account / Not now); the sheet also opens when a guest write is refused by
+  the database (safety net on React Query mutations). Gated: compose, stories, likes, comments, reviews,
+  follow, friend requests, live sharing and live links, hazard reports.
+- Profile tab for guests: a guest card instead of the header, only Visited and Saved stats, no Friends or
+  Messages rows, "Leave guest mode" (warns that a guest cannot sign back in).
+- Upgrade (`/create-account` → email → `/finish-account`): `updateUser({ email, data })` links the email to the
+  same user, the email link confirms it, the guest chooses a password, then the profile gets the chosen name
+  and username (a taken username keeps the automatic one). Saved places and trips are kept. Signing in to
+  another account from guest mode leaves the guest data behind (warned).
+- Whole members-only screens (`post/new`, `story/new`, `review/new`, `profile/edit`, `friends`, `messages`,
+  `messages/[id]`) are wrapped in `AccountRequired`: a guest arriving from a link or notification sees why and
+  "Create account" instead of a screen that cannot work.
+- AI function (v6, deployed): guests get `AI_DAILY_LIMIT_GUEST` (default 10) questions a day, members
+  `AI_DAILY_LIMIT` (50). Every chat/lens answer returns `usage: { used, limit, guest }` and `{ mode: 'usage' }`
+  reads it for free; `useAiUsage()` keeps it in the query cache and `AiQuota` shows "7 of 10 AI questions left
+  today" (with a bar) on the AI guide, the place chat sheet and Lens. The day resets at 00:00 UTC (5 am PKT).
