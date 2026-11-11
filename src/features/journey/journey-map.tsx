@@ -14,6 +14,7 @@ import { colors } from '@/lib/theme';
 import type { JourneyItem } from './journey-items';
 import type { NavProgress } from './navigation';
 import { pointAlong, remainingLine, type RouteIndex } from './route-geometry';
+import { COUNTRY } from '@/constants/app.constants';
 
 type Props = {
   route: Route | null;
@@ -119,7 +120,7 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
       attributionPosition={{ bottom: padding.bottom + 4, left: 8 }}
       onDidFailLoadingMap={onLoadError}
     >
-      {cameraStop ? <Camera {...cameraStop} /> : <Camera initialViewState={{ center: [70.5, 30.5], zoom: 5 }} />}
+      {cameraStop ? <Camera {...cameraStop} /> : <Camera initialViewState={{ center: COUNTRY.center, zoom: 5 }} />}
 
       {full && progress ? (
         <GeoJSONSource id="journey-travelled" data={full}>

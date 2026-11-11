@@ -3,13 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { distanceMeters } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
 import type { NearbyService, ServiceCategory } from '@/lib/types';
+import { SERVICES } from '@/constants/app.constants';
 
 /**
  * Nearby services: live OpenStreetMap data from the free Overpass API, with
  * the seeded `nearby_services` table as a fallback when Overpass is slow,
  * rate-limited or offline. Results are cached per ~1 km cell for 15 minutes.
  */
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_URL = SERVICES.overpass;
 
 const OSM_FILTERS: Record<ServiceCategory, string> = {
   restaurant: 'nwr["amenity"~"^(restaurant|cafe|fast_food)$"]',

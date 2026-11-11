@@ -1,12 +1,13 @@
 import { tx } from '@/lib/i18n';
+import { COUNTRY, SERVICES } from '@/constants/app.constants';
 /**
  * Online fallback for streets and addresses that are not in the local place
  * list, using Photon (photon.komoot.io, OpenStreetMap data, free and keyless).
  * Called only after the user pauses typing and only when the local results
  * are thin, to stay well inside its fair-use limits.
  */
-const PHOTON_URL = 'https://photon.komoot.io/api/';
-const PAKISTAN_BBOX = '60.5,23.3,77.9,37.2';
+const PHOTON_URL = SERVICES.photon;
+const PAKISTAN_BBOX = COUNTRY.bbox.join(',');
 
 export type OnlinePlace = {
   id: string;

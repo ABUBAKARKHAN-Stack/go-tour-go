@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { storage, useStorage } from '@/lib/storage';
 
 import { isValidPhone, normalizePhone } from './phone-helpers';
+import { SHARE_SITE_URL } from '@/constants/app.constants';
 
 /**
  * Links that show where a traveller is: SOS links (go-tour-go.expo.app/sos?t=…)
@@ -11,7 +12,8 @@ import { isValidPhone, normalizePhone } from './phone-helpers';
  * in-app screen (Android App Links); without it, a small web page. Links last
  * at most 24 hours and can be ended early by the sender.
  */
-export const SHARE_SITE = 'https://go-tour-go.expo.app';
+/** The share site (src/constants/app.constants.ts). */
+export const SHARE_SITE = SHARE_SITE_URL;
 
 export type ShareKind = 'sos' | 'live';
 

@@ -4,6 +4,7 @@
  */
 import type { LatLng } from '@/lib/geo';
 import { tx, txEn } from '@/lib/i18n';
+import { EXTERNAL, SERVICES } from '@/constants/app.constants';
 
 export type TravelMode = 'driving' | 'cycling' | 'walking';
 
@@ -33,11 +34,7 @@ export type Route = {
   createdAt: number;
 };
 
-const BASE: Record<TravelMode, string> = {
-  driving: 'https://routing.openstreetmap.de/routed-car/route/v1/driving',
-  cycling: 'https://routing.openstreetmap.de/routed-bike/route/v1/bike',
-  walking: 'https://routing.openstreetmap.de/routed-foot/route/v1/foot',
-};
+const BASE: Record<TravelMode, string> = SERVICES.routing;
 
 export function buildRouteUrl(mode: TravelMode, from: LatLng, to: LatLng, alternatives = false) {
   const coords = `${from.longitude.toFixed(6)},${from.latitude.toFixed(6)};${to.longitude.toFixed(6)},${to.latitude.toFixed(6)}`;
@@ -201,5 +198,5 @@ export async function fetchRoutes(mode: TravelMode, from: LatLng, to: Route['to'
 /** Hand-off for full turn-by-turn navigation. */
 export function googleMapsDirectionsUrl(to: LatLng, mode: TravelMode) {
   const travel = mode === 'cycling' ? 'bicycling' : mode;
-  return `https://www.google.com/maps/dir/?api=1&destination=${to.latitude},${to.longitude}&travelmode=${travel}`;
+  return `${EXTERNAL.googleMapsDirections}?api=1&destination=${to.latitude},${to.longitude}&travelmode=${travel}`;
 }

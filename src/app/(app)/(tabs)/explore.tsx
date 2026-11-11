@@ -48,6 +48,7 @@ import { storage, StorageKeys, useStorage } from '@/lib/storage';
 import { colors, shadow } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
+import { COUNTRY } from '@/constants/app.constants';
 
 // Panel motion: the height follows Hide / Show, the cards fade; it slides away for an alert card.
 const PANEL_LAYOUT = LinearTransition.duration(240).easing(EASE_OUT).reduceMotion(ReduceMotion.System);
@@ -56,7 +57,7 @@ const PANEL_OUT = FadeOutDown.duration(160).reduceMotion(ReduceMotion.System);
 const CARDS_IN = FadeIn.duration(200).delay(60).reduceMotion(ReduceMotion.System);
 const CARDS_OUT = FadeOut.duration(120).reduceMotion(ReduceMotion.System);
 
-const PAKISTAN_CENTER: [number, number] = [70.5, 30.5];
+const PAKISTAN_CENTER = COUNTRY.center;
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();

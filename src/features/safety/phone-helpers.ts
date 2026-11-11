@@ -1,3 +1,5 @@
+import { EXTERNAL } from '@/constants/app.constants';
+
 /** Pure helpers for SOS messages and WhatsApp links (unit-tested). */
 
 export function normalizePhone(raw: string): string {
@@ -14,7 +16,7 @@ export function isValidPhone(phone: string) {
 
 /** OpenStreetMap link, used only when a GoTourGo link could not be created (no internet). */
 export function osmLink(lat: number, lng: number) {
-  return `https://www.openstreetmap.org/?mlat=${lat.toFixed(6)}&mlon=${lng.toFixed(6)}#map=17/${lat.toFixed(6)}/${lng.toFixed(6)}`;
+  return `${EXTERNAL.openStreetMap}?mlat=${lat.toFixed(6)}&mlon=${lng.toFixed(6)}#map=17/${lat.toFixed(6)}/${lng.toFixed(6)}`;
 }
 
 /**
@@ -33,6 +35,6 @@ export function sosMessage(name: string, link: string | null, lat: number | null
 
 /** WhatsApp click-to-chat link (opens WhatsApp or the browser; no extra Android permissions). */
 export function whatsappLink(phone: string, text: string) {
-  return `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
+  return `${EXTERNAL.whatsapp}${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
 }
 
