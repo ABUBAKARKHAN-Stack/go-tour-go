@@ -1189,6 +1189,8 @@ export const ur: Record<string, string> = {
   "Weather & road alerts": "موسم اور سڑک کی اطلاعات",
   "assistant": "معاون",
   // Guest mode
+  "Explore as guest": "بطور مہمان دیکھیں",
+  "Guest mode": "مہمان موڈ",
   "Get more": "مزید حاصل کریں",
   "Guests get {0} a day. A free account gets more.": "مہمانوں کو روزانہ {0} ملتے ہیں۔ مفت اکاؤنٹ کو زیادہ ملتے ہیں۔",
   "No AI questions left today. More tomorrow.": "آج کے AI سوالات ختم ہو گئے۔ کل مزید ملیں گے۔",

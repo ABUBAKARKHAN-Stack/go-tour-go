@@ -1,14 +1,14 @@
 import { Link, router } from 'expo-router';
 import { ArrowRight, Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
 import { InlineError } from '@/components/states';
 import { Text } from '@/components/text';
 import { signIn, signInAsGuest } from '@/features/auth/api';
-import { AuthShell, AuthSwitch } from '@/features/auth/auth-shell';
+import { AuthShell, AuthSwitch, OrDivider } from '@/features/auth/auth-shell';
 import { signInSchema } from '@/features/auth/schemas';
 import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
@@ -89,22 +89,20 @@ export default function SignIn() {
         </Pressable>
       </Link>
 
-      <View className="pt-1">
+      <View className="gap-2 pt-1">
         <AppButton label={tx('Sign in')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
+        <OrDivider />
+        {/* Guest mode: explore without an account (saved places and trips carry over if they sign up later). */}
+        <AppButton
+          label={tx('Continue as guest')}
+          icon={Compass}
+          variant="secondary"
+          loading={guestBusy}
+          accessibilityHint={tx('Explore, save places and plan trips without an account')}
+          onPress={continueAsGuest}
+        />
       </View>
       <AuthSwitch prompt={tx("Don't have an account?")} action={tx('Sign up')} onPress={() => router.push('/sign-up')} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityHint={tx('Explore, save places and plan trips without an account')}
-        accessibilityState={{ busy: guestBusy }}
-        disabled={guestBusy}
-        onPress={continueAsGuest}
-        hitSlop={6}
-        className="-mt-2 min-h-11 flex-row items-center justify-center gap-1.5 active:opacity-60"
-      >
-        {guestBusy ? <ActivityIndicator size="small" color={colors.accent} /> : <Compass color={colors.accent} size={16} />}
-        <Text className="text-sm font-semibold text-accent">{tx('Continue as guest')}</Text>
-      </Pressable>
     </AuthShell>
   );
 }
