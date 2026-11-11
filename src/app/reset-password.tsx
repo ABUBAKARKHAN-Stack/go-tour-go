@@ -13,7 +13,7 @@ import { serverError, useZodForm } from '@/lib/forms';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 
-/** Opened from the password-reset email (gotourgodevelopment://reset-password?code=...). */
+/** Opened from the password-reset email (gotourgo://reset-password?code=...). */
 export default function ResetPassword() {
   const { code, error_description } = useLocalSearchParams<{ code?: string; error_description?: string }>();
   const [ready, setReady] = useState(!code);

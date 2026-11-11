@@ -3,10 +3,10 @@
 project_id = "go-tour-go"
 
 [auth]
-site_url = "gotourgodevelopment://"
+site_url = "gotourgo://"
 # Deep link used by the password-reset email (also add it in the dashboard:
 # Authentication > URL Configuration > Redirect URLs).
-additional_redirect_urls = ["gotourgodevelopment://reset-password"]
+additional_redirect_urls = ["gotourgo://reset-password"]
 
 [functions.ai]
 # User-facing function: the platform verifies the caller's JWT, and
