@@ -159,7 +159,7 @@ function DestinationCardBase({ destination: d, distance, rating, variant = 'tile
         <View className="gap-1 px-3 pb-3 pt-2.5">
           <View className="flex-row items-center gap-1.5">
             <MapPin color={colors.primary} size={14} />
-            <Text numberOfLines={1} className="shrink text-[15px] font-semibold text-heading">
+            <Text numberOfLines={1} className={`shrink font-semibold text-heading ${width < 180 ? 'text-[14px]' : 'text-[15px]'}`}>
               {d.name}
             </Text>
           </View>
