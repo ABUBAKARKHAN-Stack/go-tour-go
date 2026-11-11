@@ -4,12 +4,14 @@ import {
   Bookmark,
   ChevronRight,
   ClipboardList,
+  Compass,
   LogOut,
   MapPin,
   MessagesSquare,
   Pencil,
   Settings,
   ShieldCheck,
+  UserPlus,
   Users,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -53,7 +55,7 @@ function Row({ icon: Icon, label, onPress, value, tone = 'ice', last }: { icon: 
 const CARD = { boxShadow: shadow(0.08, 6, 20) };
 
 export default function ProfileScreen() {
-  const { profile, profileLoading, email, userId } = useAuth();
+  const { profile, profileLoading, email, userId, isGuest } = useAuth();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const follows = useFollowCounts(userId ?? undefined);
@@ -64,10 +66,15 @@ export default function ProfileScreen() {
   const bandH = insets.top + 132;
 
   const confirmSignOut = () =>
-    Alert.alert(tx('Sign out?'), tx('Location sharing will stop.'), [
+    Alert.alert(
+      isGuest ? tx('Leave guest mode?') : tx('Sign out?'),
+      isGuest
+        ? tx('Guests cannot sign back in: your saved places and trips will be lost. Create an account first to keep them.')
+        : tx('Location sharing will stop.'),
+      [
       { text: tx('Cancel'), style: 'cancel' },
       {
-        text: tx('Sign out'),
+        text: isGuest ? tx('Leave guest mode') : tx('Sign out'),
         style: 'destructive',
         onPress: async () => {
           await stopSharing().catch(() => undefined);
@@ -121,7 +128,9 @@ export default function ProfileScreen() {
         </View>
 
         <View className="gap-5 px-4" style={{ marginTop: -52 }}>
-          {profileLoading && !profile ? (
+          {isGuest ? (
+            <GuestCard />
+          ) : profileLoading && !profile ? (
             <LoadingState variant="profile" />
           ) : (
             <View className="items-center gap-1.5">
@@ -147,7 +156,7 @@ export default function ProfileScreen() {
           )}
 
           <View className="flex-row justify-between rounded-[20px] bg-card px-2 py-3" style={CARD}>
-            {stats.map((st) => (
+            {(isGuest ? stats.slice(0, 2) : stats).map((st) => (
               <Pressable
                 key={st.label}
                 accessibilityRole="button"
@@ -169,19 +178,47 @@ export default function ProfileScreen() {
           <View className="rounded-[20px] bg-card px-4 py-1" style={CARD}>
             <Row icon={ClipboardList} tone="ice" label={tx('My trip')} value={`${trips.data?.length ?? 0}`} onPress={() => router.navigate('/trips')} />
             <Row icon={Bookmark} tone="peach" label={tx('Saved places')} onPress={() => router.push({ pathname: '/saved', params: { tab: 'places' } })} />
-            <Row icon={Users} tone="mint" label={tx('Friends')} onPress={() => router.push('/friends')} />
-            <Row icon={MessagesSquare} tone="lemon" label={tx('Messages')} onPress={() => router.push('/messages')} />
+            {isGuest ? null : <Row icon={Users} tone="mint" label={tx('Friends')} onPress={() => router.push('/friends')} />}
+            {isGuest ? null : <Row icon={MessagesSquare} tone="lemon" label={tx('Messages')} onPress={() => router.push('/messages')} />}
             <Row icon={Bell} tone="ice" label={tx('Notifications')} onPress={() => router.push('/notifications')} />
             <Row icon={ShieldCheck} tone="peach" label={tx('Safety & SOS')} onPress={() => router.push('/safety')} />
             <Row icon={Settings} tone="sand" label={tx('Settings')} onPress={() => router.push('/settings')} last />
           </View>
 
-          <Text className="text-center text-xs text-faint">
-            {tx('Profile visibility: {0}', { 0: profile?.visibility === 'friends' ? tx('Private (friends only)') : tx('Public') })}
-          </Text>
-          <AppButton label={tx('Sign out')} icon={LogOut} variant="outline" onPress={confirmSignOut} />
+          {isGuest ? null : (
+            <Text className="text-center text-xs text-faint">
+              {tx('Profile visibility: {0}', { 0: profile?.visibility === 'friends' ? tx('Private (friends only)') : tx('Public') })}
+            </Text>
+          )}
+          <AppButton label={isGuest ? tx('Leave guest mode') : tx('Sign out')} icon={LogOut} variant="outline" onPress={confirmSignOut} />
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+/** Profile for someone exploring as a guest: what they can do, and the way to a full account. */
+function GuestCard() {
+  const signInInstead = () =>
+    Alert.alert(tx('Sign in to another account?'), tx('Your guest saved places and trips stay with the guest profile and will not move to that account.'), [
+      { text: tx('Cancel'), style: 'cancel' },
+      { text: tx('Sign in'), onPress: () => void signOut() },
+    ]);
+  return (
+    <View className="items-center gap-3 rounded-[24px] bg-card p-5" style={CARD}>
+      <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-background bg-primary-soft">
+        <Compass color={colors.primary} size={34} />
+      </View>
+      <Text accessibilityRole="header" className="font-display text-[24px] leading-8 text-heading">
+        {tx("You're exploring as a guest")}
+      </Text>
+      <Text className="text-center text-sm leading-5 text-muted-foreground">
+        {tx('Save places, plan trips, use the AI guide and send an SOS. Create a free account to post, review, add friends and share your live location.')}
+      </Text>
+      <View className="w-full gap-2 pt-1">
+        <AppButton label={tx('Create account')} icon={UserPlus} onPress={() => router.push('/create-account')} />
+        <AppButton label={tx('I already have an account')} variant="secondary" onPress={signInInstead} />
+      </View>
     </View>
   );
 }

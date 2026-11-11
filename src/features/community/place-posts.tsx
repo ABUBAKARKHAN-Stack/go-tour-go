@@ -13,6 +13,7 @@ import { displayName } from '@/features/social/api';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 import type { CommunityPost } from '@/lib/types';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 const TILE = 148;
 
@@ -22,10 +23,11 @@ const TILE = 148;
  */
 export function PlacePostsSection({ destinationId, name }: { destinationId: string; name: string }) {
   const feed = useFeed({ destinationId });
+  const requireAccount = useRequireAccount();
   const count = usePlacePostCount(destinationId);
   const posts = useMemo(() => (feed.data?.pages[0] ?? []).slice(0, 8), [feed.data]);
   const total = count.data ?? posts.length;
-  const postHere = () => router.push({ pathname: '/post/new', params: { destination: destinationId } });
+  const postHere = () => requireAccount(tx('post travel moments')) && router.push({ pathname: '/post/new', params: { destination: destinationId } });
 
   return (
     <View className="gap-3">

@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 
 import { dataSyncStore, syncLocalData } from '@/features/data/sync';
 import { HazardCardOverlay } from '@/features/alerts/hazard-card';
+import { GuestGateOverlay } from '@/features/auth/guest-gate';
 import { useInboxRealtime } from '@/features/inbox/api';
 import { useJourneyEffects } from '@/features/journey/use-journey-effects';
 import { LocationProvider } from '@/features/location/location-provider';
@@ -71,9 +72,11 @@ export default function AppLayout() {
           <Stack.Screen name="story/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="story/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="review/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="create-account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         </Stack>
         <ProximityCardOverlay />
         <HazardCardOverlay />
+        <GuestGateOverlay />
       </ProximityProvider>
     </LocationProvider>
   );

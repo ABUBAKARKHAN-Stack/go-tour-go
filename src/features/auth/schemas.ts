@@ -43,3 +43,10 @@ export const signUpSchema = z.object({
 export const forgotPasswordSchema = z.object({ email: emailField });
 
 export const resetPasswordSchema = z.object({ password: newPasswordField });
+
+/** A guest creating an account: the password comes after they confirm the email. */
+export const guestUpgradeSchema = z.object({
+  fullName: fullNameField,
+  username: usernameField,
+  email: emailField,
+});

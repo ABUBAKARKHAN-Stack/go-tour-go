@@ -62,3 +62,67 @@ export async function updatePassword(password: string) {
 export async function signOut() {
   await supabase.auth.signOut();
 }
+
+/** Where the "finish creating your account" email link lands (a guest converting). */
+export const FINISH_ACCOUNT_REDIRECT = Linking.createURL('/finish-account');
+
+/** Explore without an account: an anonymous sign-in (enable "Allow anonymous sign-ins" in Supabase). */
+export async function signInAsGuest() {
+  const { error } = await supabase.auth.signInAnonymously();
+  if (error) {
+    if (/anonymous.*disabled|not enabled/i.test(error.message)) {
+      throw new Error(tx('Guest mode is not available right now. Create an account or sign in.'));
+    }
+    throw error;
+  }
+}
+
+/**
+ * A guest turns into a full account and keeps their saved places and trips
+ * (the same user). Step 1: link the email; Supabase emails a confirmation
+ * link. Step 2 (finishGuestUpgrade) sets the password after they tap it.
+ */
+export async function startGuestUpgrade(params: { email: string; fullName: string; username: string }) {
+  const { error } = await supabase.auth.updateUser(
+    { email: params.email.trim(), data: { full_name: params.fullName.trim(), username: params.username.trim().toLowerCase() } },
+    { emailRedirectTo: FINISH_ACCOUNT_REDIRECT },
+  );
+  if (error) {
+    if (/already (been )?registered|already exists|email.*(taken|in use)/i.test(error.message)) {
+      throw new Error(tx('An account with this email already exists. Try signing in.'));
+    }
+    throw error;
+  }
+}
+
+/** Confirms the email from the link (PKCE code, or token hash). */
+export async function confirmEmailLink(params: { code?: string; tokenHash?: string }) {
+  if (params.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+    if (error) throw error;
+    return;
+  }
+  if (params.tokenHash) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: params.tokenHash, type: 'email_change' });
+    if (error) throw error;
+  }
+}
+
+/** Step 2: set the password, then put the chosen name and username on the profile. */
+export async function finishGuestUpgrade(password: string) {
+  const { data, error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+  // A fresh token carries is_anonymous = false, which the profile rules check.
+  await supabase.auth.refreshSession();
+  const user = data.user;
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; username?: string };
+  if (!user) return;
+  const patch: { full_name?: string; username?: string } = {};
+  if (meta.full_name) patch.full_name = meta.full_name.slice(0, 80);
+  if (meta.username && /^[a-z0-9_]{3,24}$/.test(meta.username)) patch.username = meta.username;
+  if (Object.keys(patch).length) {
+    const { error: profileError } = await supabase.from('profiles').update(patch).eq('id', user.id);
+    // A taken username keeps the automatic one; they can change it in Edit profile.
+    if (profileError && patch.username) await supabase.from('profiles').update({ full_name: patch.full_name }).eq('id', user.id);
+  }
+}

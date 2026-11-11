@@ -12,10 +12,12 @@ import { useFriendships, useSocialActions, useUserSearch } from '@/features/soci
 import { errorMessage } from '@/lib/errors';
 import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 type Tab = 'friends' | 'requests' | 'find';
 
 export default function FriendsScreen() {
+  const requireAccount = useRequireAccount();
   const [tab, setTab] = useState<Tab>('friends');
   const [term, setTerm] = useState('');
   const friendships = useFriendships();
@@ -116,7 +118,7 @@ export default function FriendsScreen() {
                   subtitle={p.home_city ? `@${p.username} · ${p.home_city}` : `@${p.username}`}
                   right={
                     status === 'none' ? (
-                      <IconButton icon={UserPlus} label={tx('Add {0}', { 0: p.username })} active onPress={() => actions.sendRequest.mutate(p.id, { onError })} />
+                      <IconButton icon={UserPlus} label={tx('Add {0}', { 0: p.username })} active onPress={() => requireAccount(tx('add friends')) && actions.sendRequest.mutate(p.id, { onError })} />
                     ) : (
                       <Text className="text-xs text-muted-foreground">{status === 'friends' ? tx('Friends') : status === 'outgoing' ? tx('Requested') : tx('Wants to connect')}</Text>
                     )

@@ -19,6 +19,7 @@ import { CSS_EASE_OUT } from '@/lib/motion';
 import { colors, shadow } from '@/lib/theme';
 import type { CommunityPost } from '@/lib/types';
 import { flipX, tx } from '@/lib/i18n';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 const DOUBLE_TAP_MS = 260;
 
@@ -46,6 +47,7 @@ type Props = {
 
 function PostCardBase({ post, userId, detail, commenterRating }: Props) {
   const actions = useCommunityActions();
+  const requireAccount = useRequireAccount();
   const ratings = useRatings();
   const liked = post.my_like.length > 0;
   const saved = (post.my_save?.length ?? 0) > 0;
@@ -65,6 +67,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
 
   const open = () => router.push({ pathname: '/post/[id]', params: { id: post.id } });
   const like = (value: boolean) => {
+    if (!requireAccount(tx('like posts'))) return;
     if (value) setPops((n) => n + 1);
     if (value) haptics.on();
     else haptics.off();

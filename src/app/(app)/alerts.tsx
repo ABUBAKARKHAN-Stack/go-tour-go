@@ -16,11 +16,13 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { colors, severityColors, shadow } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 export default function AlertsScreen() {
   const alerts = useRoadAlerts();
   const location = useLastLocation();
   const { userId } = useAuth();
+  const requireAccount = useRequireAccount();
   const [reporting, setReporting] = useState(false);
 
   return (
@@ -29,7 +31,7 @@ export default function AlertsScreen() {
       title={tx('Road & travel alerts')}
       subtitle={tx('Official alerts and traveller reports')}
       scroll={false}
-      right={userId ? <AppButton label={tx('Report')} size="sm" variant="secondary" onPress={() => setReporting(true)} /> : undefined}
+      right={userId ? <AppButton label={tx('Report')} size="sm" variant="secondary" onPress={() => requireAccount(tx('report hazards')) && setReporting(true)} /> : undefined}
     >
       <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />
       {alerts.isLoading ? (

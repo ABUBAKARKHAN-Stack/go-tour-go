@@ -17,8 +17,10 @@ import { displayName, useFollowCounts, useFriendships, useProfile, useSocialActi
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 export default function UserProfileScreen() {
+  const requireAccount = useRequireAccount();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { userId } = useAuth();
   const profile = useProfile(id);
@@ -94,7 +96,7 @@ export default function UserProfileScreen() {
             {status === 'friends' ? (
               <AppButton label={tx('Message')} icon={MessageCircle} variant="accent" loading={opening} onPress={message} className="flex-1" />
             ) : status === 'incoming' && friendship ? (
-              <AppButton label={tx('Accept request')} icon={Check} variant="accent" onPress={() => actions.respond.mutate({ id: friendship.id, accept: true }, { onError })} className="flex-1" />
+              <AppButton label={tx('Accept request')} icon={Check} variant="accent" onPress={() => requireAccount(tx('add friends')) && actions.respond.mutate({ id: friendship.id, accept: true }, { onError })} className="flex-1" />
             ) : status === 'outgoing' ? (
               <AppButton label={tx('Request sent')} variant="secondary" disabled className="flex-1" />
             ) : (
@@ -104,14 +106,14 @@ export default function UserProfileScreen() {
                 variant="accent"
                 disabled={!profile.data.allow_friend_requests}
                 loading={actions.sendRequest.isPending}
-                onPress={() => actions.sendRequest.mutate(id, { onError })}
+                onPress={() => requireAccount(tx('add friends')) && actions.sendRequest.mutate(id, { onError })}
                 className="flex-1"
               />
             )}
             <AppButton
               label={follows.data?.isFollowing ? tx('Following') : tx('Follow')}
               variant={follows.data?.isFollowing ? 'secondary' : 'outline'}
-              onPress={() => actions.toggleFollow.mutate({ target: id, follow: !follows.data?.isFollowing }, { onError })}
+              onPress={() => requireAccount(tx('follow travellers')) && actions.toggleFollow.mutate({ target: id, follow: !follows.data?.isFollowing }, { onError })}
               className="flex-1"
             />
           </View>

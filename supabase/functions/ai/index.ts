@@ -8,7 +8,7 @@
 //   - "translate": Urdu translation of a landmark guide, made once and stored
 //     in destination_translations (marked machine_translated) for everyone.
 //
-// Secrets: GEMINI_API_KEY (required), GEMINI_MODEL, AI_DAILY_LIMIT (optional).
+// Secrets: GEMINI_API_KEY (required), GEMINI_MODEL, AI_DAILY_LIMIT, AI_DAILY_LIMIT_GUEST (optional).
 // Deploy:  supabase functions deploy ai
 import { withSupabase } from 'npm:@supabase/server@1';
 
@@ -48,6 +48,8 @@ type GeminiPart = { text?: string; inline_data?: { mime_type: string; data: stri
 
 const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-flash-latest';
 const DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT') ?? '50');
+/** Guests (anonymous sign-ins) get a smaller daily allowance. */
+const GUEST_DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT_GUEST') ?? '10');
 const MAX_IMAGE_BASE64 = 2_000_000; // ~1.5 MB image
 const MAX_TURNS = 12;
 const MAX_TURN_CHARS = 2000;
@@ -120,7 +122,8 @@ export default {
       // Translations already stored are free; only a new translation uses quota.
       if (payload.mode === 'translate') return json(await handleTranslate(payload, ctx.supabaseAdmin, userId));
 
-      await consumeQuota(ctx.supabaseAdmin, userId);
+      const guest = (ctx.jwtClaims as Record<string, unknown> | null)?.is_anonymous === true;
+      await consumeQuota(ctx.supabaseAdmin, userId, guest);
 
       if (payload.mode === 'chat') return json(await handleChat(payload, ctx.supabase));
       if (payload.mode === 'lens') return json(await handleLens(payload, ctx.supabase));
@@ -137,14 +140,20 @@ export default {
 type Db = any;
 
 /** Per-user daily quota (service role only; clients cannot touch ai_usage). */
-async function consumeQuota(admin: Db, userId: string) {
+async function consumeQuota(admin: Db, userId: string, guest: boolean) {
   const { data: used, error } = await admin.rpc('increment_ai_usage', { uid: userId });
   if (error) {
     console.error('quota error', error);
     throw new HttpError(503, 'AI service unavailable.');
   }
-  if (typeof used === 'number' && used > DAILY_LIMIT) {
-    throw new HttpError(429, `Daily AI limit reached (${DAILY_LIMIT}). Try again tomorrow.`);
+  const limit = guest ? GUEST_DAILY_LIMIT : DAILY_LIMIT;
+  if (typeof used === 'number' && used > limit) {
+    throw new HttpError(
+      429,
+      guest
+        ? `Guests can ask ${limit} questions a day. Create a free account for more, or try again tomorrow.`
+        : `Daily AI limit reached (${limit}). Try again tomorrow.`,
+    );
   }
 }
 

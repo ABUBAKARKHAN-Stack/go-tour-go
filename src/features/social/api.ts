@@ -61,6 +61,8 @@ export function useUserSearch(term: string) {
         .select(`${SUMMARY}, bio, home_city`)
         .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
         .neq('id', userId!)
+        // Guests (anonymous sign-ins) never show up in people search.
+        .eq('is_guest', false)
         .limit(20);
       if (error) throw error;
       return data as (ProfileSummary & { bio: string | null; home_city: string | null })[];

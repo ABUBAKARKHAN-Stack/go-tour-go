@@ -18,6 +18,7 @@ import { errorMessage } from '@/lib/errors';
 import { tx } from '@/lib/i18n';
 import { brandGradient, colors } from '@/lib/theme';
 import type { PostComment } from '@/lib/types';
+import { useRequireAccount } from '@/features/auth/guest-gate';
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,6 +29,7 @@ export default function PostDetail() {
   const actions = useCommunityActions();
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<PostComment | null>(null);
+  const requireAccount = useRequireAccount();
   const list = useRef<FlatList<PostComment>>(null);
   const input = useRef<TextInputRef>(null);
   const count = comments.data?.length ?? post.data?.comments[0]?.count ?? 0;
@@ -35,6 +37,7 @@ export default function PostDetail() {
   const send = () => {
     const body = text.trim();
     if (!body) return;
+    if (!requireAccount(tx('comment on posts'))) return;
     setText('');
     setReplyTo(null);
     actions.addComment.mutate(

@@ -1,13 +1,13 @@
 import { Link, router } from 'expo-router';
-import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
+import { ArrowRight, Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { FormTextField } from '@/components/form-field';
 import { InlineError } from '@/components/states';
 import { Text } from '@/components/text';
-import { signIn } from '@/features/auth/api';
+import { signIn, signInAsGuest } from '@/features/auth/api';
 import { AuthShell, AuthSwitch } from '@/features/auth/auth-shell';
 import { signInSchema } from '@/features/auth/schemas';
 import { serverError, useZodForm } from '@/lib/forms';
@@ -17,6 +17,19 @@ import { tx } from '@/lib/i18n';
 export default function SignIn() {
   const [show, setShow] = useState(false);
   const { control, handleSubmit, setError, setFocus, formState } = useZodForm(signInSchema, { defaultValues: { email: '', password: '' } });
+
+  const [guestBusy, setGuestBusy] = useState(false);
+  // Explore without an account; the root navigator opens the app once the guest session arrives.
+  const continueAsGuest = async () => {
+    setGuestBusy(true);
+    try {
+      await signInAsGuest();
+    } catch (e) {
+      setError('root', serverError(e));
+    } finally {
+      setGuestBusy(false);
+    }
+  };
 
   const submit = handleSubmit(async ({ email, password }) => {
     try {
@@ -80,6 +93,18 @@ export default function SignIn() {
         <AppButton label={tx('Sign in')} trailingIcon={ArrowRight} onPress={submit} loading={formState.isSubmitting} />
       </View>
       <AuthSwitch prompt={tx("Don't have an account?")} action={tx('Sign up')} onPress={() => router.push('/sign-up')} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityHint={tx('Explore, save places and plan trips without an account')}
+        accessibilityState={{ busy: guestBusy }}
+        disabled={guestBusy}
+        onPress={continueAsGuest}
+        hitSlop={6}
+        className="-mt-2 min-h-11 flex-row items-center justify-center gap-1.5 active:opacity-60"
+      >
+        {guestBusy ? <ActivityIndicator size="small" color={colors.accent} /> : <Compass color={colors.accent} size={16} />}
+        <Text className="text-sm font-semibold text-accent">{tx('Continue as guest')}</Text>
+      </Pressable>
     </AuthShell>
   );
 }
