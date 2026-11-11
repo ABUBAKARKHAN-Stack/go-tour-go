@@ -197,13 +197,13 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
           type="line"
           id="route-casing"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.background, 'line-width': 9, 'line-opacity': 0.8 }}
+          paint={{ 'line-color': colors.background, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 5.5, 15, 7.5, 18, 10.5] as never, 'line-opacity': 0.8 }}
         />
         <Layer
           type="line"
           id="route-line"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.route, 'line-width': 5 }}
+          paint={{ 'line-color': colors.route, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2.5, 12, 3.5, 15, 5, 18, 7.5] as never }}
         />
       </GeoJSONSource>
 
@@ -311,7 +311,7 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
 
       {props.arrow ? (
         <ViewAnnotation id="journey-arrow" lngLat={[props.arrow.longitude, props.arrow.latitude]}>
-          <NavArrow rotation={props.arrow.bearing} />
+          <NavArrow rotation={props.arrow.bearing} size={30} />
         </ViewAnnotation>
       ) : props.simulatedFix ? (
         <ViewAnnotation id="simulated-user" lngLat={[props.simulatedFix.longitude, props.simulatedFix.latitude]}>

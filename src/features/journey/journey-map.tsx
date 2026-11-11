@@ -1,5 +1,5 @@
 import { Camera, GeoJSONSource, Layer, Map, ViewAnnotation } from '@maplibre/maplibre-react-native';
-import { Landmark, MapPin, TriangleAlert } from 'lucide-react-native';
+import { Landmark, MapPin, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { memo, useMemo } from 'react';
 import { View } from 'react-native';
 
@@ -83,7 +83,7 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
             type="line"
             id="journey-travelled-line"
             layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': colors.borderStrong, 'line-width': 6 }}
+            paint={{ 'line-color': colors.borderStrong, 'line-width': ROUTE_WIDTH as never }}
           />
         </GeoJSONSource>
       ) : null}
@@ -94,44 +94,64 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
             type="line"
             id="journey-route-casing"
             layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': colors.routeCasing, 'line-width': 11 }}
+            paint={{ 'line-color': colors.routeCasing, 'line-width': ROUTE_CASING_WIDTH as never }}
           />
           <Layer
             type="line"
             id="journey-route-line"
             layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': colors.route, 'line-width': 6 }}
+            paint={{ 'line-color': colors.route, 'line-width': ROUTE_WIDTH as never }}
           />
         </GeoJSONSource>
       ) : null}
 
+      {/* Pins stand on their tip, so the head sits above the route instead of covering it. */}
       {items.map((item) => (
-        <ViewAnnotation key={item.id} id={`journey-${item.id}`} lngLat={[item.longitude, item.latitude]}>
-          <View
-            className={`h-8 w-8 items-center justify-center rounded-full border-2 border-white ${
-              item.kind === 'hazard' ? 'bg-destructive' : 'bg-primary'
-            } ${progress && item.along < progress.along ? 'opacity-50' : ''}`}
-          >
-            {item.kind === 'hazard' ? <TriangleAlert color="#FFFFFF" size={15} /> : <Landmark color="#FFFFFF" size={15} />}
-          </View>
+        <ViewAnnotation key={item.id} id={`journey-${item.id}`} lngLat={[item.longitude, item.latitude]} anchor="bottom">
+          <Pin
+            color={item.kind === 'hazard' ? colors.destructive : colors.primary}
+            icon={item.kind === 'hazard' ? TriangleAlert : Landmark}
+            faded={Boolean(progress && item.along < progress.along)}
+          />
         </ViewAnnotation>
       ))}
 
       {route ? (
-        <ViewAnnotation id="journey-destination" lngLat={[route.to.longitude, route.to.latitude]}>
-          <View className="h-11 w-11 items-center justify-center rounded-full border-[3px] border-white bg-accent">
-            <MapPin color="#FFFFFF" size={20} />
-          </View>
+        <ViewAnnotation id="journey-destination" lngLat={[route.to.longitude, route.to.latitude]} anchor="bottom">
+          <Pin color={colors.accent} icon={MapPin} size={32} />
         </ViewAnnotation>
       ) : null}
 
       {here ? (
         <ViewAnnotation id="journey-user" lngLat={here}>
           {/* Navigating, the map turns with the traveller so the arrow points up; in the preview the map faces north. */}
-          <NavArrow rotation={follow ? 0 : bearing} size={follow ? 52 : 44} />
+          <NavArrow rotation={follow ? 0 : bearing} size={follow ? 38 : 30} />
         </ViewAnnotation>
       ) : null}
     </Map>
+  );
+}
+
+/**
+ * Route width by zoom: thin when the whole route is in view, wider at street
+ * level where you follow it. The white casing is a thin outline around it.
+ */
+const ROUTE_WIDTH = ['interpolate', ['linear'], ['zoom'], 8, 2.5, 12, 3.5, 15, 5, 18, 7.5];
+const ROUTE_CASING_WIDTH = ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 5.5, 15, 7.5, 18, 10.5];
+
+/** Small map pin: a round head with an icon over a short stem whose tip marks the spot. */
+function Pin({ color, icon: Icon, size = 24, faded }: { color: string; icon: LucideIcon; size?: number; faded?: boolean }) {
+  return (
+    <View className="items-center" style={{ opacity: faded ? 0.5 : 1 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View
+        className="items-center justify-center rounded-full border-2 border-white"
+        style={{ width: size, height: size, backgroundColor: color, boxShadow: '0 2px 6px rgba(21, 56, 79, 0.3)' }}
+      >
+        <Icon color="#FFFFFF" size={Math.round(size * 0.5)} />
+      </View>
+      <View style={{ width: 2, height: 7, backgroundColor: color, marginTop: -1 }} />
+      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: color, marginTop: -2, borderWidth: 1, borderColor: '#FFFFFF' }} />
+    </View>
   );
 }
 
