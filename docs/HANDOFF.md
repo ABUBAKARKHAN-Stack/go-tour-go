@@ -211,7 +211,8 @@ and emergency numbers.
   PNGs, brand background colours in `app.json`) changes it again, to `ab8db1e4f9e65dc0a358c9c7ffcafd1862b751e8`
   in this container. It ships with a new APK; after that build, OTA updates go to the new APK only.
 - The rename to `com.abubakaraijaz.gotourgo` / `gotourgo://` (section on the share site) changes it to
-  `7aeebfa4217193b5a9db9ff36ba2a7b3d9bb6b97`. That build is a new app id, so it installs next to the old one.
+  `7ef8854e7f769e1d955c1e6b69aac8dc395203e4` (slug kept as `go-tour-go-development`). That build is a new app id,
+  so it installs next to the old one.
 - JS-only PRs must keep the fingerprint unchanged. Anything that changes it (new native module, app.json
   plugins/icons, Android config) must go into a PR that is merged together with an APK build. Say so in the PR.
 - PR #18 was handled this way (draft until the owner approved the build). Do the same for future native changes.
@@ -300,11 +301,13 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 
 ### Rename: no more "development" (Nov 2026)
 
-The app dropped its "development" names: EAS slug `go-tour-go`, URL scheme `gotourgo://`, Android package
+The app dropped its "development" names: URL scheme `gotourgo://`, Android package
 `com.abubakaraijaz.gotourgo` (was `…gotourgodevelopment`), npm name `go-tour-go`. The EAS project id is unchanged,
 so EAS Update keeps working. A new package id is a **new app** on the phone: install it fresh (sign in again,
 download offline maps again); the old app can be uninstalled. Owner steps:
-1. expo.dev → project settings → rename the project slug to `go-tour-go` (EAS refuses a slug mismatch).
+1. The EAS slug stays `go-tour-go-development`: expo.dev does not let a project's slug change, and EAS refuses
+   a build whose `app.json` slug differs from the project's. The slug is internal (not shown in the app, the
+   phone or any link), so only the visible names changed.
 2. Build: `bunx eas-cli build -p android --profile preview`. When asked for credentials for the new package,
    reuse the existing keystore to keep the same signing fingerprint; otherwise read the new SHA-256 with
    `bunx eas-cli credentials -p android` and set `ANDROID_CERT_SHA256` before building the share site.
