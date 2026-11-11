@@ -309,8 +309,9 @@ download offline maps again); the old app can be uninstalled. Owner steps:
    a build whose `app.json` slug differs from the project's. The slug is internal (not shown in the app, the
    phone or any link), so only the visible names changed.
 2. Build: `bunx eas-cli build -p android --profile preview`. When asked for credentials for the new package,
-   reuse the existing keystore to keep the same signing fingerprint; otherwise read the new SHA-256 with
-   `bunx eas-cli credentials -p android` and set `ANDROID_CERT_SHA256` before building the share site.
+   EAS generated a new keystore for the new package; its SHA-256
+   (`03:F6:90:23:…:8D:BB:CE`, see `bunx eas-cli credentials -p android`) is the default in
+   `scripts/build-share-site.mjs`.
 3. Supabase → Authentication → URL Configuration: Site URL `gotourgo://`, Redirect URLs add
    `gotourgo://reset-password` (and `gotourgo://`).
 4. Redeploy the share site so `/.well-known/assetlinks.json` names the new package.
