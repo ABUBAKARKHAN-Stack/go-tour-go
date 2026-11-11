@@ -17,12 +17,9 @@ import { endShareLink, isShareToken, shareUrl, useSharedLocation, type SharedLoc
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { flipX, tx } from '@/lib/i18n';
 import { cardShadow, colors } from '@/lib/theme';
+import { sosEmergencyNumbers } from '@/features/safety/emergency';
 
-const EMERGENCY = [
-  { number: '15', label: tx('Police') },
-  { number: '1122', label: tx('Rescue') },
-  { number: '115', label: tx('Edhi ambulance') },
-];
+const EMERGENCY = sosEmergencyNumbers;
 
 /**
  * Opened from an SOS or live-location link (go-tour-go.expo.app/sos?t=… or

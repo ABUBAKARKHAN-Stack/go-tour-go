@@ -23,13 +23,9 @@ import { haptics } from '@/lib/haptics';
 import { errorMessage } from '@/lib/errors';
 import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { emergencyNumbers } from '@/features/safety/emergency';
 
-const EMERGENCY_NUMBERS = [
-  { label: tx('Rescue'), number: '1122' },
-  { label: tx('Police'), number: '15' },
-  { label: tx('Edhi ambulance'), number: '115' },
-  { label: tx('Motorway police'), number: '130' },
-];
+const EMERGENCY_NUMBERS = emergencyNumbers;
 
 type SosState = { message: string; lat: number | null; lng: number | null; token: string | null } | null;
 

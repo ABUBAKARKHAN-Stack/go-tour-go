@@ -187,6 +187,17 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
   (side-effect import in `src/lib/supabase.ts`).
 - The UI is built from `src/components` only; gluestack-ui was removed in #28. Do not reintroduce it.
 
+## App-wide constants
+
+`src/constants/app.constants.ts` holds what the whole app shares: the app's name, slug, scheme and Android
+package (read from `app.json`, which stays the source for native values), the share-site address, every
+external service URL (map style, OSRM routing, Open-Meteo, Overpass, Photon, offline-map release), hand-off
+links (Google Maps, OpenStreetMap, WhatsApp), Pakistan's map centre and search box, and the emergency
+numbers (labels translated in `src/features/safety/emergency.ts`). It is plain data with no app imports, so
+pure, unit-tested modules can use it. Secrets never go there (`src/lib/env.ts` reads `EXPO_PUBLIC_*`).
+The share site (`site/`) and its build script are plain JS and keep their own copies of the site address
+and emergency numbers.
+
 ## 5. OTA and fingerprint rule
 
 - `runtimeVersion` uses the **fingerprint** policy. An EAS Update only reaches builds with the same fingerprint.

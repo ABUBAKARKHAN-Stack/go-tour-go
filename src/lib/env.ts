@@ -3,10 +3,12 @@
  * bundle; they must be referenced statically (process.env.EXPO_PUBLIC_X) for
  * Expo to replace them at build time. Never put secrets here.
  */
+import { SERVICES } from '@/constants/app.constants';
+
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
 const mapStyleUrl =
-  process.env.EXPO_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
+  process.env.EXPO_PUBLIC_MAP_STYLE_URL || SERVICES.mapStyle;
 
 export const env = {
   supabaseUrl,

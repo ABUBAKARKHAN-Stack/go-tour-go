@@ -4,7 +4,7 @@ import { Share } from 'react-native';
 import { useAuth } from '@/features/auth/auth-provider';
 import { supabase } from '@/lib/supabase';
 import type { CommunityPost, PostComment, Story } from '@/lib/types';
-import { SHARE_SITE } from '@/features/safety/share-links';
+import { SHARE_SITE_URL } from '@/constants/app.constants';
 
 export { formatCount } from '@/features/community/format';
 
@@ -194,7 +194,7 @@ export function useCommunityActions() {
       mutationFn: async (post: CommunityPost) => {
         const place = post.destination ? `${post.destination.name}, ${post.destination.city}` : post.place_name;
         // The link opens a web page with the photos/video and an "Open in GoTourGo" button.
-        const link = `${SHARE_SITE}/p?id=${post.id}`;
+        const link = `${SHARE_SITE_URL}/p?id=${post.id}`;
         const message = [post.body ? `"${post.body}"` : null, place ? `📍 ${place}` : null, link].filter(Boolean).join('\n');
         const result = await Share.share({ message });
         if (result.action !== Share.sharedAction) return false;

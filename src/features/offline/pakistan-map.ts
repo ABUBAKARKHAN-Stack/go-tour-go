@@ -1,6 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 import { GLYPH_FONT } from './offline-style';
+import { SERVICES } from '@/constants/app.constants';
 
 export { GLYPH_FONT, OFFLINE_LAYER_IDS, offlineBaseStyle, offlineStyle } from './offline-style';
 
@@ -9,7 +10,7 @@ export { GLYPH_FONT, OFFLINE_LAYER_IDS, offlineBaseStyle, offlineStyle } from '.
  * OpenStreetMap and published on the repository's "pakistan-map" release.
  * The repository is public, so the files download without credentials.
  */
-export const MAP_RELEASE_BASE = 'https://github.com/ABUBAKARKHAN-Stack/go-tour-go/releases/download/pakistan-map';
+export const MAP_RELEASE_BASE = SERVICES.offlineMapRelease;
 
 export type MapManifest = {
   version: number;

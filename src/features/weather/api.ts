@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { tx } from '@/lib/i18n';
+import { SERVICES } from '@/constants/app.constants';
 
 /**
  * Current weather from Open-Meteo (free, no API key). Cached 30 minutes per
@@ -45,7 +46,7 @@ export function describeWeather(code: number) {
 
 export async function fetchWeather(lat: number, lng: number): Promise<Weather> {
   const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
+    `${SERVICES.weather}?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
     '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,visibility,uv_index,weather_code,is_day&timezone=auto';
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error('Weather unavailable');
