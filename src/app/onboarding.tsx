@@ -2,6 +2,7 @@ import {
   ArrowRight,
   BellRing,
   Camera,
+  Compass,
   Landmark,
   Languages,
   Map as MapIcon,
@@ -14,15 +15,17 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { AppButton } from '@/components/app-button';
 import { IconTile, type TileTone } from '@/components/brand';
+import { signInAsGuest } from '@/features/auth/api';
 import { Text } from '@/components/text';
 import { HERO_PHOTOS, prefetchHeroPhotos, type HeroPhoto } from '@/features/brand/hero-photos';
 import { FloatingCard, HandNote, PhotoHeader, photoHeight, StepPill, sweepOverlap, TwoToneTitle } from '@/features/brand/mood';
+import { errorMessage } from '@/lib/errors';
 import { haptics } from '@/lib/haptics';
 import { changeLanguage, language, tx } from '@/lib/i18n';
 import { LOCALES } from '@/lib/preferences';
@@ -118,6 +121,19 @@ export default function Onboarding() {
   useEffect(prefetchHeroPhotos, []);
 
   const finish = () => storage.set(StorageKeys.onboardingDone, true);
+  const [guestBusy, setGuestBusy] = useState(false);
+  // Guest session first, then finish: the root guard then opens the app instead of sign-in.
+  const exploreAsGuest = async () => {
+    setGuestBusy(true);
+    try {
+      await signInAsGuest();
+      finish();
+    } catch (e) {
+      Alert.alert(tx('Guest mode'), errorMessage(e));
+    } finally {
+      setGuestBusy(false);
+    }
+  };
   const next = () => {
     haptics.select();
     if (index < SLIDES.length - 1) list.current?.scrollToIndex({ index: index + 1, animated: true });
@@ -183,6 +199,21 @@ export default function Onboarding() {
         <View className="w-full max-w-[300px]">
           <AppButton label={index === SLIDES.length - 1 ? tx('Get started') : tx('Next')} trailingIcon={ArrowRight} onPress={next} />
         </View>
+        {/* Last step: try the app without an account (guest mode). */}
+        {index === SLIDES.length - 1 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityHint={tx('Explore, save places and plan trips without an account')}
+            accessibilityState={{ busy: guestBusy }}
+            disabled={guestBusy}
+            onPress={exploreAsGuest}
+            hitSlop={6}
+            className="-mt-2 min-h-11 flex-row items-center justify-center gap-1.5 active:opacity-60"
+          >
+            {guestBusy ? <ActivityIndicator size="small" color={colors.accent} /> : <Compass color={colors.accent} size={16} />}
+            <Text className="text-sm font-semibold text-accent">{tx('Explore as guest')}</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );

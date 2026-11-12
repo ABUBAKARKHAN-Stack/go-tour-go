@@ -102,3 +102,14 @@ export function AuthSwitch({ prompt, action, onPress }: { prompt: string; action
     </View>
   );
 }
+
+/** "OR" between signing in and continuing as a guest. */
+export function OrDivider() {
+  return (
+    <View className="flex-row items-center gap-3 py-0.5" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View className="h-px flex-1 bg-border-strong" />
+      <Text className="text-xs font-semibold text-faint">{tx('or').toUpperCase()}</Text>
+      <View className="h-px flex-1 bg-border-strong" />
+    </View>
+  );
+}
