@@ -19,6 +19,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, LinearTransition, R
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
+import { Sheet } from '@/components/sheet';
 import { DestinationCard } from '@/components/destination-card';
 import { Chip } from '@/components/form';
 import { OfflineBanner } from '@/components/offline-banner';
@@ -36,7 +37,9 @@ import { useLastLocation, useLocationState } from '@/features/location/location-
 import { LocationStatusCard } from '@/features/location/location-status-card';
 import { validHeading } from '@/features/map/nav-arrow';
 import { PlacePreview } from '@/features/map/place-preview';
+import { useSpotName } from '@/features/map/spot-name';
 import { TravelMap, type TravelMapHandle } from '@/features/map/travel-map';
+import { navigateTo } from '@/features/routing/navigate';
 import { useJourney } from '@/features/journey/journey-store';
 import { useSavedIds } from '@/features/saved/api';
 import { useFriendLocations } from '@/features/safety/friend-locations';
@@ -149,6 +152,12 @@ export default function ExploreScreen() {
     if (a) map.current?.flyTo(a.longitude, a.latitude, Math.max(7, Math.min(15, 14 - Math.log2(Math.max(a.radius_m, 250) / 500))));
   }, [handledAlert, alerts.data]);
 
+  // A long-pressed spot: directions to it, or a hazard report there.
+  const [spot, setSpot] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [shownSpot, setShownSpot] = useState(spot);
+  if (spot && spot !== shownSpot) setShownSpot(spot);
+  const spotName = useSpotName(shownSpot);
+
   const startReport = (point: { latitude: number; longitude: number } | null) => {
     setReportPoint(point);
     setPicking(false);
@@ -220,8 +229,8 @@ export default function ExploreScreen() {
           setSelectedId(id);
         }}
         selectedAlertId={selectedAlertId}
-        pickedPoint={reporting && reportPoint ? reportPoint : null}
-        onLongPress={userId && !picking ? (p) => startReport(p) : undefined}
+        pickedPoint={spot ?? (reporting && reportPoint ? reportPoint : null)}
+        onLongPress={!picking ? (p) => setSpot(p) : undefined}
         onSelectAlert={(id) => {
           setSelectedId(null);
           setSelectedAlertId(id);
@@ -384,6 +393,49 @@ export default function ExploreScreen() {
           </View>
         </>
       ) : null}
+      <Sheet
+        visible={Boolean(spot)}
+        onClose={() => setSpot(null)}
+        dragAnywhere
+        header={
+          <View className="flex-row items-start gap-3 pb-1">
+            <View className="h-11 w-11 items-center justify-center rounded-full bg-peach">
+              <MapPin color={colors.accent} size={20} />
+            </View>
+            <View className="flex-1 gap-0.5">
+              <Text accessibilityRole="header" className="font-display text-xl leading-7 text-heading">
+                {spotName.data?.name ?? tx('Dropped pin')}
+              </Text>
+              <Text className="text-sm text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>
+                {[spotName.data?.subtitle, location && shownSpot ? tx('{0} away', { 0: formatDistance(distanceMeters(location, shownSpot)) }) : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            </View>
+          </View>
+        }
+      >
+        <AppButton
+          label={tx('Directions to here')}
+          icon={Navigation}
+          disabled={!spotName.data || !shownSpot}
+          onPress={() => {
+            if (!spotName.data || !shownSpot) return;
+            setSpot(null);
+            navigateTo({ id: spotName.data.id, name: spotName.data.name, subtitle: spotName.data.subtitle, ...shownSpot });
+          }}
+        />
+        <AppButton
+          label={tx('Report a hazard here')}
+          icon={TriangleAlert}
+          variant="secondary"
+          onPress={() => {
+            const p = shownSpot;
+            setSpot(null);
+            startReport(p);
+          }}
+        />
+      </Sheet>
       <ReportHazardSheet
         visible={reporting && !picking}
         point={reportPoint}

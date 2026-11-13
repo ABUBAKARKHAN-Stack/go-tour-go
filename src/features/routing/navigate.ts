@@ -7,10 +7,11 @@ type Target = { id: string; name: string; latitude: number; longitude: number; s
  * notification actions, search): opens the journey preview, which plans the
  * route from the current location with the landmarks and hazards on the way.
  * Landmark ids are passed on so "Learn more" works on arrival; places from
- * search use ids like "place:n123".
+ * search use ids like "place:n123", spots picked on the map "pin:<lat>, <lng>".
+ * `replace` swaps the current screen (a map picker) for the journey preview.
  */
-export function navigateTo(target: Target) {
-  router.push({
+export function navigateTo(target: Target, opts: { replace?: boolean } = {}) {
+  (opts.replace ? router.replace : router.push)({
     pathname: '/journey',
     params: {
       name: target.name,

@@ -1277,4 +1277,12 @@ export const ur: Record<string, string> = {
   "Places to visit": "دیکھنے کی جگہیں",
   "What to buy": "کیا خریدیں",
   "Writing an answer": "جواب لکھا جا رہا ہے",
+  // Choose a destination on the map
+  "Directions to here": "یہاں تک راستہ",
+  "Dropped pin": "منتخب جگہ",
+  "Move the map to your destination": "نقشہ سرکا کر اپنی منزل پر پن رکھیں",
+  "Near {0}": "{0} کے قریب",
+  "Pick any spot as your destination": "کسی بھی جگہ کو اپنی منزل بنائیں",
+  "Report a hazard here": "یہاں خطرے کی اطلاع دیں",
+  "You are already here": "آپ پہلے ہی یہاں ہیں",
 };

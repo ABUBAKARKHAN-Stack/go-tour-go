@@ -9,7 +9,7 @@
 //     in destination_translations (marked machine_translated) for everyone.
 //
 // Secrets: GEMINI_API_KEY (required), GEMINI_MODEL, GEMINI_FALLBACK_MODEL,
-//          AI_DAILY_LIMIT, AI_DAILY_LIMIT_GUEST (optional).
+//          AI_QUESTIONS_PER_DAY, AI_QUESTIONS_PER_DAY_GUEST (optional).
 // Deploy:  supabase functions deploy ai
 import { withSupabase } from 'npm:@supabase/server@1';
 
@@ -71,9 +71,12 @@ const FIRST_TRY_MS = 22_000;
  */
 const THINKING: (Record<string, unknown> | null)[] = [{ thinkingLevel: 'low' }, { thinkingBudget: 0 }, null];
 const thinkingChoice = new Map<string, number>();
-const DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT') ?? '50');
-/** Guests (anonymous sign-ins) get a smaller daily allowance. */
-const GUEST_DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT_GUEST') ?? '10');
+/**
+ * Questions a day (chat and Lens; a demo allowance). Guests (anonymous
+ * sign-ins) get fewer. New names, so older AI_DAILY_LIMIT secrets don't apply.
+ */
+const DAILY_LIMIT = Number(Deno.env.get('AI_QUESTIONS_PER_DAY') ?? '5');
+const GUEST_DAILY_LIMIT = Number(Deno.env.get('AI_QUESTIONS_PER_DAY_GUEST') ?? '2');
 const MAX_IMAGE_BASE64 = 2_000_000; // ~1.5 MB image
 const MAX_TURNS = 12;
 const MAX_TURN_CHARS = 2000;
@@ -306,8 +309,8 @@ export default {
       // Reading the allowance is free.
       if (payload.mode === 'usage') return json({ usage: await readUsage(ctx.supabaseAdmin, userId, guest) });
 
-      // Translations already stored are free; only a new translation uses quota.
-      if (payload.mode === 'translate') return json(await handleTranslate(payload, ctx.supabaseAdmin, userId, guest));
+      // Landmark translations are made once and shared, so they don't use anyone's questions.
+      if (payload.mode === 'translate') return json(await handleTranslate(payload, ctx.supabaseAdmin));
 
       if (payload.mode !== 'chat' && payload.mode !== 'lens') return json({ error: 'Unknown mode' }, 400);
       const usage = await consumeQuota(ctx.supabaseAdmin, userId, guest);
@@ -402,7 +405,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * Urdu guide for a landmark: returns the stored translation, filling any
  * missing sections once with Gemini. Human/sourced text is never replaced.
  */
-async function handleTranslate(payload: TranslateRequest, admin: Db, userId: string, guest: boolean) {
+async function handleTranslate(payload: TranslateRequest, admin: Db) {
   if (payload.locale !== 'ur' || !UUID.test(payload.destinationId ?? '')) throw new HttpError(400, 'Invalid request.');
 
   const { data: d, error } = await admin
@@ -428,7 +431,6 @@ async function handleTranslate(payload: TranslateRequest, admin: Db, userId: str
   if (needName) source.name = d.name;
   if (Object.keys(source).length === 0) return { translation: existing };
 
-  await consumeQuota(admin, userId, guest);
   const text = await callGemini({
     system_instruction: {
       parts: [

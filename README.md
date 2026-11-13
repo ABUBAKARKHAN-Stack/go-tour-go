@@ -30,7 +30,8 @@ Figma file `bO6d8RIpnNL3awG2lQQMA8`; tokens live in `global.css` with hex mirror
 | `GEMINI_API_KEY` | Google Gemini | AI assistant + Visual Lens | Yes, for AI | Supabase secret | **No, server-only** |
 | `GEMINI_MODEL` | Gemini | Model override (default `gemini-flash-latest`) | No | Supabase secret | Server-only |
 | `GEMINI_FALLBACK_MODEL` | Gemini | Lighter model asked when the first is slow or busy (default `gemini-flash-lite-latest`) | No | Supabase secret | Server-only |
-| `AI_DAILY_LIMIT` | Edge Function | Requests per user per day (default 50) | No | Supabase secret | Server-only |
+| `AI_QUESTIONS_PER_DAY` | Edge Function | AI questions per member per day (default 5) | No | Supabase secret | Server-only |
+| `AI_QUESTIONS_PER_DAY_GUEST` | Edge Function | AI questions per guest per day (default 2) | No | Supabase secret | Server-only |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` … | Supabase | Injected into Edge Functions automatically | Auto | none | **Never in the app** |
 
 Only `EXPO_PUBLIC_*` variables are bundled into the app. Never put the Gemini key or any secret/service-role key in `.env.local`.
