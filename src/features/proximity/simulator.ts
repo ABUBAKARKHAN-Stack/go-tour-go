@@ -64,13 +64,15 @@ export const simulator = {
   /**
    * Drives along a route (the active journey) at a steady speed, so journey
    * guidance, voice, landmark and hazard alerts can be shown without moving.
-   * Simulated time runs faster than real time.
+   * Runs in real time, so voice prompts come at the right distances.
    */
   startAlongRoute(coordinates: [number, number][], name: string, speedKmh = 50) {
     simulator.stop();
     const index = buildRouteIndex(coordinates);
     if (index.total <= 0) return;
-    const stepSeconds = 2;
+    // Real time (one fix a second, like navigation GPS), so voice guidance is
+    // timed as on a real drive.
+    const stepSeconds = 1;
     const stepMeters = (speedKmh / 3.6) * stepSeconds;
     const total = Math.ceil(index.total / stepMeters) + 1;
     saveProximityState({ ...loadProximityState(), lastFix: null });
@@ -91,7 +93,7 @@ export const simulator = {
       i += 1;
       sim = { ...sim, step: i };
       emit();
-    }, 700);
+    }, stepSeconds * 1000);
   },
   stop() {
     if (timer) clearInterval(timer);

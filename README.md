@@ -29,6 +29,7 @@ Figma file `bO6d8RIpnNL3awG2lQQMA8`; tokens live in `global.css` with hex mirror
 | `EXPO_PUBLIC_MAP_STYLE_URL` | MapLibre tiles | Override map style (default OpenFreeMap *liberty*, no key) | No | `.env.local` + EAS env | Yes |
 | `GEMINI_API_KEY` | Google Gemini | AI assistant + Visual Lens | Yes, for AI | Supabase secret | **No, server-only** |
 | `GEMINI_MODEL` | Gemini | Model override (default `gemini-flash-latest`) | No | Supabase secret | Server-only |
+| `GEMINI_FALLBACK_MODEL` | Gemini | Lighter model asked when the first is slow or busy (default `gemini-flash-lite-latest`) | No | Supabase secret | Server-only |
 | `AI_DAILY_LIMIT` | Edge Function | Requests per user per day (default 50) | No | Supabase secret | Server-only |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` … | Supabase | Injected into Edge Functions automatically | Auto | none | **Never in the app** |
 
@@ -318,4 +319,4 @@ Radii vary per landmark, for example: Wazir Khan Mosque 300 m, Minar-e-Pakistan 
 - Seed destinations ship without photos (category placeholders). Add licensed image URLs with `update public.destinations set image_url = … where slug = …`.
 - Road alerts and nearby-service fallbacks are seeded demo data.
 - Visual Lens and Smart Scan are demonstrations, and AI answers can be wrong.
-- English and Urdu are fully supported (interface, right-to-left layout, Nastaliq font). Urdu landmark guides come from Urdu Wikipedia where available and are otherwise translated once by AI (labelled as such). Chinese and Arabic are available for the AI guide and Visual Lens answers only. Turn-by-turn voice uses Urdu only if the phone has an Urdu text-to-speech voice, otherwise English.
+- English and Urdu are fully supported (interface, right-to-left layout, Nastaliq font). Urdu landmark guides come from Urdu Wikipedia where available and are otherwise translated once by AI (labelled as such). The AI guide and Visual Lens answer in the app language (English or Urdu). Turn-by-turn voice uses Urdu only if the phone has an Urdu text-to-speech voice, otherwise English.

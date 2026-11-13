@@ -112,6 +112,8 @@ let context: { landmarks: Landmark[]; alerts: RoadAlert[] } = { landmarks: [], a
 const listeners = new Set<() => void>();
 const eventListeners = new Set<(e: JourneyEvent) => void>();
 
+export type AvoidResult = 'switched' | 'none' | 'unavailable';
+
 export type JourneyEvent = { type: 'arrived' } | { type: 'rerouted' } | { type: 'off-route' };
 
 function set(patch: Partial<JourneyState>) {
@@ -189,15 +191,25 @@ function speakEnglish() {
   return !isUrdu || !urduVoice;
 }
 
-function say(text: string) {
-  if (!state.voice) return;
-  Speech.stop();
+let lastSaid = { text: '', at: 0 };
+
+/**
+ * Speaks in the voice language. Phrases queue (Android speaks them in turn)
+ * instead of cutting each other off; `now` interrupts for what can't wait
+ * (a turn right here, arrival). The same phrase twice within 8 s is said once.
+ */
+function say(text: string, now = false) {
+  if (!state.voice || !text) return;
+  const at = Date.now();
+  if (text === lastSaid.text && at - lastSaid.at < 8000) return;
+  lastSaid = { text, at };
+  if (now) Speech.stop();
   Speech.speak(text, { language: speakEnglish() ? 'en-US' : 'ur-PK', rate: 0.98 });
 }
 
 /** Speaks a phrase (English source text with placeholders) in the voice language. */
-export function speak(phrase: string, vars?: Record<string, string | number | null | undefined>) {
-  say(speakEnglish() ? txEn(phrase, vars) : tx(phrase, vars));
+export function speak(phrase: string, vars?: Record<string, string | number | null | undefined>, now = false) {
+  say(speakEnglish() ? txEn(phrase, vars) : tx(phrase, vars), now);
 }
 
 export const journeyStore = {
@@ -286,7 +298,7 @@ export const journeyStore = {
     persist(true);
     const first = state.route.steps[0];
     if (first) {
-      speak('Starting your journey to {0}.', { 0: state.target.name });
+      speak('Starting your journey to {0}.', { 0: state.target.name }, true);
       say(speakEnglish() ? first.instructionEn : first.instruction);
     }
   },
@@ -335,13 +347,16 @@ export const journeyStore = {
     if (upcoming && prev && prev.stepIndex === progress.stepIndex) {
       const thresholds = voiceThresholds(state.mode);
       const t = crossedThreshold(prev.toManeuver, progress.toManeuver, thresholds);
-      if (t != null) say(spokenInstruction(upcoming, progress.toManeuver, t === thresholds[thresholds.length - 1], speakEnglish()));
+      if (t != null) {
+        const last = t === thresholds[thresholds.length - 1];
+        say(spokenInstruction(upcoming, progress.toManeuver, last, speakEnglish()), last);
+      }
     }
 
     if (progress.arrived) {
       set({ progress, phase: 'arrived' });
       storage.remove(StorageKeys.activeJourney);
-      speak('You have arrived at {0}', { 0: state.target?.name ?? txEn('your destination') });
+      speak('You have arrived at {0}', { 0: state.target?.name ?? txEn('your destination') }, true);
       emit({ type: 'arrived' });
       return;
     }
@@ -380,26 +395,28 @@ export const journeyStore = {
 
   /**
    * Switches to the fastest alternative route that stays clear of a hazard.
-   * Returns false when no alternative avoids it (or routing is unavailable).
+   * "none": no alternative misses it; "unavailable": the routing service
+   * could not be reached (or the journey ended meanwhile).
    * Takes over from an automatic re-route still on its way.
    */
-  async avoid(hazard: LatLng & { radius: number }, from: LatLng): Promise<boolean> {
-    if (state.phase !== 'active' || !state.target) return false;
+  async avoid(hazard: LatLng & { radius: number }, from: LatLng): Promise<AvoidResult> {
+    if (state.phase !== 'active' || !state.target) return 'unavailable';
     const { id, signal } = newRouteRequest();
     avoiding = true;
     if (state.rerouting) set({ rerouting: false });
     try {
       const routes = await fetchRoutes(state.mode, from, state.target, signal);
+      if (id !== routeRequest || state.phase !== 'active') return 'unavailable';
       const route = routeAvoiding(routes, hazard);
-      if (!route || id !== routeRequest || state.phase !== 'active') return false;
+      if (!route) return 'none';
       indexRoute(route);
       set({ route, routes: { ...state.routes, [state.mode]: route }, items: itemsFor(route), progress: null });
       persist(true);
       speak('Taking a route around the hazard');
       emit({ type: 'rerouted' });
-      return true;
+      return 'switched';
     } catch {
-      return false;
+      return 'unavailable';
     } finally {
       if (id === routeRequest) avoiding = false;
     }

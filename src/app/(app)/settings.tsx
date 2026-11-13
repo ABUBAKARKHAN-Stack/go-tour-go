@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { Bell, Database, FlaskConical, Map as MapIcon, Navigation, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, FlatList, Linking, Modal, Pressable, Share, View } from 'react-native';
@@ -19,9 +20,27 @@ import { registerGeofences, stopGeofences } from '@/features/proximity/geofence-
 import { simulator, useSimulator } from '@/features/proximity/simulator';
 import { crashReport, useLastError } from '@/lib/crash-log';
 import { formatDistance } from '@/lib/geo';
-import { AI_LANGUAGES, LOCALES, usePreferences } from '@/lib/preferences';
+import { LOCALES, usePreferences } from '@/lib/preferences';
 import { cardShadow, colors } from '@/lib/theme';
 import { changeLanguage, tx } from '@/lib/i18n';
+
+/**
+ * Which app update is running (the date it was published and the start of its
+ * id), so a tester can check the phone picked up the newest one.
+ */
+function RunningUpdate() {
+  const label = Updates.isEmbeddedLaunch || !Updates.updateId
+    ? tx('Running the version built into the APK (no update downloaded yet)')
+    : tx('Running update {0} · {1}', {
+        0: Updates.createdAt ? Updates.createdAt.toLocaleString() : '?',
+        1: Updates.updateId.slice(0, 8),
+      });
+  return (
+    <Text selectable className="text-xs text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>
+      {label}
+    </Text>
+  );
+}
 
 export default function SettingsScreen() {
   const [prefs, setPrefs] = usePreferences();
@@ -128,17 +147,7 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
-        <Text className="text-xs text-muted-foreground">{tx('Menus, buttons and landmark guides appear in this language. Urdu uses right-to-left layout.')}</Text>
-      </Card>
-
-      <Card className="gap-3">
-        <Text className="text-base font-semibold text-heading">{tx('AI guide reply language')}</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {AI_LANGUAGES.map((l) => (
-            <Chip key={l.value} label={l.label} selected={prefs.aiLanguage === l.value} onPress={() => setPrefs({ aiLanguage: l.value })} />
-          ))}
-        </View>
-        <Text className="text-xs text-muted-foreground">{tx('The AI guide and Visual Lens can also answer in Chinese or Arabic for visitors.')}</Text>
+        <Text className="text-xs text-muted-foreground">{tx('Menus, landmark guides, voice guidance and the AI guide all use this language. Urdu uses right-to-left layout.')}</Text>
       </Card>
 
       <Card className="gap-3">
@@ -180,6 +189,7 @@ export default function SettingsScreen() {
           <FlaskConical color={colors.primary} size={18} />
           <Text className="flex-1 text-base font-semibold text-heading">{tx('Demo tools')}</Text>
         </View>
+        <RunningUpdate />
         <Text className="text-xs text-muted-foreground">
           {tx('Simulate travelling towards a landmark to test geofencing, notifications, the contextual card and navigation without moving. Real GPS is paused while it runs.')}
         </Text>

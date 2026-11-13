@@ -4,7 +4,8 @@
  * traveller is, the next manoeuvre, time left, and whether they left the
  * route or arrived. Runs on every navigation fix, foreground or background.
  */
-import type { Route, RouteStep, TravelMode } from '@/features/routing/osrm';
+import { describeStep, type Route, type RouteStep, type TravelMode } from '@/features/routing/osrm';
+import { hasArabicScript } from '@/features/data/search-text';
 import { distanceMeters } from '@/lib/geo';
 
 import { projectPoint, type RouteIndex } from './route-geometry';
@@ -138,7 +139,13 @@ export function spokenDistance(m: number, t: Translate = txEn): string {
  */
 export function spokenInstruction(step: RouteStep, distance: number, lastThreshold: boolean, english = true): string {
   const t: Translate = english ? txEn : tx;
-  const instruction = english ? step.instructionEn : step.instruction;
+  // The Urdu voice can't read road names written in English letters (most
+  // OpenStreetMap names), so it says the direction without them.
+  const instruction = english
+    ? step.instructionEn
+    : step.name && !hasArabicScript(step.name)
+      ? describeStep({ ...step, name: null }, tx)
+      : step.instruction;
   if (step.type === 'arrive') {
     return lastThreshold ? t('You have arrived at your destination') : t('In {0}, you will arrive', { 0: spokenDistance(distance, t) });
   }

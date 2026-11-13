@@ -9,6 +9,7 @@ import { AppButton } from '@/components/app-button';
 import { Text } from '@/components/text';
 import { ALERT_LABELS, useRoadAlerts, useVoteHazard } from '@/features/alerts/api';
 import { useAuth } from '@/features/auth/auth-provider';
+import { AT_HAZARD_M } from '@/features/journey/journey-items';
 import { journeyStore, useJourney } from '@/features/journey/journey-store';
 import { getCurrentFix } from '@/features/location/location-provider';
 import { useNow } from '@/features/safety/friend-locations';
@@ -44,6 +45,8 @@ export function HazardCardOverlay() {
   const traveller = alert.source === 'traveller';
   const canVote = traveller && Boolean(userId) && alert.reporter_id !== userId && voted !== alert.id;
   const here = card.distance <= alert.radius_m;
+  // Already at the blocked spot: no detour can help any more.
+  const atHazard = card.distance <= AT_HAZARD_M;
   const endsIn = alert.ends_at ? Math.max(0, (Date.parse(alert.ends_at) - now) / 1000) : null;
 
   const castVote = (stillThere: boolean) =>
@@ -61,10 +64,11 @@ export function HazardCardOverlay() {
     setAvoidingId(id);
     try {
       const fix = await getCurrentFix();
-      const ok = fix ? await journeyStore.avoid({ latitude: alert.latitude, longitude: alert.longitude, radius: alert.radius_m }, fix) : false;
+      const result = fix ? await journeyStore.avoid({ latitude: alert.latitude, longitude: alert.longitude, radius: alert.radius_m }, fix) : 'unavailable';
       // Close only this hazard's card, not one that replaced it while we waited.
-      if (ok) hazardCard.dismiss(id);
-      else Alert.alert(tx('No way around found'), tx('None of the other routes avoid this hazard. Slow down and take care.'));
+      if (result === 'switched') hazardCard.dismiss(id);
+      else if (result === 'none') Alert.alert(tx('No way around found'), tx('None of the other routes avoid this hazard. Slow down and take care.'));
+      else Alert.alert(tx('Could not find a route'), tx('The route service could not be reached. Check your connection and try again.'));
     } finally {
       setAvoidingId((current) => (current === id ? null : current));
     }
@@ -117,14 +121,19 @@ export function HazardCardOverlay() {
           ) : null}
 
           {journey.phase === 'active' ? (
-            <AppButton label={tx('Find a way around')} loading={avoiding} onPress={findWayAround} />
+            atHazard ? (
+              <Text className="text-sm text-foreground">{tx("You're at this hazard. Slow down and take care.")}</Text>
+            ) : (
+              <AppButton label={tx('Find a way around')} loading={avoiding} onPress={findWayAround} />
+            )
           ) : (
             <AppButton
               label={tx('Show on map')}
               variant="secondary"
               onPress={() => {
                 hazardCard.dismiss();
-                router.navigate('/explore');
+                // `at` makes a second tap on the same hazard move the map again.
+                router.navigate({ pathname: '/explore', params: { alert: alert.id, at: String(Date.now()) } });
               }}
             />
           )}

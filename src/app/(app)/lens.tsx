@@ -62,7 +62,7 @@ export default function LensScreen() {
     try {
       const small = await compressImage(uri, 1024, true);
       if (!small.base64) throw new Error(tx('Could not read the image.'));
-      const found = await analyzeImage(small.base64, { question: question.trim() || undefined, locale: prefs.aiLanguage });
+      const found = await analyzeImage(small.base64, { question: question.trim() || undefined, locale: prefs.locale });
       if (id === request.current) setResult(found);
     } catch (e) {
       if (id === request.current) setError(e instanceof Error ? e.message : 'AI service unavailable.');
