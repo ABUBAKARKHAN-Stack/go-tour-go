@@ -12,7 +12,7 @@ import { brandGradient, colors } from '@/lib/theme';
  * (AI guide, place chat, Lens). Shown only once the server has told us the
  * numbers, so it never guesses (offline it stays hidden).
  */
-export function AiQuota({ className }: { className?: string }) {
+export function AiQuota({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { data } = useAiUsage();
   if (!data || !data.limit) return null;
   const left = Math.max(0, data.limit - data.used);
@@ -21,6 +21,23 @@ export function AiQuota({ className }: { className?: string }) {
     left === 0
       ? tx('No AI questions left today. More tomorrow.')
       : tx('{0} of {1} AI questions left today', { 0: left, 1: data.limit });
+
+  // Slim line for chat screens: the same facts, without the card.
+  if (compact) {
+    return (
+      <View accessible accessibilityLabel={label} accessibilityLiveRegion="polite" className={`flex-row items-center justify-center gap-1.5 ${className ?? ''}`}>
+        <Sparkles color={low ? colors.destructive : colors.faint} size={12} />
+        <Text className={`text-[12px] ${low ? 'font-semibold text-destructive' : 'text-faint'}`} style={{ fontVariant: ['tabular-nums'] }}>
+          {label}
+        </Text>
+        {data.guest ? (
+          <Pressable accessibilityRole="link" hitSlop={8} onPress={() => router.push('/create-account')} className="active:opacity-60">
+            <Text className="text-[12px] font-semibold text-accent">{tx('Get more')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
 
   return (
     <View

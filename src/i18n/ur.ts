@@ -1270,4 +1270,11 @@ export const ur: Record<string, string> = {
   "SOS active": "SOS فعال ہے",
   "End it with I'm safe below before sending another.": "دوسرا بھیجنے سے پہلے نیچے \"میں محفوظ ہوں\" سے اسے ختم کریں۔",
   "Runtime {0}": "رن ٹائم {0}",
+  // AI guide, simpler
+  "Ask me about places, food, culture or routes. Guides below are for {0}.": "مجھ سے مقامات، کھانے، ثقافت یا راستوں کے بارے میں پوچھیں۔ نیچے دی گئی رہنمائی {0} کے لیے ہے۔",
+  "Culture and etiquette": "ثقافت اور آداب",
+  "Food to try": "آزمانے کے کھانے",
+  "Places to visit": "دیکھنے کی جگہیں",
+  "What to buy": "کیا خریدیں",
+  "Writing an answer": "جواب لکھا جا رہا ہے",
 };

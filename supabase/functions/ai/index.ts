@@ -19,6 +19,8 @@ type NearbyContext = { name: string; category?: string; distanceKm?: number };
 
 type ChatRequest = {
   mode: 'chat';
+  /** Stream the answer as server-sent events (delta, then done or error). */
+  stream?: boolean;
   messages: ChatTurn[];
   context?: {
     locationLabel?: string;
@@ -171,6 +173,120 @@ async function callModel(key: string, model: string, body: Record<string, unknow
   throw new HttpError(504, 'Timed out');
 }
 
+/** How long a streamed answer may take once it has started. */
+const STREAM_TOTAL_MS = 90_000;
+
+/** Thrown once words have reached the traveller: no other model can take over then. */
+class StreamedError extends Error {}
+
+/**
+ * Streams an answer, calling `write` with each piece of text as Gemini makes
+ * it. A model that doesn't start answering within its time gives way to the
+ * next one; once text is flowing, that model finishes the answer.
+ */
+async function streamGemini(body: Record<string, unknown>, write: (text: string) => void): Promise<void> {
+  const key = Deno.env.get('GEMINI_API_KEY');
+  if (!key) throw new HttpError(503, 'AI service is not configured.');
+  const started = Date.now();
+  const models = [...new Set([MODEL, FALLBACK_MODEL])];
+  let lastError: unknown = null;
+  for (const [i, model] of models.entries()) {
+    const left = TOTAL_BUDGET_MS - (Date.now() - started);
+    if (left < 4000) break;
+    const firstWords = i === 0 && models.length > 1 ? Math.min(FIRST_TRY_MS, left) : left;
+    try {
+      await streamModel(key, model, body, firstWords, write);
+      return;
+    } catch (error) {
+      if (error instanceof StreamedError) throw error;
+      lastError = error;
+      console.error('Gemini stream attempt failed', model, `${Date.now() - started}ms`, error instanceof Error ? error.message : error);
+    }
+  }
+  if (lastError instanceof HttpError && lastError.status !== 504) throw lastError;
+  throw new HttpError(504, 'The AI service is slow right now. Please try again in a moment.');
+}
+
+async function streamModel(key: string, model: string, body: Record<string, unknown>, firstWordsMs: number, write: (text: string) => void) {
+  for (let t = thinkingChoice.get(model) ?? 0; t < THINKING.length; t++) {
+    const thinking = THINKING[t];
+    const generationConfig = { ...((body.generationConfig as Record<string, unknown>) ?? {}), ...(thinking ? { thinkingConfig: thinking } : {}) };
+    const startedAt = Date.now();
+    const abort = new AbortController();
+    // Until the first words arrive, the fallback is waiting; after that, the whole answer has a cap.
+    let timer = setTimeout(() => abort.abort(), firstWordsMs);
+    let sent = false;
+    try {
+      let res: Response;
+      try {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          body: JSON.stringify({ ...body, generationConfig }),
+          signal: abort.signal,
+        });
+      } catch {
+        throw new HttpError(504, abort.signal.aborted ? `No answer after ${Date.now() - startedAt}ms` : 'Could not reach the AI service.');
+      }
+      if (res.status === 400 || res.status === 404) {
+        const text = await res.text();
+        if (res.status === 400 && thinking && /thinking/i.test(text)) continue;
+        console.error('Gemini rejected the request', model, res.status, text.slice(0, 500));
+        throw new HttpError(502, 'AI service unavailable.');
+      }
+      if (res.status === 429) throw new HttpError(429, 'The AI service is busy. Try again in a minute.');
+      if (!res.ok || !res.body) {
+        console.error('Gemini error', model, res.status, (await res.text()).slice(0, 500));
+        throw new HttpError(502, 'AI service unavailable.');
+      }
+      thinkingChoice.set(model, t);
+
+      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+      let buffer = '';
+      let finish = '';
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += value;
+          let end: number;
+          while ((end = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, end).trim();
+            buffer = buffer.slice(end + 1);
+            if (!line.startsWith('data:')) continue;
+            let chunk: { candidates?: { content?: { parts?: (GeminiPart & { thought?: boolean })[] }; finishReason?: string }[] };
+            try {
+              chunk = JSON.parse(line.slice(5));
+            } catch {
+              continue;
+            }
+            const candidate = chunk.candidates?.[0];
+            if (candidate?.finishReason) finish = candidate.finishReason;
+            const text = (candidate?.content?.parts ?? []).filter((p) => !p.thought).map((p) => p.text ?? '').join('');
+            if (!text) continue;
+            if (!sent) {
+              sent = true;
+              clearTimeout(timer);
+              timer = setTimeout(() => abort.abort(), STREAM_TOTAL_MS);
+              console.log('Gemini started answering', model, `${Date.now() - startedAt}ms`);
+            }
+            write(text);
+          }
+        }
+      } catch (error) {
+        if (sent) throw new StreamedError('The answer was cut off. Please ask again.');
+        throw new HttpError(504, abort.signal.aborted ? `No answer after ${Date.now() - startedAt}ms` : String(error));
+      }
+      console.log('Gemini finished', model, `${Date.now() - startedAt}ms`, finish);
+      if (!sent) throw new HttpError(502, 'The AI service returned an empty answer.');
+      return;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw new HttpError(504, 'Timed out');
+}
+
 class HttpError extends Error {
   constructor(public status: number, message: string, public usage?: Usage) {
     super(message);
@@ -195,6 +311,7 @@ export default {
 
       if (payload.mode !== 'chat' && payload.mode !== 'lens') return json({ error: 'Unknown mode' }, 400);
       const usage = await consumeQuota(ctx.supabaseAdmin, userId, guest);
+      if (payload.mode === 'chat' && payload.stream) return streamChat(payload, ctx.supabase, ctx.supabaseAdmin, userId, usage);
       try {
         const answer = payload.mode === 'chat' ? await handleChat(payload, ctx.supabase) : await handleLens(payload, ctx.supabase);
         return json({ ...answer, usage });
@@ -358,7 +475,8 @@ async function handleTranslate(payload: TranslateRequest, admin: Db, userId: str
   return { translation: saved };
 }
 
-async function handleChat(payload: ChatRequest, supabase: Db) {
+/** The Gemini request for a chat turn: the conversation plus the traveller's context. */
+async function chatRequest(payload: ChatRequest, supabase: Db): Promise<Record<string, unknown>> {
   const turns = (payload.messages ?? [])
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
     .slice(-MAX_TURNS)
@@ -400,12 +518,55 @@ async function handleChat(payload: ChatRequest, supabase: Db) {
 
   const system = `${CHAT_SYSTEM}\n- Reply in ${languageName(c.locale)}.\n\nCONTEXT:\n${lines.join('\n') || 'No location context available.'}`;
 
-  const text = await callGemini({
+  return {
     system_instruction: { parts: [{ text: system }] },
     contents: turns,
     generationConfig: { temperature: 0.6, maxOutputTokens: 1200 },
+  };
+}
+
+async function handleChat(payload: ChatRequest, supabase: Db) {
+  return { text: await callGemini(await chatRequest(payload, supabase)) };
+}
+
+/**
+ * The chat answer as server-sent events: {"type":"delta","text"} as it is
+ * written, then {"type":"done","usage"} or {"type":"error","error","usage"}.
+ * A question whose answer never started is not counted.
+ */
+async function streamChat(payload: ChatRequest, supabase: Db, admin: Db, userId: string, usage: Usage): Promise<Response> {
+  let request: Record<string, unknown>;
+  try {
+    request = await chatRequest(payload, supabase);
+  } catch (error) {
+    const refunded = await refundQuota(admin, userId, usage);
+    if (error instanceof HttpError) return json({ error: error.message, usage: refunded }, error.status);
+    throw error;
+  }
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: Record<string, unknown>) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+      let wrote = false;
+      try {
+        await streamGemini(request, (text) => {
+          wrote = true;
+          send({ type: 'delta', text });
+        });
+        send({ type: 'done', usage });
+      } catch (error) {
+        const left = wrote ? usage : await refundQuota(admin, userId, usage);
+        const message = error instanceof HttpError && error.status !== 500 ? error.message : error instanceof StreamedError ? error.message : 'AI service unavailable.';
+        if (!(error instanceof HttpError)) console.error('chat stream', error);
+        send({ type: 'error', error: message, usage: left });
+      } finally {
+        controller.close();
+      }
+    },
   });
-  return { text };
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' },
+  });
 }
 
 async function handleLens(payload: LensRequest, supabase: Db) {

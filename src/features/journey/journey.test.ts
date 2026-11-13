@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { parseOsrmResponse, type Route } from '@/features/routing/osrm';
 import { distanceMeters } from '@/lib/geo';
 
-import { advance, crossedThreshold, formatEta, spokenDistance, spokenInstruction, stepStarts, voiceThresholds, type NavProgress } from './navigation';
+import { advance, crossedThreshold, formatEta, spokenDistance, spokenInstruction, spokenParts, stepStarts, voiceThresholds, type NavProgress } from './navigation';
 import * as journeyItemsModule from './journey-items';
 import { hazardsAhead, journeyItems } from './journey-items';
 import { buildRouteIndex, corridor, pointAlong, projectPoint, remainingLine } from './route-geometry';
@@ -152,6 +152,14 @@ describe('voice', () => {
     expect(spokenInstruction(route.steps[1], 300, false)).toBe('In 300 metres, turn left onto Korangi Road');
     expect(spokenInstruction(route.steps[1], 50, true)).toBe('Turn left onto Korangi Road');
     expect(spokenInstruction(route.steps[2], 10, true)).toBe('You have arrived at your destination');
+    // English wording: one part, English voice.
+    expect(spokenParts(route.steps[1], 50, true)).toEqual([{ text: 'Turn left onto Korangi Road', english: true }]);
+    // App-language voice (tests run with English text): the road name in English letters is its own English part.
+    expect(spokenParts(route.steps[1], 50, true, false)).toEqual([
+      { text: 'Turn left onto', english: false },
+      { text: 'Korangi Road', english: true },
+    ]);
+    expect(spokenParts(route.steps[1], 300, false, false).map((p) => p.english)).toEqual([false, true]);
     expect(formatEta(3720)).toBe('1 h 2 min');
     expect(formatEta(20)).toBe('1 min');
   });

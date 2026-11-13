@@ -38,7 +38,7 @@ export default function SharedLocationScreen() {
       <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
         <ArrowLeft color={colors.foreground} size={20} style={flipX} />
       </Pressable>
-      <Text numberOfLines={1} className="flex-1 font-display text-2xl text-heading">
+      <Text numberOfLines={2} className="flex-1 font-display text-2xl text-heading">
         {title}
       </Text>
     </View>

@@ -1,10 +1,12 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
+import { fetch as streamingFetch } from 'expo/fetch';
 
 import { useQuery } from '@tanstack/react-query';
 
 import type { ContentLocale } from '@/lib/preferences';
 import { queryClient } from '@/lib/query-client';
 import type { DestinationTranslation } from '@/lib/types';
+import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -78,6 +80,82 @@ export async function askAssistant(messages: ChatTurn[], context: ChatContext): 
   const res = await invoke<{ text: string }>({ mode: 'chat', messages: messages.slice(-12), context });
   return res.text;
 }
+
+/** The answer was stopped on purpose (New chat, screen closed). */
+export class AiAborted extends Error {}
+
+/**
+ * Streams the AI guide's answer: `onText` gets each new piece as it is
+ * written, so the reply appears word by word. Resolves when the answer is
+ * complete; rejects with the server's message (or AiAborted).
+ */
+export async function streamAssistant(
+  messages: ChatTurn[],
+  context: ChatContext,
+  onText: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Sign in to use the AI assistant.');
+
+  let res: Response;
+  try {
+    // expo/fetch streams the response body (React Native's own fetch waits for the whole reply).
+    res = (await streamingFetch(`${env.supabaseUrl}/functions/v1/ai`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: env.supabasePublishableKey,
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify({ mode: 'chat', stream: true, messages: messages.slice(-12), context }),
+      signal,
+    })) as unknown as Response;
+  } catch {
+    if (signal?.aborted) throw new AiAborted();
+    throw new Error('AI service unavailable. Check your connection and try again.');
+  }
+  if (!res.ok || !res.body) {
+    const payload = (await res.json().catch(() => null)) as { error?: string; usage?: unknown } | null;
+    rememberUsage(payload?.usage);
+    throw new Error(payload?.error ?? 'AI service unavailable.');
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let end: number;
+      while ((end = buffer.indexOf('\n\n')) >= 0) {
+        const block = buffer.slice(0, end);
+        buffer = buffer.slice(end + 2);
+        for (const line of block.split('\n')) {
+          if (!line.startsWith('data:')) continue;
+          const event = JSON.parse(line.slice(5)) as { type: string; text?: string; error?: string; usage?: unknown };
+          if (event.type === 'delta' && event.text) onText(event.text);
+          else if (event.type === 'done') rememberUsage(event.usage);
+          else if (event.type === 'error') {
+            rememberUsage(event.usage);
+            throw new AiServerError(event.error ?? 'AI service unavailable.');
+          }
+        }
+      }
+    }
+  } catch (e) {
+    if (signal?.aborted) throw new AiAborted();
+    if (e instanceof AiServerError) throw e;
+    throw new Error('The answer was cut off. Check your connection and ask again.');
+  }
+}
+
+/** An error the AI service reported (shown as it is). */
+class AiServerError extends Error {}
 
 export async function analyzeImage(imageBase64: string, opts: { question?: string; locale?: ContentLocale }): Promise<LensResult> {
   const res = await invoke<{ result: LensResult }>({

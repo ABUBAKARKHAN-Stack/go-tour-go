@@ -48,7 +48,7 @@ export function ViewerPicker({ audience, onAudience, friends, chosen, onToggle }
                   className={`min-h-14 flex-row items-center gap-3 rounded-2xl border px-3 ${on ? 'border-primary bg-primary/10' : 'border-border bg-card'}`}
                 >
                   <Avatar profile={p} size={36} />
-                  <Text numberOfLines={1} className="flex-1 text-sm font-semibold text-heading">
+                  <Text numberOfLines={2} className="flex-1 text-sm font-semibold text-heading">
                     {displayName(p)}
                   </Text>
                   <View className={`h-6 w-6 items-center justify-center rounded-md border-2 ${on ? 'border-primary bg-primary' : 'border-border'}`}>

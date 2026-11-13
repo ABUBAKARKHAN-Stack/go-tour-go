@@ -69,7 +69,7 @@ export function BrandHeader({
         <View className="gap-0.5">
           <View className="flex-row items-center gap-2.5">
             {Icon ? <Icon color={colors.primary} fill={iconFilled ? colors.primary : 'transparent'} size={28} /> : null}
-            <Text accessibilityRole="header" numberOfLines={1} className="shrink font-display text-[32px] leading-[38px] text-heading">
+            <Text accessibilityRole="header" numberOfLines={2} className="shrink font-display text-[32px] leading-[38px] text-heading">
               {title}
             </Text>
           </View>

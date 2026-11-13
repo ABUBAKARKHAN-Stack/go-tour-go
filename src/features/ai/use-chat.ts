@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { askAssistant, type ChatContext, type ChatTurn } from '@/features/ai/api';
+import { AiAborted, streamAssistant, type ChatContext, type ChatTurn } from '@/features/ai/api';
 import { useDestinationsByDistance } from '@/features/destinations/api';
 import { describeWeather, type Weather } from '@/features/weather/api';
 import { usePreferences } from '@/lib/preferences';
@@ -9,7 +9,7 @@ import { usePreferences } from '@/lib/preferences';
 export type ChatMessage = ChatTurn & { id: string };
 
 /**
- * Small, controlled context for the AI: the chosen AI language, the place in
+ * Small, controlled context for the AI: the app language, the place in
  * focus, an approximate location label, the 5 nearest places and the weather
  * already in the cache. No extra API calls.
  */
@@ -36,39 +36,54 @@ export function useChatContext(destinationSlug?: string): ChatContext {
 
 /**
  * One conversation with the AI travel guide (the last 12 turns are sent).
- * States: ready -> waiting for a reply -> ready (or error). Each conversation
- * has a number; "New chat" starts a new one, so a reply still on its way for
- * the old conversation is dropped instead of appearing in the new one.
+ * States: ready -> waiting (asked, no words yet) -> streaming (the answer is
+ * being written into the last message) -> ready, or error. "New chat" aborts
+ * the answer in progress and starts an empty conversation.
  */
+export type ChatStatus = 'ready' | 'waiting' | 'streaming';
+
 export function useChat(context: ChatContext) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<ChatStatus>('ready');
   const [error, setError] = useState<string | null>(null);
-  const conversation = useRef(0);
-  // Set at once (state updates only show on the next render), so a quick double tap sends once.
-  const waiting = useRef(false);
+  // The answer in progress; set at once, so a quick double tap sends once.
+  const current = useRef<AbortController | null>(null);
 
   const send = useCallback(
     async (text: string) => {
       const content = text.trim();
-      if (!content || waiting.current) return false;
-      const id = conversation.current;
+      if (!content || current.current) return false;
+      const controller = new AbortController();
+      current.current = controller;
+      const replyId = `${Date.now()}-a`;
       const next: ChatMessage[] = [...messages, { id: `${Date.now()}`, role: 'user', content }];
-      waiting.current = true;
       setMessages(next);
       setError(null);
-      setLoading(true);
+      setStatus('waiting');
+      let started = false;
       try {
-        const reply = await askAssistant(next.map(({ role, content: c }) => ({ role, content: c })), context);
-        if (id !== conversation.current) return true;
-        setMessages((m) => [...m, { id: `${Date.now()}-a`, role: 'assistant', content: reply }]);
+        await streamAssistant(
+          next.map(({ role, content: c }) => ({ role, content: c })),
+          context,
+          (piece) => {
+            if (controller.signal.aborted) return;
+            if (!started) {
+              started = true;
+              setStatus('streaming');
+              setMessages((m) => [...m, { id: replyId, role: 'assistant', content: piece }]);
+            } else {
+              setMessages((m) => m.map((msg) => (msg.id === replyId ? { ...msg, content: msg.content + piece } : msg)));
+            }
+          },
+          controller.signal,
+        );
       } catch (e) {
-        if (id !== conversation.current) return true;
+        if (e instanceof AiAborted || controller.signal.aborted) return true;
         setError(e instanceof Error ? e.message : 'AI service unavailable.');
       } finally {
-        if (id === conversation.current) {
-          waiting.current = false;
-          setLoading(false);
+        if (current.current === controller) {
+          current.current = null;
+          setStatus('ready');
         }
       }
       return true;
@@ -77,12 +92,15 @@ export function useChat(context: ChatContext) {
   );
 
   const reset = useCallback(() => {
-    conversation.current += 1;
-    waiting.current = false;
+    current.current?.abort();
+    current.current = null;
     setMessages([]);
     setError(null);
-    setLoading(false);
+    setStatus('ready');
   }, []);
 
-  return { messages, loading, error, send, reset };
+  // Leaving the screen stops an answer still being written.
+  useEffect(() => () => current.current?.abort(), []);
+
+  return { messages, status, loading: status !== 'ready', error, send, reset };
 }

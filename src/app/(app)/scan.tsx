@@ -101,7 +101,7 @@ export default function ScanScreen() {
           ) : isUrl ? (
             <>
               <Text className="text-xs font-bold uppercase text-accent">{tx('Link')}</Text>
-              <Text numberOfLines={3} className="text-sm text-foreground">
+              <Text className="text-sm text-foreground">
                 {scanned}
               </Text>
               <Text className="text-xs text-muted-foreground">{tx('Only open links you trust.')}</Text>

@@ -139,19 +139,36 @@ export function spokenDistance(m: number, t: Translate = txEn): string {
  */
 export function spokenInstruction(step: RouteStep, distance: number, lastThreshold: boolean, english = true): string {
   const t: Translate = english ? txEn : tx;
-  // The Urdu voice can't read road names written in English letters (most
-  // OpenStreetMap names), so it says the direction without them.
-  const instruction = english
-    ? step.instructionEn
-    : step.name && !hasArabicScript(step.name)
-      ? describeStep({ ...step, name: null }, tx)
-      : step.instruction;
+  const instruction = english ? step.instructionEn : step.instruction;
   if (step.type === 'arrive') {
     return lastThreshold ? t('You have arrived at your destination') : t('In {0}, you will arrive', { 0: spokenDistance(distance, t) });
   }
   if (lastThreshold) return instruction;
   const lowered = english ? instruction.charAt(0).toLowerCase() + instruction.slice(1) : instruction;
   return t('In {0}, {1}', { 0: spokenDistance(distance, t), 1: lowered });
+}
+
+/** A piece of a spoken instruction and the voice that says it. */
+export type SpokenPart = { text: string; english: boolean };
+
+const ROAD_MARK = '\u0001';
+
+/**
+ * The instruction as voice parts. The Urdu voice can't read road names in
+ * English letters (most OpenStreetMap names), so in Urdu such a name is said
+ * by the English voice, in its place: "[N-35] پر بائیں مڑیں".
+ */
+export function spokenParts(step: RouteStep, distance: number, lastThreshold: boolean, english = true): SpokenPart[] {
+  if (english || !step.name || hasArabicScript(step.name)) {
+    return [{ text: spokenInstruction(step, distance, lastThreshold, english), english }];
+  }
+  const marked = spokenInstruction({ ...step, instruction: describeStep({ ...step, name: ROAD_MARK }, tx) }, distance, lastThreshold, false);
+  const parts: SpokenPart[] = [];
+  marked.split(ROAD_MARK).forEach((piece, i) => {
+    if (i > 0) parts.push({ text: step.name!, english: true });
+    if (piece.trim()) parts.push({ text: piece.trim(), english: false });
+  });
+  return parts;
 }
 
 export function formatEta(seconds: number): string {
