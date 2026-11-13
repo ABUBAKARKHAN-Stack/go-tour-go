@@ -337,6 +337,17 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
 - Hazard reports: at the traveller's location by default; on Explore, long-press the map or use
   "Choose on map" in the report sheet to report at a spot. Hazards draw as warning-triangle markers
   above the landmark layers; a hazard card's "Show on map" flies Explore to it and outlines its area.
+- **Don't use Tailwind start/end utilities** (`ps-*`, `pe-*`, `ms-*`, `me-*`, `start-*`, `end-*`): Uniwind turns
+  them into style names React Native ignores (`paddingHorizontalStart`), so they do nothing on the phone. Use the
+  style props `paddingStart`, `paddingEnd`, `marginStart`, `marginEnd`, `start`, `end` (they flip for Urdu).
+  `src/lib/style-guard.test.ts` fails if one comes back.
+- AI chats are saved as conversations (`features/ai/conversations.ts`, per account on the phone, 30 kept): the AI
+  guide has History and New chat, and recent chats on its start screen; Ask AI on a destination page continues
+  that place's latest conversation.
+- Comment replies: `post_comments.parent_id` (migration `comment_replies`), one level deep; a reply to a reply
+  joins the same thread (database trigger).
+- Plan a journey: the swap button reverses the route (from the searched place to your location); that direction
+  is a preview, and live navigation is offered from your location.
 - Bottom sheets use `src/components/sheet.tsx` (`Sheet`): drag down or flick to close, short drags spring
   back, backdrop and Android back close it; `inline` for sheets with a text input (AI chat), `dragAnywhere`
   for sheets without a scrolling list. Use it for any new bottom sheet.

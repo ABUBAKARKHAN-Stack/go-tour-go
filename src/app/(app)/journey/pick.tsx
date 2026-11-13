@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Crosshair, MapPin, Navigation } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -27,6 +27,8 @@ import { colors, shadow } from '@/lib/theme';
  */
 export default function PickDestination() {
   const insets = useSafeAreaInsets();
+  // From the planner with start and destination swapped: the spot is where the route starts.
+  const reverse = useLocalSearchParams<{ reverse?: string }>().reverse === '1';
   const map = useRef<TravelMapHandle>(null);
   const location = useLastLocation();
   const locationState = useLocationState();
@@ -50,7 +52,7 @@ export default function PickDestination() {
 
   const go = () => {
     if (!spot.data) return;
-    navigateTo({ id: spot.data.id, name: spot.data.name, subtitle: spot.data.subtitle, ...center }, { replace: true });
+    navigateTo({ id: spot.data.id, name: spot.data.name, subtitle: spot.data.subtitle, ...center }, { replace: true, reverse });
   };
 
   if (mapError) {
@@ -97,11 +99,11 @@ export default function PickDestination() {
       <View className="absolute left-0 right-0 top-0 flex-row items-center gap-3 px-4" style={{ paddingTop: insets.top + 8 }} pointerEvents="box-none">
         <IconButton icon={ArrowLeft} flip label={tx('Go back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/search'))} />
         <View className="flex-1 rounded-full bg-card px-4 py-2.5" style={{ boxShadow: shadow(0.12, 6, 18) }}>
-          <Text className="text-sm font-semibold text-heading">{tx('Move the map to your destination')}</Text>
+          <Text className="text-sm font-semibold text-heading">{reverse ? tx('Move the map to where you start') : tx('Move the map to your destination')}</Text>
         </View>
       </View>
 
-      <View className="absolute end-4 gap-2" style={{ bottom: insets.bottom + 200 }}>
+      <View className="absolute gap-2" style={{ end: 16, bottom: insets.bottom + 200 }}>
         {locationState.permission === 'granted' ? <IconButton icon={Crosshair} label={tx('Show my location')} onPress={locateMe} /> : null}
       </View>
 
@@ -120,7 +122,7 @@ export default function PickDestination() {
           </View>
         </View>
         <AppButton
-          label={tooClose ? tx('You are already here') : tx('Directions to here')}
+          label={tooClose ? tx('You are already here') : reverse ? tx('Directions from here') : tx('Directions to here')}
           icon={Navigation}
           disabled={!spot.data || tooClose}
           onPress={go}

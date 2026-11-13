@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Bike, Car, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpDown, Bike, Car, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,8 +48,13 @@ function mainRoad(steps: { name: string | null; distance: number }[]) {
  * Route preview (design screen 08): routes for each travel mode, time and
  * distance, and the landmarks and hazards on the way, then "Start journey".
  */
+/** The traveller's own position as a route end (a reversed journey). */
+const YOUR_LOCATION = tx('Your location');
+
 export default function JourneyPreview() {
-  const params = useLocalSearchParams<{ name: string; lat: string; lng: string; id?: string; subtitle?: string }>();
+  // `reverse=1`: the place is where the route starts and it ends at your location (From/To swapped).
+  const params = useLocalSearchParams<{ name: string; lat: string; lng: string; id?: string; subtitle?: string; reverse?: string }>();
+  const reverse = params.reverse === '1';
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [prefs, setPrefs] = usePreferences();
@@ -78,21 +83,24 @@ export default function JourneyPreview() {
     if (!validTarget) return;
     const current = journeyStore.get();
     if (current.phase === 'active') return;
+    const planned = reverse ? current.origin : current.target;
     const same =
-      current.target &&
-      current.target.latitude === target.latitude &&
-      current.target.longitude === target.longitude &&
+      planned &&
+      planned.latitude === target.latitude &&
+      planned.longitude === target.longitude &&
+      (reverse ? current.target?.name === YOUR_LOCATION : current.target?.name !== YOUR_LOCATION) &&
       (current.phase === 'preview' || current.phase === 'planning');
     if (same) return;
     let cancelled = false;
     getCurrentFix().then((fix) => {
       if (cancelled || !fix) return;
-      journeyStore.plan(target, fix, prefs.travelMode);
+      if (reverse) journeyStore.plan({ name: YOUR_LOCATION, latitude: fix.latitude, longitude: fix.longitude }, target, prefs.travelMode);
+      else journeyStore.plan(target, fix, prefs.travelMode);
     });
     return () => {
       cancelled = true;
     };
-  }, [target, validTarget, hasFix, prefs.travelMode]);
+  }, [target, validTarget, hasFix, prefs.travelMode, reverse]);
 
   const sheetHeight = Math.min(height * 0.56, 520);
   const route = journey.route;
@@ -188,7 +196,9 @@ export default function JourneyPreview() {
           <ArrowLeft color={colors.foreground} size={20} style={flipX} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={2} className="text-base font-semibold text-heading">{tx('Your location → {0}', { 0: target.name })}</Text>
+          <Text numberOfLines={2} className="text-base font-semibold text-heading">
+            {reverse ? tx('{0} → Your location', { 0: target.name }) : tx('Your location → {0}', { 0: target.name })}
+          </Text>
           <Text numberOfLines={2} className="text-xs text-faint">
             {via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}
           </Text>
@@ -298,7 +308,17 @@ export default function JourneyPreview() {
               onPress={saveOffline}
               disabled={!route || journey.phase !== 'preview'}
             />
-            <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
+            {reverse ? (
+              // Turn-by-turn follows you from where you are, so this direction is a preview.
+              <AppButton
+                label={tx('Navigate from my location')}
+                icon={ArrowUpDown}
+                onPress={() => router.setParams({ reverse: undefined })}
+                className="flex-1"
+              />
+            ) : (
+              <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
+            )}
           </View>
         </View>
       </View>

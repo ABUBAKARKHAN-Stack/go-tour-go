@@ -223,7 +223,7 @@ function OwnStoryBubble({ group }: { group: StoryGroup | undefined }) {
           accessibilityLabel={tx('Add story')}
           hitSlop={8}
           onPress={() => requireAccount(tx('post stories')) && router.push('/story/new')}
-          className="absolute end-0.5 top-12 h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary"
+          className="absolute top-12 h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary" style={{ end: 2 }}
         >
           <Plus color="#fff" size={13} strokeWidth={3} />
         </Pressable>
@@ -249,7 +249,7 @@ function StoryBubble({ group }: { group: StoryGroup }) {
         <Image source={{ uri: group.latest.image_url }} style={{ width: '100%', height: '100%', borderRadius: 999 }} contentFit="cover" />
       </View>
       {place ? (
-        <View className="absolute end-0.5 top-0 h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary">
+        <View className="absolute top-0 h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary" style={{ end: 2 }}>
           <MapPin color="#fff" size={12} />
         </View>
       ) : null}

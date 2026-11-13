@@ -94,7 +94,7 @@ export function PhotoHeader({
           experimental_backgroundImage: 'linear-gradient(180deg, rgba(246,250,252,0.92), rgba(246,250,252,0.55) 60%, rgba(246,250,252,0))',
         }}
       />
-      <View pointerEvents="box-none" className="absolute start-5 flex-row items-center gap-3" style={{ top: topInset + 8 }}>
+      <View pointerEvents="box-none" className="absolute flex-row items-center gap-3" style={{ start: 20, top: topInset + 8 }}>
         {leading}
         <View pointerEvents="none">
           <BrandLogo height={leading ? 44 : 52} />

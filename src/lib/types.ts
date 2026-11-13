@@ -232,6 +232,8 @@ export type PostMedia = {
 export type PostComment = {
   id: string;
   post_id: string;
+  /** The top comment this replies to (one level deep), or null. */
+  parent_id?: string | null;
   author_id: string;
   body: string;
   created_at: string;

@@ -181,8 +181,8 @@ export default function Home() {
               accessibilityLabel={tx('Search places and plan a journey')}
               onPress={() => router.push('/search')}
               {...searchPress.handlers}
-              className="min-h-14 flex-row items-center gap-3 rounded-full bg-card pe-1.5 ps-5"
-              style={{ boxShadow: shadow(0.12, 8, 24) }}
+              className="min-h-14 flex-row items-center gap-3 rounded-full bg-card"
+              style={{ paddingEnd: 6, paddingStart: 20, boxShadow: shadow(0.12, 8, 24) }}
             >
               <Search color={colors.heading} size={20} />
               <Text numberOfLines={1} className="flex-1 text-[15px] text-faint">

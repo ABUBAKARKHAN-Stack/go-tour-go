@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { CornerDownRight, Send, X } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -30,9 +30,23 @@ export default function PostDetail() {
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<PostComment | null>(null);
   const requireAccount = useRequireAccount();
-  const list = useRef<FlatList<PostComment>>(null);
+  const list = useRef<FlatList<{ comment: PostComment; replies: PostComment[] }>>(null);
   const input = useRef<TextInputRef>(null);
   const count = comments.data?.length ?? post.data?.comments[0]?.count ?? 0;
+  // Top comments in order, each with its replies (one level, oldest first).
+  const threads = useMemo(() => {
+    const all = comments.data ?? [];
+    const ids = new Set(all.map((c) => c.id));
+    const replies = new Map<string, PostComment[]>();
+    const tops: PostComment[] = [];
+    for (const c of all) {
+      if (c.parent_id && ids.has(c.parent_id)) replies.set(c.parent_id, [...(replies.get(c.parent_id) ?? []), c]);
+      else tops.push(c);
+    }
+    return tops.map((c) => ({ comment: c, replies: replies.get(c.id) ?? [] }));
+  }, [comments.data]);
+  // Threads showing all their replies (longer threads start folded).
+  const [open, setOpen] = useState<Set<string>>(new Set());
 
   const send = () => {
     const body = text.trim();
@@ -40,8 +54,11 @@ export default function PostDetail() {
     if (!requireAccount(tx('comment on posts'))) return;
     setText('');
     setReplyTo(null);
+    // Replies hang under the top comment (a reply to a reply joins the same thread).
+    const parentId = replyTo ? (replyTo.parent_id ?? replyTo.id) : null;
+    if (parentId) setOpen((o) => new Set(o).add(parentId));
     actions.addComment.mutate(
-      { postId: id, body, tempId: `pending-${Date.now()}` },
+      { postId: id, body, tempId: `pending-${Date.now()}`, parentId },
       {
         onError: (e) => {
           setText(body);
@@ -49,7 +66,7 @@ export default function PostDetail() {
         },
       },
     );
-    setTimeout(() => list.current?.scrollToEnd({ animated: true }), 80);
+    if (!parentId) setTimeout(() => list.current?.scrollToEnd({ animated: true }), 80);
   };
 
   const reply = (c: PostComment) => {
@@ -77,8 +94,8 @@ export default function PostDetail() {
         <>
           <FlatList
             ref={list}
-            data={comments.data ?? []}
-            keyExtractor={(c) => c.id}
+            data={threads}
+            keyExtractor={(t) => t.comment.id}
             keyboardShouldPersistTaps="handled"
             contentContainerClassName="gap-3 px-4 pb-4"
             ListHeaderComponent={
@@ -94,47 +111,28 @@ export default function PostDetail() {
                 <Text className="text-sm text-muted-foreground">{tx('No comments yet. Start the conversation.')}</Text>
               )
             }
-            renderItem={({ item }) => {
-              const pending = item.id.startsWith('pending-');
-              const canDelete = !pending && (item.author_id === userId || post.data?.author_id === userId);
-              const isAuthor = item.author_id === post.data?.author_id;
+            renderItem={({ item: thread }) => {
+              const folded = thread.replies.length > 2 && !open.has(thread.comment.id);
+              const shown = folded ? thread.replies.slice(-1) : thread.replies;
               return (
-                <Pressable
-                  onLongPress={canDelete ? () => remove(item) : undefined}
-                  delayLongPress={350}
-                  accessibilityHint={canDelete ? tx('Long-press to delete') : undefined}
-                  className={`flex-row gap-3 ${pending ? 'opacity-60' : ''}`}
-                >
-                  <Avatar profile={item.author} size={32} />
-                  <View className="flex-1 gap-1">
-                    <View className="rounded-[18px] rounded-tl-md bg-primary-soft px-3 py-2">
-                      <View className="flex-row items-center gap-1.5">
-                        <Text numberOfLines={1} className="shrink text-xs font-semibold text-heading">
-                          {displayName(item.author)}
-                        </Text>
-                        {isAuthor ? (
-                          <View className="rounded-full bg-primary-soft px-1.5 py-0.5">
-                            <Text className="text-[9px] font-bold uppercase text-primary">{tx('Author')}</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <MentionText className="text-sm leading-5 text-foreground" text={item.body} />
-                    </View>
-                    <View className="flex-row items-center gap-4 px-3">
-                      <Text className="text-[11px] text-muted-foreground">{pending ? tx('Sending…') : timeAgo(item.created_at)}</Text>
-                      {!pending ? (
-                        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => reply(item)}>
-                          <Text className="text-[11px] font-semibold text-muted-foreground">{tx('Reply')}</Text>
+                <View className="gap-2.5">
+                  <CommentRow comment={thread.comment} postAuthorId={post.data?.author_id} userId={userId} onReply={reply} onDelete={remove} />
+                  {thread.replies.length ? (
+                    // Replies sit indented under the comment, with a thread line.
+                    <View className="gap-2.5 border-border" style={{ marginStart: 44, borderStartWidth: 2, paddingStart: 10 }}>
+                      {folded ? (
+                        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setOpen((o) => new Set(o).add(thread.comment.id))} className="min-h-8 justify-center">
+                          <Text className="text-xs font-semibold text-muted-foreground">
+                            {tx('View {0} more replies', { 0: thread.replies.length - shown.length })}
+                          </Text>
                         </Pressable>
                       ) : null}
-                      {canDelete ? (
-                        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => remove(item)}>
-                          <Text className="text-[11px] font-semibold text-muted-foreground">{tx('Delete')}</Text>
-                        </Pressable>
-                      ) : null}
+                      {shown.map((r) => (
+                        <CommentRow key={r.id} comment={r} postAuthorId={post.data?.author_id} userId={userId} onReply={reply} onDelete={remove} small />
+                      ))}
                     </View>
-                  </View>
-                </Pressable>
+                  ) : null}
+                </View>
               );
             }}
           />
@@ -174,5 +172,64 @@ export default function PostDetail() {
         </>
       )}
     </Screen>
+  );
+}
+
+/** One comment (or a reply, `small`): avatar, name, text, then time, Reply and Delete. */
+function CommentRow({
+  comment: item,
+  postAuthorId,
+  userId,
+  onReply,
+  onDelete,
+  small = false,
+}: {
+  comment: PostComment;
+  postAuthorId?: string;
+  userId: string | null;
+  onReply: (c: PostComment) => void;
+  onDelete: (c: PostComment) => void;
+  small?: boolean;
+}) {
+  const pending = item.id.startsWith('pending-');
+  const canDelete = !pending && (item.author_id === userId || postAuthorId === userId);
+  const isAuthor = item.author_id === postAuthorId;
+  return (
+    <Pressable
+      onLongPress={canDelete ? () => onDelete(item) : undefined}
+      delayLongPress={350}
+      accessibilityHint={canDelete ? tx('Long-press to delete') : undefined}
+      className={`flex-row gap-2.5 ${pending ? 'opacity-60' : ''}`}
+    >
+      <Avatar profile={item.author} size={small ? 24 : 32} />
+      <View className="flex-1 gap-1">
+        <View className="rounded-[18px] rounded-tl-md bg-primary-soft px-3 py-2">
+          <View className="flex-row items-center gap-1.5">
+            <Text numberOfLines={1} className="shrink text-xs font-semibold text-heading">
+              {displayName(item.author)}
+            </Text>
+            {isAuthor ? (
+              <View className="rounded-full bg-white/80 px-1.5 py-0.5">
+                <Text className="text-[9px] font-bold uppercase text-primary">{tx('Author')}</Text>
+              </View>
+            ) : null}
+          </View>
+          <MentionText className="text-sm leading-5 text-foreground" text={item.body} />
+        </View>
+        <View className="flex-row items-center gap-4 px-3">
+          <Text className="text-[11px] text-muted-foreground">{pending ? tx('Sending…') : timeAgo(item.created_at)}</Text>
+          {!pending ? (
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => onReply(item)}>
+              <Text className="text-[11px] font-semibold text-muted-foreground">{tx('Reply')}</Text>
+            </Pressable>
+          ) : null}
+          {canDelete ? (
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => onDelete(item)}>
+              <Text className="text-[11px] font-semibold text-muted-foreground">{tx('Delete')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
   );
 }

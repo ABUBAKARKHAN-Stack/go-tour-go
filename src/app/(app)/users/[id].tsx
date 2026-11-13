@@ -1,15 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Image } from 'expo-image';
 import {
   ArrowLeft,
   Check,
   Grid3x3,
-  Layers,
   Lock,
   MapPin,
   MessageCircle,
   Pencil,
-  Play,
   Plus,
   Settings,
   UserMinus,
@@ -27,13 +24,13 @@ import { Text } from '@/components/text';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useRequireAccount } from '@/features/auth/guest-gate';
 import { formatCount, useAuthorPostCount, useFeed, useStories } from '@/features/community/api';
+import { PostTile } from '@/features/community/post-tile';
 import { useSeenStories } from '@/features/community/story-seen';
 import { startConversation } from '@/features/messaging/api';
 import { displayName, useFollowCounts, useFriendships, useProfile, useSocialActions } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { tx } from '@/lib/i18n';
 import { brandGradient, colors } from '@/lib/theme';
-import type { CommunityPost } from '@/lib/types';
 
 type Tab = 'posts' | 'places';
 const GAP = 2;
@@ -296,38 +293,6 @@ function TabButton({ active, icon: Icon, label, onPress }: { active: boolean; ic
       className={`min-h-12 flex-1 items-center justify-center border-b-2 ${active ? 'border-heading' : 'border-transparent'}`}
     >
       <Icon color={active ? colors.heading : colors.faint} size={22} />
-    </Pressable>
-  );
-}
-
-/** A square in the grid: the first photo (or a video's poster), or the words of a text post. */
-function PostTile({ post, size }: { post: CommunityPost; size: number }) {
-  const media = post.media ?? [];
-  const first = media[0];
-  const thumb = first ? (first.type === 'video' ? first.poster_url : first.url) : post.image_url;
-  const video = first ? first.type === 'video' : Boolean(post.video_url);
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={post.body || tx('Post')}
-      onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
-      style={{ width: size, height: size }}
-      className="overflow-hidden bg-muted active:opacity-80"
-    >
-      {thumb ? (
-        <Image source={{ uri: thumb }} recyclingKey={post.id} contentFit="cover" transition={150} style={{ width: '100%', height: '100%' }} />
-      ) : (
-        <View className="flex-1 justify-center bg-primary-soft p-2.5">
-          <Text numberOfLines={5} className="text-[13px] leading-[18px] text-heading">
-            {post.body}
-          </Text>
-        </View>
-      )}
-      {media.length > 1 || video ? (
-        <View className="absolute end-1.5 top-1.5" pointerEvents="none">
-          {video ? <Play color="#fff" fill="#fff" size={16} /> : <Layers color="#fff" size={16} />}
-        </View>
-      ) : null}
     </Pressable>
   );
 }

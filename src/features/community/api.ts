@@ -228,16 +228,17 @@ export function useCommunityActions() {
 
     // Comments show up at once (optimistic) and roll back if sending fails.
     addComment: useMutation({
-      mutationFn: async ({ postId, body }: { postId: string; body: string; tempId: string }) => {
+      mutationFn: async ({ postId, body, parentId }: { postId: string; body: string; tempId: string; parentId?: string | null }) => {
         const text = body.trim();
         if (!text) throw new Error('Write a comment first.');
-        const { error } = await supabase.from('post_comments').insert({ post_id: postId, author_id: userId, body: text });
+        const { error } = await supabase.from('post_comments').insert({ post_id: postId, author_id: userId, body: text, parent_id: parentId ?? null });
         if (error) throw error;
       },
-      onMutate: ({ postId, body, tempId }) => {
+      onMutate: ({ postId, body, tempId, parentId }) => {
         const pending: PostComment = {
           id: tempId,
           post_id: postId,
+          parent_id: parentId ?? null,
           author_id: userId!,
           body: body.trim(),
           created_at: new Date().toISOString(),
@@ -259,7 +260,8 @@ export function useCommunityActions() {
         if (error) throw error;
       },
       onMutate: ({ id, postId }) => {
-        qc.setQueryData<PostComment[]>(['comments', postId], (list) => list?.filter((c) => c.id !== id));
+        // Its replies go with it (the database deletes them too).
+        qc.setQueryData<PostComment[]>(['comments', postId], (list) => list?.filter((c) => c.id !== id && c.parent_id !== id));
         patchPost(postId, (p) => ({ ...p, comments: [{ count: Math.max(0, (p.comments[0]?.count ?? 1) - 1) }] }));
       },
       onSettled: (_d, _e, v) => {

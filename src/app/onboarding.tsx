@@ -171,7 +171,7 @@ export default function Onboarding() {
       />
 
       {/* Language and Skip stay on top of every step, level with the logo. */}
-      <View className="absolute end-4 flex-row items-center gap-1" style={{ top: insets.top + 16 }}>
+      <View className="absolute flex-row items-center gap-1" style={{ end: 16, top: insets.top + 16 }}>
         <View className="flex-row rounded-full bg-white/80 p-0.5" accessibilityRole="radiogroup" accessibilityLabel="Language / زبان">
           {LOCALES.map((l) => (
             <Pressable
