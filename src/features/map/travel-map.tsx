@@ -61,8 +61,10 @@ type Props = {
   /** A spot picked for a hazard report, marked with a pin. */
   pickedPoint?: { latitude: number; longitude: number } | null;
   onMapPress: () => void;
-  /** Long-press on the map (used to report a hazard at that spot). */
+  /** Long-press on the map (directions to, or a hazard at, that spot). */
   onLongPress?: (point: { latitude: number; longitude: number }) => void;
+  /** The map stopped moving: its centre (for "choose on map"). */
+  onCenterChange?: (point: { latitude: number; longitude: number }) => void;
   onLoadError: () => void;
 };
 
@@ -169,6 +171,10 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
       logo={false}
       ref={mapRef}
       onPress={props.onMapPress}
+      onRegionDidChange={(e) => {
+        const [longitude, latitude] = e.nativeEvent.center;
+        props.onCenterChange?.({ latitude, longitude });
+      }}
       onLongPress={(e) => {
         const [longitude, latitude] = e.nativeEvent.lngLat;
         props.onLongPress?.({ latitude, longitude });

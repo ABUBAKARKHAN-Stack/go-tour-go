@@ -49,7 +49,7 @@ export function PlaceChatSheet({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const chat = useChat(useChatContext(place.slug));
+  const chat = useChat(useChatContext(place.slug), `place:${place.slug}`);
   const [input, setInput] = useState('');
   const list = useRef<FlatList<ChatMessage>>(null);
   const handled = useRef(0);

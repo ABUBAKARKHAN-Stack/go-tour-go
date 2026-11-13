@@ -8,6 +8,7 @@ import {
   Globe,
   Landmark,
   MapPin,
+  MapPinned,
   SearchX,
   ShieldCheck,
   X,
@@ -250,6 +251,7 @@ export default function SearchScreen() {
             )
           ) : (
             <>
+              <ResultRow icon={MapPinned} tint="accent" title={tx('Choose on map')} subtitle={tx('Pick any spot as your destination')} onPress={() => router.push('/journey/pick')} />
               {recent.length ? (
                 <View className="gap-1">
                   <SectionTitle title={tx('RECENT')} action={tx('Clear')} onAction={() => setRecent([])} />
@@ -285,6 +287,8 @@ export default function SearchScreen() {
           icon={SearchX}
           title={tx('No matches')}
           message={online.isFetching ? tx('Still looking online...') : tx('Try another spelling, or a nearby area or landmark.')}
+          actionLabel={tx('Choose on map')}
+          onAction={() => router.push('/journey/pick')}
         />
       ) : (
         <SectionList

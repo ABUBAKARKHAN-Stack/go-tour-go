@@ -105,7 +105,7 @@ src/components/          shared UI (AppButton, form controls, Screen, states + s
 src/lib/                 supabase client, env, i18n (tx), theme, motion, forms, query cache, crash log, geo
 src/i18n/ur.ts           Urdu strings keyed by the English source text
 supabase/migrations/     SQL migrations (file names = the versions applied in the project)
-supabase/functions/ai/   Gemini edge function (secrets: GEMINI_API_KEY, optional GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, AI_DAILY_LIMIT_GUEST)
+supabase/functions/ai/   Gemini edge function (secrets: GEMINI_API_KEY, optional GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_QUESTIONS_PER_DAY, AI_QUESTIONS_PER_DAY_GUEST)
 scripts/                 import_pakistan_data.py (OSM → Supabase), build-pakistan-map.sh, make-water-polygons.py,
                          check-pakistan-map.py, build-share-site.mjs, check-translations.cjs, brand/, tests/
 site/                    static SOS / live-location web page (EAS Hosting)
@@ -274,7 +274,8 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 - Run `get_advisors` (security + performance) after schema changes.
 - Edge function `ai`: secrets `GEMINI_API_KEY` (required), `GEMINI_MODEL` (default `gemini-flash-latest`),
   `GEMINI_FALLBACK_MODEL` (default `gemini-flash-lite-latest`, asked when the first is slow or busy),
-  `AI_DAILY_LIMIT`, `AI_DAILY_LIMIT_GUEST`. Thinking is kept short (`thinkingLevel: low`, or
+  `AI_QUESTIONS_PER_DAY` (default 5), `AI_QUESTIONS_PER_DAY_GUEST` (default 2; the old `AI_DAILY_LIMIT*`
+  secrets are no longer read). Landmark translations don't use questions. Thinking is kept short (`thinkingLevel: low`, or
   `thinkingBudget: 0` on 2.5 models); every attempt logs its model and time. A failed answer does not
   use up a question.
 - Edge function `translate-urdu` (owner-run machine-Urdu job, `verify_jwt = false`, single-use tokens),
@@ -422,7 +423,7 @@ in); added on the owner's request.
 1. Supabase → Authentication → Sign In / Providers: turn on **Allow anonymous sign-ins** and **Allow manual
    linking** (manual linking lets a guest add an email and keep their data). Consider CAPTCHA (Supabase rate
    limits anonymous sign-ins to 30 per hour per IP).
-2. Deploy the `ai` Edge Function (guest daily limit). Optional secret `AI_DAILY_LIMIT_GUEST` (default 10).
+2. Deploy the `ai` Edge Function (guest daily limit). Optional secret `AI_QUESTIONS_PER_DAY_GUEST` (default 2).
 3. Publish the OTA update.
 
 **Database** (`supabase/migrations/20261111154858_guest_mode.sql`, applied)
@@ -456,7 +457,7 @@ in); added on the owner's request.
 - Whole members-only screens (`post/new`, `story/new`, `review/new`, `profile/edit`, `friends`, `messages`,
   `messages/[id]`) are wrapped in `AccountRequired`: a guest arriving from a link or notification sees why and
   "Create account" instead of a screen that cannot work.
-- AI function (v6, deployed): guests get `AI_DAILY_LIMIT_GUEST` (default 10) questions a day, members
-  `AI_DAILY_LIMIT` (50). Every chat/lens answer returns `usage: { used, limit, guest }` and `{ mode: 'usage' }`
+- AI function (v6, deployed): guests get `AI_QUESTIONS_PER_DAY_GUEST` (default 2) questions a day, members
+  `AI_QUESTIONS_PER_DAY` (5). Every chat/lens answer returns `usage: { used, limit, guest }` and `{ mode: 'usage' }`
   reads it for free; `useAiUsage()` keeps it in the query cache and `AiQuota` shows "7 of 10 AI questions left
   today" (with a bar) on the AI guide, the place chat sheet and Lens. The day resets at 00:00 UTC (5 am PKT).

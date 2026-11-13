@@ -2,6 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AiAborted, streamAssistant, type ChatContext, type ChatTurn } from '@/features/ai/api';
+import { useAuth } from '@/features/auth/auth-provider';
+import { storage } from '@/lib/storage';
 import { useDestinationsByDistance } from '@/features/destinations/api';
 import { describeWeather, type Weather } from '@/features/weather/api';
 import { usePreferences } from '@/lib/preferences';
@@ -34,16 +36,42 @@ export function useChatContext(destinationSlug?: string): ChatContext {
   }, [prefs.locale, destinationSlug, location, nearest, sorted, qc]);
 }
 
+/** Messages kept per conversation on the phone. */
+const KEEP_MESSAGES = 40;
+
+/** Where a conversation is saved: per account and per thread ("guide", "place:<slug>"). */
+function chatKey(userId: string, thread: string) {
+  return `gtg.ai.chat.${userId}.${thread}`;
+}
+
 /**
  * One conversation with the AI travel guide (the last 12 turns are sent).
  * States: ready -> waiting (asked, no words yet) -> streaming (the answer is
  * being written into the last message) -> ready, or error. "New chat" aborts
  * the answer in progress and starts an empty conversation.
+ *
+ * The conversation is saved on the phone (per account and `thread`), so
+ * leaving the screen or closing the app keeps it; it is saved when a
+ * question is asked and when an answer is complete, not on every word.
  */
 export type ChatStatus = 'ready' | 'waiting' | 'streaming';
 
-export function useChat(context: ChatContext) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function useChat(context: ChatContext, thread: string) {
+  const { userId } = useAuth();
+  const key = userId ? chatKey(userId, thread) : null;
+  const [messages, setMessages] = useState<ChatMessage[]>(() => (key ? storage.get<ChatMessage[]>(key, []) : []));
+  const [loadedKey, setLoadedKey] = useState(key);
+  // Another account or thread: show its own saved conversation.
+  if (key !== loadedKey) {
+    setLoadedKey(key);
+    setMessages(key ? storage.get<ChatMessage[]>(key, []) : []);
+  }
+  const save = useCallback(
+    (list: ChatMessage[]) => {
+      if (key) storage.set(key, list.slice(-KEEP_MESSAGES));
+    },
+    [key],
+  );
   const [status, setStatus] = useState<ChatStatus>('ready');
   const [error, setError] = useState<string | null>(null);
   // The answer in progress; set at once, so a quick double tap sends once.
@@ -58,15 +86,18 @@ export function useChat(context: ChatContext) {
       const replyId = `${Date.now()}-a`;
       const next: ChatMessage[] = [...messages, { id: `${Date.now()}`, role: 'user', content }];
       setMessages(next);
+      save(next);
       setError(null);
       setStatus('waiting');
       let started = false;
+      let answer = '';
       try {
         await streamAssistant(
           next.map(({ role, content: c }) => ({ role, content: c })),
           context,
           (piece) => {
             if (controller.signal.aborted) return;
+            answer += piece;
             if (!started) {
               started = true;
               setStatus('streaming');
@@ -77,6 +108,7 @@ export function useChat(context: ChatContext) {
           },
           controller.signal,
         );
+        if (!controller.signal.aborted) save([...next, { id: replyId, role: 'assistant', content: answer }]);
       } catch (e) {
         if (e instanceof AiAborted || controller.signal.aborted) return true;
         setError(e instanceof Error ? e.message : 'AI service unavailable.');
@@ -88,16 +120,17 @@ export function useChat(context: ChatContext) {
       }
       return true;
     },
-    [messages, context],
+    [messages, context, save],
   );
 
   const reset = useCallback(() => {
     current.current?.abort();
     current.current = null;
+    if (key) storage.remove(key);
     setMessages([]);
     setError(null);
     setStatus('ready');
-  }, []);
+  }, [key]);
 
   // Leaving the screen stops an answer still being written.
   useEffect(() => () => current.current?.abort(), []);

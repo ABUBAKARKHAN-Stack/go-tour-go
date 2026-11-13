@@ -82,7 +82,8 @@ export default function AssistantScreen() {
   const { profile } = useAuth();
   const { sorted, location } = useDestinationsByDistance();
   const context = useChatContext(params.destination);
-  const chat = useChat(context);
+  // One saved conversation per place in focus, or the general guide.
+  const chat = useChat(context, params.destination ? `place:${params.destination}` : 'guide');
   const { messages, status, error } = chat;
   const [input, setInput] = useState(params.q ?? '');
   const list = useRef<FlatList<ChatMessage>>(null);
