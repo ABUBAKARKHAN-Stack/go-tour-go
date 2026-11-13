@@ -1285,4 +1285,18 @@ export const ur: Record<string, string> = {
   "Pick any spot as your destination": "کسی بھی جگہ کو اپنی منزل بنائیں",
   "Report a hazard here": "یہاں خطرے کی اطلاع دیں",
   "You are already here": "آپ پہلے ہی یہاں ہیں",
+  // Profiles
+  "1 post": "1 پوسٹ",
+  "Create a free account to post, add friends and share your live location.": "پوسٹ کرنے، دوست بنانے اور اپنا لائیو مقام شیئر کرنے کے لیے مفت اکاؤنٹ بنائیں۔",
+  "No places yet": "ابھی کوئی جگہ نہیں",
+  "Open story": "اسٹوری کھولیں",
+  "Opens your community profile": "آپ کا کمیونٹی پروفائل کھولتا ہے",
+  "People": "لوگ",
+  "Places tagged in posts appear here.": "پوسٹس میں ٹیگ کی گئی جگہیں یہاں نظر آتی ہیں۔",
+  "Safety and app": "حفاظت اور ایپ",
+  "Share your first travel moment": "اپنا پہلا سفری لمحہ شیئر کریں",
+  "Travel": "سفر",
+  "When they post, it will show here.": "جب وہ پوسٹ کریں گے تو یہاں نظر آئے گا۔",
+  "Your posts appear here as a grid.": "آپ کی پوسٹس یہاں گرڈ کی صورت میں نظر آتی ہیں۔",
+  "{0} posts": "{0} پوسٹس",
 };

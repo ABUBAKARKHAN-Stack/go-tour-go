@@ -98,6 +98,20 @@ export function useFeed(filter?: FeedFilter) {
   });
 }
 
+/** How many posts someone has made (the "Posts" count on a profile). */
+export function useAuthorPostCount(authorId: string | undefined) {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ['feed', 'author-count', authorId],
+    enabled: Boolean(authorId && userId),
+    queryFn: async () => {
+      const { count, error } = await supabase.from('community_posts').select('id', { count: 'exact', head: true }).eq('author_id', authorId!);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
 /** How many posts are tagged at a landmark (for "See all (12)"). */
 export function usePlacePostCount(destinationId: string | undefined) {
   const { userId } = useAuth();
