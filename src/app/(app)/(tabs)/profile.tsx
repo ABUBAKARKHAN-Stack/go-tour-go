@@ -15,55 +15,41 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react-native';
-import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
-import { BrandLogo, type TileTone } from '@/components/brand';
-import { LoadingState } from '@/components/states';
+import { Skeleton } from '@/components/skeleton';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { Text } from '@/components/text';
 import { signOut } from '@/features/auth/api';
 import { useAuth } from '@/features/auth/auth-provider';
-import { FALLBACK_PHOTO, HERO_PHOTOS } from '@/features/brand/hero-photos';
-import { formatCount } from '@/features/community/format';
+import { formatCount, useAuthorPostCount } from '@/features/community/api';
 import { useSavedIds } from '@/features/saved/api';
 import { displayName, useFollowCounts, useFriendships } from '@/features/social/api';
 import { stopSharing } from '@/features/safety/sharing';
 import { useTrips } from '@/features/trips/api';
-import { colors, shadow } from '@/lib/theme';
+import { cardShadow, colors } from '@/lib/theme';
 import { flipX, tx } from '@/lib/i18n';
 
-const ROW_TONE: Record<TileTone, string> = { ice: 'bg-primary-soft', mint: 'bg-mint', peach: 'bg-peach', lemon: 'bg-lemon', sand: 'bg-sand' };
-
-function Row({ icon: Icon, label, onPress, value, tone = 'ice', last }: { icon: LucideIcon; label: string; onPress: () => void; value?: string; tone?: TileTone; last?: boolean }) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} className={`min-h-14 flex-row items-center gap-3 py-2.5 active:opacity-70 ${last ? '' : 'border-b border-border'}`}>
-      <View className={`h-10 w-10 items-center justify-center rounded-2xl ${ROW_TONE[tone]}`}>
-        <Icon color={colors.primary} size={19} />
-      </View>
-      <Text className="flex-1 text-[15px] font-medium text-heading">{label}</Text>
-      {value ? <Text className="text-sm text-muted-foreground">{value}</Text> : null}
-      <ChevronRight color={colors.faint} size={18} style={flipX} />
-    </Pressable>
-  );
-}
-
-const CARD = { boxShadow: shadow(0.08, 6, 20) };
-
+/**
+ * Profile tab: who you are (the card opens your community profile, with its
+ * Posts · Followers · Following), your travels at a glance, then the app's
+ * places grouped under small headings. Plain and calm: one icon colour,
+ * no photo band.
+ */
 export default function ProfileScreen() {
   const { profile, profileLoading, email, userId, isGuest } = useAuth();
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const follows = useFollowCounts(userId ?? undefined);
+  const posts = useAuthorPostCount(isGuest ? undefined : (userId ?? undefined));
   const friends = useFriendships();
   const trips = useTrips();
   const saved = useSavedIds();
   const visited = (trips.data ?? []).filter((t) => t.status === 'visited').length;
-  const bandH = insets.top + 132;
 
   const confirmSignOut = () =>
     Alert.alert(
@@ -72,128 +58,176 @@ export default function ProfileScreen() {
         ? tx('Guests cannot sign back in: your saved places and trips will be lost. Create an account first to keep them.')
         : tx('Location sharing will stop.'),
       [
-      { text: tx('Cancel'), style: 'cancel' },
-      {
-        text: isGuest ? tx('Leave guest mode') : tx('Sign out'),
-        style: 'destructive',
-        onPress: async () => {
-          await stopSharing().catch(() => undefined);
-          await signOut();
+        { text: tx('Cancel'), style: 'cancel' },
+        {
+          text: isGuest ? tx('Leave guest mode') : tx('Sign out'),
+          style: 'destructive',
+          onPress: async () => {
+            await stopSharing().catch(() => undefined);
+            await signOut();
+          },
         },
-      },
-    ]);
+      ],
+    );
 
-  const stats = [
-    { label: tx('Visited'), value: visited, onPress: () => router.navigate('/trips') },
-    { label: tx('Saved'), value: saved.data?.length ?? 0, onPress: () => router.push({ pathname: '/saved', params: { tab: 'places' } }) },
-    { label: tx('Friends'), value: friends.friends.length, onPress: () => router.push('/friends') },
-    {
-      label: tx('Followers'),
-      value: follows.data?.followers ?? 0,
-      onPress: () => userId && router.push({ pathname: '/follows/[id]', params: { id: userId, tab: 'followers' } }),
-    },
-    {
-      label: tx('Following'),
-      value: follows.data?.following ?? 0,
-      onPress: () => userId && router.push({ pathname: '/follows/[id]', params: { id: userId, tab: 'following' } }),
-    },
-  ];
+  const openCommunityProfile = () => userId && router.push({ pathname: '/users/[id]', params: { id: userId } });
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
-        {/* Photo band with the logo and settings; the avatar overlaps its lower edge. */}
-        <View style={{ height: bandH }}>
-          <Image
-            source={{ uri: HERO_PHOTOS.connect.uri }}
-            placeholder={FALLBACK_PHOTO}
-            placeholderContentFit="cover"
-            contentFit="cover"
-            cachePolicy="disk"
-            transition={250}
-            accessible={false}
-            style={StyleSheet.absoluteFill}
-          />
-          <View
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFill, { experimental_backgroundImage: 'linear-gradient(180deg, rgba(246,250,252,0.9) 0%, rgba(246,250,252,0.35) 45%, rgba(246,250,252,0.15) 70%, rgb(246,250,252) 100%)' }]}
-          />
-          <View className="flex-row items-center gap-2 px-4" style={{ paddingTop: insets.top + 8 }}>
-            <View className="flex-1">
-              <BrandLogo height={36} />
-            </View>
-            <IconButton icon={Settings} label={tx('Settings')} onPress={() => router.push('/settings')} />
-          </View>
+      <ScrollView contentContainerClassName="gap-6 px-4 pt-2" contentContainerStyle={{ paddingBottom: tabSpace }} showsVerticalScrollIndicator={false}>
+        <View className="flex-row items-center">
+          <Text accessibilityRole="header" className="flex-1 font-display text-[30px] leading-9 text-heading">
+            {tx('Profile')}
+          </Text>
+          <IconButton icon={Settings} label={tx('Settings')} onPress={() => router.push('/settings')} />
         </View>
 
-        <View className="gap-5 px-4" style={{ marginTop: -52 }}>
-          {isGuest ? (
-            <GuestCard />
-          ) : profileLoading && !profile ? (
-            <LoadingState variant="profile" />
-          ) : (
-            <View className="items-center gap-1.5">
-              <View className="rounded-full border-4 border-background" style={{ boxShadow: shadow(0.14, 6, 18) }}>
-                <Avatar profile={profile} size={96} />
+        {isGuest ? (
+          <GuestCard />
+        ) : profileLoading && !profile ? (
+          <Skeleton variant="list" label={tx('Loading...')} />
+        ) : (
+          <View className="overflow-hidden rounded-[20px] bg-card" style={cardShadow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityHint={tx('Opens your community profile')}
+              onPress={openCommunityProfile}
+              className="flex-row items-center gap-3.5 p-4 active:bg-muted"
+            >
+              <Avatar profile={profile} size={64} />
+              <View className="flex-1 gap-0.5">
+                <Text className="text-lg font-bold leading-6 text-heading">{displayName(profile)}</Text>
+                <Text className="text-sm text-muted-foreground">@{profile?.username}</Text>
+                {profile?.home_city ? (
+                  <View className="flex-row items-center gap-1">
+                    <MapPin color={colors.faint} size={12} />
+                    <Text className="text-xs text-faint">{profile.home_city}</Text>
+                  </View>
+                ) : null}
               </View>
-              <Text accessibilityRole="header" className="pt-1 font-display text-[26px] leading-8 text-heading">
-                {displayName(profile)}
-              </Text>
-              <Text className="text-sm text-muted-foreground">@{profile?.username}</Text>
-              {profile?.home_city ? (
-                <View className="flex-row items-center gap-1">
-                  <MapPin color={colors.primary} size={14} />
-                  <Text className="text-sm text-muted-foreground">{profile.home_city}</Text>
-                </View>
-              ) : null}
-              {profile?.bio ? <Text className="px-4 text-center text-sm leading-5 text-foreground">{profile.bio}</Text> : null}
-              {email ? <Text className="text-xs text-faint">{email}</Text> : null}
-              <View className="pt-2">
-                <AppButton label={tx('Edit profile')} icon={Pencil} size="sm" variant="outline" onPress={() => router.push('/profile/edit')} />
-              </View>
+              <IconButton icon={Pencil} label={tx('Edit profile')} onPress={() => router.push('/profile/edit')} />
+            </Pressable>
+            {/* The community profile in brief; each number opens its list. */}
+            <View className="flex-row border-t border-border">
+              <CardStat value={posts.data ?? 0} label={tx('Posts')} onPress={openCommunityProfile} />
+              <CardStat
+                value={follows.data?.followers ?? 0}
+                label={tx('Followers')}
+                onPress={() => userId && router.push({ pathname: '/follows/[id]', params: { id: userId, tab: 'followers' } })}
+                divider
+              />
+              <CardStat
+                value={follows.data?.following ?? 0}
+                label={tx('Following')}
+                onPress={() => userId && router.push({ pathname: '/follows/[id]', params: { id: userId, tab: 'following' } })}
+                divider
+              />
             </View>
-          )}
-
-          <View className="flex-row justify-between rounded-[20px] bg-card px-2 py-3" style={CARD}>
-            {(isGuest ? stats.slice(0, 2) : stats).map((st) => (
-              <Pressable
-                key={st.label}
-                accessibilityRole="button"
-                accessibilityLabel={`${st.value} ${st.label}`}
-                onPress={st.onPress}
-                hitSlop={4}
-                className="flex-1 items-center gap-0.5 rounded-2xl py-1 active:bg-muted"
-              >
-                <Text className="font-display text-xl text-heading" style={{ fontVariant: ['tabular-nums'] }}>
-                  {formatCount(st.value)}
-                </Text>
-                <Text numberOfLines={1} className="text-[11px] text-muted-foreground">
-                  {st.label}
-                </Text>
-              </Pressable>
-            ))}
           </View>
+        )}
 
-          <View className="rounded-[20px] bg-card px-4 py-1" style={CARD}>
-            <Row icon={ClipboardList} tone="ice" label={tx('My trip')} value={`${trips.data?.length ?? 0}`} onPress={() => router.navigate('/trips')} />
-            <Row icon={Bookmark} tone="peach" label={tx('Saved places')} onPress={() => router.push({ pathname: '/saved', params: { tab: 'places' } })} />
-            {isGuest ? null : <Row icon={Users} tone="mint" label={tx('Friends')} onPress={() => router.push('/friends')} />}
-            {isGuest ? null : <Row icon={MessagesSquare} tone="lemon" label={tx('Messages')} onPress={() => router.push('/messages')} />}
-            <Row icon={Bell} tone="ice" label={tx('Notifications')} onPress={() => router.push('/notifications')} />
-            <Row icon={ShieldCheck} tone="peach" label={tx('Safety & SOS')} onPress={() => router.push('/safety')} />
-            <Row icon={Settings} tone="sand" label={tx('Settings')} onPress={() => router.push('/settings')} last />
+        <View className="flex-row gap-2.5">
+          <TravelStat value={visited} label={tx('Visited')} onPress={() => router.navigate('/trips')} />
+          <TravelStat value={saved.data?.length ?? 0} label={tx('Saved')} onPress={() => router.push({ pathname: '/saved', params: { tab: 'places' } })} />
+          {isGuest ? null : <TravelStat value={friends.friends.length} label={tx('Friends')} onPress={() => router.push('/friends')} />}
+        </View>
+
+        <Group title={tx('Travel')}>
+          <Row icon={ClipboardList} label={tx('My trip')} value={`${trips.data?.length ?? 0}`} onPress={() => router.navigate('/trips')} />
+          <Row icon={Bookmark} label={tx('Saved places')} onPress={() => router.push({ pathname: '/saved', params: { tab: 'places' } })} />
+          <Row icon={Bell} label={tx('Notifications')} onPress={() => router.push('/notifications')} last />
+        </Group>
+
+        {isGuest ? null : (
+          <Group title={tx('People')}>
+            <Row icon={Users} label={tx('Friends')} onPress={() => router.push('/friends')} />
+            <Row icon={MessagesSquare} label={tx('Messages')} onPress={() => router.push('/messages')} last />
+          </Group>
+        )}
+
+        <Group title={tx('Safety and app')}>
+          <Row icon={ShieldCheck} label={tx('Safety & SOS')} onPress={() => router.push('/safety')} />
+          <Row icon={Settings} label={tx('Settings')} onPress={() => router.push('/settings')} last />
+        </Group>
+
+        <View className="gap-2">
+          <View className="overflow-hidden rounded-[20px] bg-card" style={cardShadow}>
+            <Pressable accessibilityRole="button" onPress={confirmSignOut} className="min-h-14 flex-row items-center gap-3 px-4 active:bg-muted">
+              <LogOut color={colors.destructive} size={20} />
+              <Text className="flex-1 text-[15px] font-semibold text-destructive">{isGuest ? tx('Leave guest mode') : tx('Sign out')}</Text>
+            </Pressable>
           </View>
-
           {isGuest ? null : (
             <Text className="text-center text-xs text-faint">
-              {tx('Profile visibility: {0}', { 0: profile?.visibility === 'friends' ? tx('Private (friends only)') : tx('Public') })}
+              {[email, tx('Profile visibility: {0}', { 0: profile?.visibility === 'friends' ? tx('Private (friends only)') : tx('Public') })]
+                .filter(Boolean)
+                .join(' · ')}
             </Text>
           )}
-          <AppButton label={isGuest ? tx('Leave guest mode') : tx('Sign out')} icon={LogOut} variant="outline" onPress={confirmSignOut} />
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+function CardStat({ value, label, onPress, divider }: { value: number; label: string; onPress: () => void; divider?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${value} ${label}`}
+      onPress={onPress}
+      className={`flex-1 items-center py-3 active:bg-muted ${divider ? 'border-s border-border' : ''}`}
+    >
+      <Text className="text-lg font-bold text-heading" style={{ fontVariant: ['tabular-nums'] }}>
+        {formatCount(value)}
+      </Text>
+      <Text className="text-xs text-muted-foreground">{label}</Text>
+    </Pressable>
+  );
+}
+
+function TravelStat({ value, label, onPress }: { value: number; label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${value} ${label}`}
+      onPress={onPress}
+      className="flex-1 gap-0.5 rounded-2xl bg-primary-soft px-3.5 py-3 active:opacity-80"
+    >
+      <Text className="font-display text-[22px] leading-7 text-heading" style={{ fontVariant: ['tabular-nums'] }}>
+        {formatCount(value)}
+      </Text>
+      <Text className="text-xs font-medium text-muted-foreground">{label}</Text>
+    </Pressable>
+  );
+}
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View className="gap-2">
+      <Text className="px-1 text-xs font-semibold uppercase tracking-[1.2px] text-faint">{title}</Text>
+      <View className="overflow-hidden rounded-[20px] bg-card" style={cardShadow}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function Row({ icon: Icon, label, onPress, value, last }: { icon: LucideIcon; label: string; onPress: () => void; value?: string; last?: boolean }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} className="min-h-14 flex-row items-center gap-3 ps-4 active:bg-muted">
+      <Icon color={colors.primary} size={20} />
+      <View className={`min-h-14 flex-1 flex-row items-center gap-2 pe-3 ${last ? '' : 'border-b border-border'}`}>
+        <Text className="flex-1 text-[15px] text-heading">{label}</Text>
+        {value ? (
+          <Text className="text-sm text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>
+            {value}
+          </Text>
+        ) : null}
+        <ChevronRight color={colors.faint} size={18} style={flipX} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -205,19 +239,21 @@ function GuestCard() {
       { text: tx('Sign in'), onPress: () => void signOut() },
     ]);
   return (
-    <View className="items-center gap-3 rounded-[24px] bg-card p-5" style={CARD}>
-      <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-background bg-primary-soft">
-        <Compass color={colors.primary} size={34} />
+    <View className="gap-3 rounded-[20px] bg-card p-5" style={cardShadow}>
+      <View className="flex-row items-center gap-3.5">
+        <View className="h-14 w-14 items-center justify-center rounded-full bg-primary-soft">
+          <Compass color={colors.primary} size={26} />
+        </View>
+        <View className="flex-1 gap-0.5">
+          <Text accessibilityRole="header" className="text-lg font-bold leading-6 text-heading">
+            {tx("You're exploring as a guest")}
+          </Text>
+          <Text className="text-sm leading-5 text-muted-foreground">{tx('Create a free account to post, add friends and share your live location.')}</Text>
+        </View>
       </View>
-      <Text accessibilityRole="header" className="font-display text-[24px] leading-8 text-heading">
-        {tx("You're exploring as a guest")}
-      </Text>
-      <Text className="text-center text-sm leading-5 text-muted-foreground">
-        {tx('Save places, plan trips, use the AI guide and send an SOS. Create a free account to post, review, add friends and share your live location.')}
-      </Text>
-      <View className="w-full gap-2 pt-1">
-        <AppButton label={tx('Create account')} icon={UserPlus} onPress={() => router.push('/create-account')} />
-        <AppButton label={tx('I already have an account')} variant="secondary" onPress={signInInstead} />
+      <View className="flex-row gap-2">
+        <AppButton label={tx('Create account')} icon={UserPlus} size="sm" onPress={() => router.push('/create-account')} className="flex-1" />
+        <AppButton label={tx('Sign in')} size="sm" variant="secondary" onPress={signInInstead} className="flex-1" />
       </View>
     </View>
   );
