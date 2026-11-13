@@ -35,9 +35,11 @@ function RunningUpdate() {
         0: Updates.createdAt ? Updates.createdAt.toLocaleString() : '?',
         1: Updates.updateId.slice(0, 8),
       });
+  // Updates reach only an APK with the same runtime version (eas update prints the one it publishes for).
+  const runtime = Updates.runtimeVersion ? tx('Runtime {0}', { 0: Updates.runtimeVersion.slice(0, 8) }) : null;
   return (
     <Text selectable className="text-xs text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>
-      {label}
+      {runtime ? `${label} · ${runtime}` : label}
     </Text>
   );
 }

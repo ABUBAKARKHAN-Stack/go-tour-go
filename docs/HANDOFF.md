@@ -336,7 +336,14 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
 - Hazard reports: at the traveller's location by default; on Explore, long-press the map or use
   "Choose on map" in the report sheet to report at a spot. Hazards draw as warning-triangle markers
   above the landmark layers; a hazard card's "Show on map" flies Explore to it and outlines its area.
-- Settings → Demo tools shows which OTA update is running (date + id), to confirm before testing.
+- Settings → Demo tools shows which OTA update is running (date + id) and the runtime version, to
+  confirm before testing.
+- **OTA updates reach only an APK with the same runtime version** (fingerprint policy). Any change to
+  app.json, native packages or config plugins changes it, even a permission or `owner`. Before
+  `eas update`, compare the runtime version it prints with the installed APK's
+  (`bunx eas-cli build:list --platform android --limit 1`, or Settings → Demo tools). If they differ,
+  build a new APK first. (Lesson from 11 Nov: the APK was built 4 minutes before an app.json commit, so
+  no update after it reached the phone.)
 
 ## 13. Design system
 

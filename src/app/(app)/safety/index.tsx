@@ -186,16 +186,18 @@ export default function SafetyScreen() {
       <Card className="items-center gap-3">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={tx('Hold for SOS')}
-          accessibilityHint={tx('Press and hold for one second to send your location to trusted contacts')}
+          accessibilityLabel={sos ? tx('SOS active') : tx('Hold for SOS')}
+          accessibilityHint={sos ? tx("End it with I'm safe below before sending another.") : tx('Press and hold for one second to send your location to trusted contacts')}
+          accessibilityState={{ disabled: triggering || Boolean(sos) }}
           onLongPress={triggerSos}
           delayLongPress={1000}
-          disabled={triggering}
-          className="h-40 w-40 items-center justify-center rounded-full border-8 border-destructive/30 bg-destructive active:scale-95"
+          // One SOS at a time: while one is open, end it with "I'm safe" first.
+          disabled={triggering || Boolean(sos)}
+          className={`h-40 w-40 items-center justify-center rounded-full border-8 border-destructive/30 bg-destructive ${sos ? 'opacity-50' : 'active:scale-95'}`}
         >
           <ShieldAlert color="#fff" size={44} />
           <Text className="mt-1 text-2xl font-extrabold text-white">{tx('SOS')}</Text>
-          <Text className="text-xs text-white/80">{triggering ? tx('Locating...') : tx('Hold 1 second')}</Text>
+          <Text className="text-xs text-white/80">{triggering ? tx('Locating...') : sos ? tx('SOS active') : tx('Hold 1 second')}</Text>
         </Pressable>
         <Text className="text-center text-xs text-muted-foreground">
           {tx('Sends your location to your trusted contacts via WhatsApp, alerts your GoTourGo friends and shares your live location for 1 hour.')}
