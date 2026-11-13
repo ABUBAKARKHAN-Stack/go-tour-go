@@ -247,8 +247,8 @@ export default function ExploreScreen() {
       {/* Top overlay: search, filters, status */}
       <View className="absolute left-0 right-0 top-0 gap-2" style={{ paddingTop: insets.top + 8 }} pointerEvents="box-none">
         <View
-          className="mx-3 min-h-[52px] flex-row items-center gap-3 rounded-full bg-card pe-1.5 ps-4"
-          style={{ boxShadow: shadow(0.12, 6, 18) }}
+          className="mx-3 min-h-[52px] flex-row items-center gap-3 rounded-full bg-card"
+          style={{ paddingEnd: 6, paddingStart: 16, boxShadow: shadow(0.12, 6, 18) }}
         >
           <Pressable accessibilityRole="search" onPress={() => router.push('/search')} className="min-h-12 flex-1 flex-row items-center gap-3 active:opacity-70">
             <Search color={colors.heading} size={20} />
@@ -315,7 +315,7 @@ export default function ExploreScreen() {
       </View>
 
       {/* Right-side controls */}
-      <View className="absolute end-3 gap-2" style={{ top: insets.top + 196 }}>
+      <View className="absolute gap-2" style={{ end: 12, top: insets.top + 196 }}>
         <IconButton icon={Crosshair} label={tx('Show my location')} onPress={locateMe} />
         {userId ? <IconButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => startReport(null)} /> : null}
         <IconButton icon={CircleDashed} label={tx('Toggle geofence radius')} active={showRadius} onPress={() => setShowRadius((v) => !v)} />
@@ -327,7 +327,7 @@ export default function ExploreScreen() {
       {/* Bottom: active journey > tapped place > popular places nearby. */}
       <View className="absolute left-3 right-3 gap-2" style={{ bottom: tabSpace - 12 }} pointerEvents={picking ? 'none' : 'box-none'}>
         {picking ? null : journeyActive && journey.target ? (
-          <View className="flex-row items-center gap-3 rounded-[20px] bg-primary p-3 ps-4" style={{ boxShadow: shadow(0.25, 6, 18) }}>
+          <View className="flex-row items-center gap-3 rounded-[20px] bg-primary p-3" style={{ paddingStart: 16, boxShadow: shadow(0.25, 6, 18) }}>
             <Navigation color={colors.primaryForeground} size={20} />
             <View className="flex-1">
               <Text numberOfLines={2} className="text-base font-semibold text-white">{tx('Navigating to {0}', { 0: journey.target.name })}</Text>

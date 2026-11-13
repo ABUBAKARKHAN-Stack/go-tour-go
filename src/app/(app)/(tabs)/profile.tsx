@@ -9,6 +9,7 @@ import {
   MapPin,
   MessagesSquare,
   Pencil,
+  Plus,
   Settings,
   ShieldCheck,
   UserPlus,
@@ -16,7 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
@@ -26,7 +27,8 @@ import { useTabBarSpace } from '@/components/tab-bar';
 import { Text } from '@/components/text';
 import { signOut } from '@/features/auth/api';
 import { useAuth } from '@/features/auth/auth-provider';
-import { formatCount, useAuthorPostCount } from '@/features/community/api';
+import { formatCount, useAuthorPostCount, useFeed } from '@/features/community/api';
+import { PostTile } from '@/features/community/post-tile';
 import { useSavedIds } from '@/features/saved/api';
 import { displayName, useFollowCounts, useFriendships } from '@/features/social/api';
 import { stopSharing } from '@/features/safety/sharing';
@@ -127,6 +129,8 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {isGuest ? null : <MyPosts userId={userId} total={posts.data ?? 0} onSeeAll={openCommunityProfile} />}
+
         <View className="flex-row gap-2.5">
           <TravelStat value={visited} label={tx('Visited')} onPress={() => router.navigate('/trips')} />
           <TravelStat value={saved.data?.length ?? 0} label={tx('Saved')} onPress={() => router.push({ pathname: '/saved', params: { tab: 'places' } })} />
@@ -167,6 +171,47 @@ export default function ProfileScreen() {
           )}
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+/** Your latest posts in a small grid; "See all" opens your community profile. */
+function MyPosts({ userId, total, onSeeAll }: { userId: string | null; total: number; onSeeAll: () => void }) {
+  const { width } = useWindowDimensions();
+  const feed = useFeed(userId ? { authorId: userId } : undefined);
+  const latest = (feed.data?.pages[0] ?? []).slice(0, 6);
+  // The grid spans the card's inner width: screen minus page and card padding, minus two gaps.
+  const tile = (width - 32 - 24 - 4) / 3;
+  return (
+    <View className="gap-2">
+      <View className="flex-row items-center px-1">
+        <Text className="flex-1 text-xs font-semibold uppercase tracking-[1.2px] text-faint">{tx('My posts')}</Text>
+        {total ? (
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={onSeeAll}>
+            <Text className="text-[13px] font-semibold text-accent">{tx('See all ({0})', { 0: formatCount(total) })}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      <View className="overflow-hidden rounded-[20px] bg-card p-3" style={cardShadow}>
+        {feed.isLoading ? (
+          <View className="flex-row gap-0.5">
+            {[0, 1, 2].map((i) => (
+              <View key={i} className="rounded-md bg-muted" style={{ width: tile, height: tile }} />
+            ))}
+          </View>
+        ) : latest.length ? (
+          <View className="flex-row flex-wrap gap-0.5 overflow-hidden rounded-xl">
+            {latest.map((p) => (
+              <PostTile key={p.id} post={p} size={tile} />
+            ))}
+          </View>
+        ) : (
+          <View className="items-center gap-2 py-3">
+            <Text className="text-center text-sm text-muted-foreground">{tx('Share your first travel moment')}</Text>
+            <AppButton label={tx('New post')} icon={Plus} size="sm" variant="secondary" onPress={() => router.push('/post/new')} />
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -216,9 +261,9 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 
 function Row({ icon: Icon, label, onPress, value, last }: { icon: LucideIcon; label: string; onPress: () => void; value?: string; last?: boolean }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} className="min-h-14 flex-row items-center gap-3 ps-4 active:bg-muted">
+    <Pressable accessibilityRole="button" onPress={onPress} className="min-h-14 flex-row items-center gap-3 active:bg-muted" style={{ paddingStart: 16 }}>
       <Icon color={colors.primary} size={20} />
-      <View className={`min-h-14 flex-1 flex-row items-center gap-2 pe-3 ${last ? '' : 'border-b border-border'}`}>
+      <View className={`min-h-14 flex-1 flex-row items-center gap-2 ${last ? '' : 'border-b border-border'}`} style={{ paddingEnd: 12 }}>
         <Text className="flex-1 text-[15px] text-heading">{label}</Text>
         {value ? (
           <Text className="text-sm text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>

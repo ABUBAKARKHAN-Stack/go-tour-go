@@ -57,7 +57,7 @@ function SaveButton({ id, name }: { id: string; name: string }) {
       accessibilityState={{ selected: isSaved }}
       hitSlop={8}
       onPress={() => toggle.mutate({ destinationId: id, save: !isSaved })}
-      className="absolute end-2.5 top-2.5 h-9 w-9 items-center justify-center rounded-full bg-white/90 active:opacity-70"
+      className="absolute top-2.5 h-9 w-9 items-center justify-center rounded-full bg-white/90 active:opacity-70" style={{ end: 10 }}
     >
       <Bookmark color={isSaved ? colors.accent : colors.heading} fill={isSaved ? colors.accent : 'transparent'} size={17} />
     </Pressable>
@@ -127,7 +127,7 @@ function DestinationCardBase({ destination: d, distance, rating, variant = 'tile
                   {d.name}
                 </Text>
               </View>
-              <Text numberOfLines={1} className="ps-4 text-[11px] text-white/80">
+              <Text numberOfLines={1} className="text-[11px] text-white/80" style={{ paddingStart: 16 }}>
                 {d.city}
               </Text>
             </View>
@@ -151,7 +151,7 @@ function DestinationCardBase({ destination: d, distance, rating, variant = 'tile
       >
         <View className="overflow-hidden rounded-t-[20px]">
           <DestinationImage uri={d.image_url} category={d.category} className="w-full" style={{ height: Math.round(width * 0.62) }} iconSize={40} recyclingKey={d.id} />
-          <View className="absolute start-2.5 top-2.5 h-8 w-8 items-center justify-center rounded-full bg-inverse/85">
+          <View className="absolute top-2.5 h-8 w-8 items-center justify-center rounded-full bg-inverse/85" style={{ start: 10 }}>
             <Icon color="#fff" size={15} />
           </View>
           <SaveButton id={d.id} name={d.name} />
@@ -163,7 +163,7 @@ function DestinationCardBase({ destination: d, distance, rating, variant = 'tile
               {d.name}
             </Text>
           </View>
-          <Text numberOfLines={1} className="ps-5 text-xs text-muted-foreground">
+          <Text numberOfLines={1} className="text-xs text-muted-foreground" style={{ paddingStart: 20 }}>
             {where}
           </Text>
           {/* Same height with or without a rating, so cards in a rail line up. */}

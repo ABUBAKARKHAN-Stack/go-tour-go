@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, SectionList, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DestinationCard } from '@/components/destination-card';
@@ -29,6 +30,8 @@ import { useDestinationsByDistance, useRatings } from '@/features/destinations/a
 import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { navigateTo } from '@/features/routing/navigate';
 import { formatDistance } from '@/lib/geo';
+import { haptics } from '@/lib/haptics';
+import { CSS_EASE_OUT } from '@/lib/motion';
 import { StorageKeys, useStorage } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
 import { cardShadow, colors } from '@/lib/theme';
@@ -151,7 +154,15 @@ export default function SearchScreen() {
 
   const remember = (r: Recent) => setRecent([r, ...recent.filter((x) => x.id !== r.id)].slice(0, 8));
 
+  // Swapped: the place you search is where you start, and the route ends at your location.
+  const [reversed, setReversed] = useState(false);
+
   const choose = (row: Row) => {
+    if (reversed) {
+      remember({ id: row.id, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude, ...(row.type === 'landmark' ? { landmarkId: row.id } : {}) });
+      navigateTo({ id: row.type === 'landmark' ? row.id : `place:${row.id}`, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude }, { reverse: true });
+      return;
+    }
     if (row.type === 'landmark') {
       remember({ id: row.id, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude, landmarkId: row.id });
       router.push({ pathname: '/destination/[id]', params: { id: row.id } });
@@ -162,9 +173,48 @@ export default function SearchScreen() {
   };
 
   const openRecent = (r: Recent) => {
+    if (reversed) {
+      navigateTo({ id: r.landmarkId ?? `place:${r.id}`, name: r.name, subtitle: r.subtitle, latitude: r.latitude, longitude: r.longitude }, { reverse: true });
+      return;
+    }
     if (r.landmarkId) router.push({ pathname: '/destination/[id]', params: { id: r.landmarkId } });
     else navigateTo({ id: `place:${r.id}`, name: r.name, latitude: r.latitude, longitude: r.longitude });
   };
+
+  const mineRow = (role: 'From' | 'To') => (
+    <View className="min-h-14 flex-row items-center gap-3">
+      {role === 'From' ? <CircleDot color={colors.primary} size={20} /> : <MapPin color={colors.accent} size={20} />}
+      <View className="flex-1">
+        <Text className="text-xs text-faint">{role === 'From' ? tx('From') : tx('To')}</Text>
+        <Text numberOfLines={1} className="text-base font-semibold text-muted-foreground">
+          {tx('Your location')}
+        </Text>
+      </View>
+    </View>
+  );
+  const searchRow = (role: 'From' | 'To') => (
+    <View className="min-h-14 flex-row items-center gap-3">
+      {role === 'From' ? <CircleDot color={colors.primary} size={20} /> : <MapPin color={colors.accent} size={20} />}
+      <View className="flex-1">
+        <Text className="text-xs text-faint">{role === 'From' ? tx('From') : tx('To')}</Text>
+        <TextInput
+          autoFocus={!params.category}
+          value={term}
+          onChangeText={setTerm}
+          placeholder={role === 'From' ? tx('Where are you starting from?') : tx('City, area, landmark or address')}
+          placeholderTextColor={colors.faint}
+          className="p-0 text-base font-semibold text-heading"
+          returnKeyType="search"
+          accessibilityLabel={role === 'From' ? tx('Start') : tx('Destination')}
+        />
+      </View>
+      {term ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={tx('Clear')} onPress={() => setTerm('')} hitSlop={10}>
+          <X color={colors.faint} size={18} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
 
   const browsing = q.length < 2;
   const browseList = category ? sorted.filter((d) => d.category === category).slice(0, 60) : [];
@@ -190,41 +240,25 @@ export default function SearchScreen() {
 
         <View className="flex-row items-center gap-3 rounded-full bg-card px-4 py-1" style={cardShadow}>
           <View className="flex-1">
-            <View className="min-h-14 flex-row items-center gap-3">
-              <CircleDot color={colors.primary} size={20} />
-              <View className="flex-1">
-                <Text className="text-xs text-faint">{tx('From')}</Text>
-                <Text numberOfLines={1} className="text-base font-semibold text-muted-foreground">
-                  {tx('Your location')}
-                </Text>
-              </View>
-            </View>
+            {/* The searched place and your location trade places when swapped. */}
+            {reversed ? searchRow('From') : mineRow('From')}
             <View className="h-px bg-border" />
-            <View className="min-h-14 flex-row items-center gap-3">
-              <MapPin color={colors.accent} size={20} />
-              <View className="flex-1">
-                <Text className="text-xs text-faint">{tx('To')}</Text>
-                <TextInput
-                  autoFocus={!params.category}
-                  value={term}
-                  onChangeText={setTerm}
-                  placeholder={tx('City, area, landmark or address')}
-                  placeholderTextColor={colors.faint}
-                  className="p-0 text-base font-semibold text-heading"
-                  returnKeyType="search"
-                  accessibilityLabel={tx('Destination')}
-                />
-              </View>
-              {term ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={tx('Clear')} onPress={() => setTerm('')} hitSlop={10}>
-                  <X color={colors.faint} size={18} />
-                </Pressable>
-              ) : null}
-            </View>
+            {reversed ? mineRow('To') : searchRow('To')}
           </View>
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft opacity-40" accessibilityElementsHidden>
-            <ArrowUpDown color={colors.foreground} size={18} />
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tx('Swap start and destination')}
+            onPress={() => {
+              haptics.select();
+              setReversed((r) => !r);
+            }}
+            hitSlop={6}
+            className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft active:opacity-70"
+          >
+            <Animated.View style={{ transform: [{ rotate: reversed ? '180deg' : '0deg' }], transitionProperty: 'transform', transitionDuration: 220, transitionTimingFunction: CSS_EASE_OUT }}>
+              <ArrowUpDown color={colors.primary} size={18} />
+            </Animated.View>
+          </Pressable>
         </View>
       </View>
 
@@ -251,7 +285,7 @@ export default function SearchScreen() {
             )
           ) : (
             <>
-              <ResultRow icon={MapPinned} tint="accent" title={tx('Choose on map')} subtitle={tx('Pick any spot as your destination')} onPress={() => router.push('/journey/pick')} />
+              <ResultRow icon={MapPinned} tint="accent" title={tx('Choose on map')} subtitle={reversed ? tx('Pick any spot as your start') : tx('Pick any spot as your destination')} onPress={() => router.push({ pathname: '/journey/pick', params: reversed ? { reverse: '1' } : {} })} />
               {recent.length ? (
                 <View className="gap-1">
                   <SectionTitle title={tx('RECENT')} action={tx('Clear')} onAction={() => setRecent([])} />
@@ -288,7 +322,7 @@ export default function SearchScreen() {
           title={tx('No matches')}
           message={online.isFetching ? tx('Still looking online...') : tx('Try another spelling, or a nearby area or landmark.')}
           actionLabel={tx('Choose on map')}
-          onAction={() => router.push('/journey/pick')}
+          onAction={() => router.push({ pathname: '/journey/pick', params: reversed ? { reverse: '1' } : {} })}
         />
       ) : (
         <SectionList

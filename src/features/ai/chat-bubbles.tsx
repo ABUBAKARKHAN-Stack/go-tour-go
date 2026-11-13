@@ -3,9 +3,7 @@ import { View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import Markdown from 'react-native-markdown-display';
 
-import { Avatar } from '@/components/avatar';
 import { Text } from '@/components/text';
-import { useAuth } from '@/features/auth/auth-provider';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 
@@ -26,27 +24,35 @@ export function AiBadge({ size = 32 }: { size?: number }) {
   );
 }
 
-/** Chat bubbles from the design guide: the traveller's in navy on the right, the AI's in soft blue on the left. */
+/**
+ * A message, laid out like the AI apps people use: the traveller's in a soft
+ * bubble on the right; the AI's as full-width text under a small label, so
+ * long answers read like a page rather than a cramped bubble.
+ */
 export function ChatBubble({ role, content }: { role: 'user' | 'assistant'; content: string }) {
-  const { profile } = useAuth();
   if (role === 'user') {
     return (
-      <View className="max-w-[88%] flex-row items-end gap-2 self-end">
-        <View className="shrink rounded-[20px] rounded-br-md bg-inverse px-4 py-2.5">
-          <Text selectable className="text-[15px] leading-[21px] text-white">
-            {content}
-          </Text>
-        </View>
-        <Avatar profile={profile} size={28} />
+      <View className="max-w-[85%] self-end rounded-[22px] rounded-br-md bg-primary-soft px-4 py-2.5">
+        <Text selectable className="text-[15px] leading-[22px] text-heading">
+          {content}
+        </Text>
       </View>
     );
   }
   return (
-    <View className="max-w-[94%] flex-row items-start gap-2 self-start">
-      <AiBadge />
-      <View className="shrink rounded-[20px] rounded-tl-md bg-primary-soft px-4 py-1">
-        <Markdown style={chatMarkdownStyles}>{content}</Markdown>
-      </View>
+    <View className="gap-1.5 self-stretch">
+      <AiLabel />
+      <Markdown style={chatMarkdownStyles}>{content}</Markdown>
+    </View>
+  );
+}
+
+/** "GoTourGo AI" above an answer. */
+function AiLabel() {
+  return (
+    <View className="flex-row items-center gap-2">
+      <AiBadge size={24} />
+      <Text className="text-[13px] font-semibold text-heading">{tx('GoTourGo AI')}</Text>
     </View>
   );
 }
@@ -68,12 +74,12 @@ export function ReplySkeleton() {
         animationTimingFunction: 'ease-in-out',
       } as const);
   return (
-    <View className="max-w-[94%] flex-row items-start gap-2 self-start" accessibilityRole="progressbar" accessibilityLabel={tx('Writing an answer')}>
-      <AiBadge />
-      <Animated.View className="w-60 gap-2 rounded-[20px] rounded-tl-md bg-primary-soft px-4 py-3.5" style={pulse}>
-        <View className="h-3 w-full rounded-full bg-white/80" />
-        <View className="h-3 w-11/12 rounded-full bg-white/80" />
-        <View className="h-3 w-3/5 rounded-full bg-white/80" />
+    <View className="gap-2 self-stretch" accessibilityRole="progressbar" accessibilityLabel={tx('Writing an answer')}>
+      <AiLabel />
+      <Animated.View className="gap-2.5 pt-1" style={pulse}>
+        <View className="h-3 w-full rounded-full bg-muted" />
+        <View className="h-3 w-11/12 rounded-full bg-muted" />
+        <View className="h-3 w-3/5 rounded-full bg-muted" />
       </Animated.View>
     </View>
   );

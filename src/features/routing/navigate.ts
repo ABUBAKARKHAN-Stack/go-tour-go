@@ -8,9 +8,10 @@ type Target = { id: string; name: string; latitude: number; longitude: number; s
  * route from the current location with the landmarks and hazards on the way.
  * Landmark ids are passed on so "Learn more" works on arrival; places from
  * search use ids like "place:n123", spots picked on the map "pin:<lat>, <lng>".
- * `replace` swaps the current screen (a map picker) for the journey preview.
+ * `replace` swaps the current screen (a map picker) for the journey preview;
+ * `reverse` plans from the place to the traveller instead.
  */
-export function navigateTo(target: Target, opts: { replace?: boolean } = {}) {
+export function navigateTo(target: Target, opts: { replace?: boolean; reverse?: boolean } = {}) {
   (opts.replace ? router.replace : router.push)({
     pathname: '/journey',
     params: {
@@ -19,6 +20,8 @@ export function navigateTo(target: Target, opts: { replace?: boolean } = {}) {
       lng: String(target.longitude),
       id: target.id,
       ...(target.subtitle ? { subtitle: target.subtitle } : {}),
+      // From the place to your location (From/To swapped in the planner).
+      ...(opts.reverse ? { reverse: '1' } : {}),
     },
   });
 }

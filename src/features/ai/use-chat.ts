@@ -1,14 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AiAborted, streamAssistant, type ChatContext, type ChatTurn } from '@/features/ai/api';
+import { AiAborted, streamAssistant, type ChatContext } from '@/features/ai/api';
+import { conversations, useConversations, type ChatMessage } from '@/features/ai/conversations';
 import { useAuth } from '@/features/auth/auth-provider';
-import { storage } from '@/lib/storage';
 import { useDestinationsByDistance } from '@/features/destinations/api';
 import { describeWeather, type Weather } from '@/features/weather/api';
 import { usePreferences } from '@/lib/preferences';
 
-export type ChatMessage = ChatTurn & { id: string };
+export type { ChatMessage } from '@/features/ai/conversations';
 
 /**
  * Small, controlled context for the AI: the app language, the place in
@@ -36,46 +36,70 @@ export function useChatContext(destinationSlug?: string): ChatContext {
   }, [prefs.locale, destinationSlug, location, nearest, sorted, qc]);
 }
 
-/** Messages kept per conversation on the phone. */
-const KEEP_MESSAGES = 40;
-
-/** Where a conversation is saved: per account and per thread ("guide", "place:<slug>"). */
-function chatKey(userId: string, thread: string) {
-  return `gtg.ai.chat.${userId}.${thread}`;
-}
-
 /**
- * One conversation with the AI travel guide (the last 12 turns are sent).
- * States: ready -> waiting (asked, no words yet) -> streaming (the answer is
- * being written into the last message) -> ready, or error. "New chat" aborts
- * the answer in progress and starts an empty conversation.
+ * The AI conversation on screen, saved in the conversation history (see
+ * conversations.ts). States: ready -> waiting (asked, no words yet) ->
+ * streaming (the answer is being written into the last message) -> ready,
+ * or error. It is saved when a question is asked and when an answer is
+ * complete, not on every word.
  *
- * The conversation is saved on the phone (per account and `thread`), so
- * leaving the screen or closing the app keeps it; it is saved when a
- * question is asked and when an answer is complete, not on every word.
+ * `place`: the destination new conversations are about (null for the general
+ * guide). With `resume`, it opens the latest conversation about that place.
  */
 export type ChatStatus = 'ready' | 'waiting' | 'streaming';
 
-export function useChat(context: ChatContext, thread: string) {
+export function useChat(context: ChatContext, opts: { place: string | null; placeName?: string | null; resume?: boolean }) {
   const { userId } = useAuth();
-  const key = userId ? chatKey(userId, thread) : null;
-  const [messages, setMessages] = useState<ChatMessage[]>(() => (key ? storage.get<ChatMessage[]>(key, []) : []));
-  const [loadedKey, setLoadedKey] = useState(key);
-  // Another account or thread: show its own saved conversation.
-  if (key !== loadedKey) {
-    setLoadedKey(key);
-    setMessages(key ? storage.get<ChatMessage[]>(key, []) : []);
-  }
-  const save = useCallback(
-    (list: ChatMessage[]) => {
-      if (key) storage.set(key, list.slice(-KEEP_MESSAGES));
-    },
-    [key],
-  );
+  const place = opts.place;
+  const placeName = opts.placeName ?? null;
+  const history = useConversations(userId);
+  const startId = () => (userId && opts.resume && place ? (conversations.latestFor(userId, place)?.id ?? null) : null);
+  const [conversationId, setConversationId] = useState<string | null>(startId);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => (userId && conversationId ? (conversations.get(userId, conversationId)?.messages ?? []) : []));
   const [status, setStatus] = useState<ChatStatus>('ready');
   const [error, setError] = useState<string | null>(null);
   // The answer in progress; set at once, so a quick double tap sends once.
   const current = useRef<AbortController | null>(null);
+  // The conversation an answer belongs to (it can change while one streams).
+  const conversationRef = useRef<string | null>(conversationId);
+
+  const show = useCallback(
+    (id: string | null) => {
+      current.current?.abort();
+      current.current = null;
+      conversationRef.current = id;
+      setConversationId(id);
+      setMessages(id && userId ? (conversations.get(userId, id)?.messages ?? []) : []);
+      setError(null);
+      setStatus('ready');
+    },
+    [userId],
+  );
+
+  // A chat saved by the previous version becomes a conversation, once; open it if this screen resumes.
+  useEffect(() => {
+    if (!userId) return;
+    conversations.migrate(userId, place ? `place:${place}` : 'guide', place, placeName);
+    if (opts.resume && place && !conversationRef.current) {
+      const latest = conversations.latestFor(userId, place);
+      // After this render: the migrated chat opens like any saved one.
+      if (latest) setTimeout(() => show(latest.id), 0);
+    }
+    // Once per account and place.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, place]);
+
+  const save = useCallback(
+    (list: ChatMessage[]) => {
+      if (!userId) return;
+      const id = conversations.save(userId, conversationRef.current, list, place, placeName);
+      if (id !== conversationRef.current) {
+        conversationRef.current = id;
+        setConversationId(id);
+      }
+    },
+    [userId, place, placeName],
+  );
 
   const send = useCallback(
     async (text: string) => {
@@ -123,17 +147,32 @@ export function useChat(context: ChatContext, thread: string) {
     [messages, context, save],
   );
 
-  const reset = useCallback(() => {
-    current.current?.abort();
-    current.current = null;
-    if (key) storage.remove(key);
-    setMessages([]);
-    setError(null);
-    setStatus('ready');
-  }, [key]);
+  /** A blank conversation (the current one stays in the history). */
+  const newChat = useCallback(() => show(null), [show]);
+
+  const remove = useCallback(
+    (id: string) => {
+      if (!userId) return;
+      conversations.remove(userId, id);
+      if (id === conversationRef.current) show(null);
+    },
+    [userId, show],
+  );
 
   // Leaving the screen stops an answer still being written.
   useEffect(() => () => current.current?.abort(), []);
 
-  return { messages, status, loading: status !== 'ready', error, send, reset };
+  return {
+    conversationId,
+    conversation: history.find((c) => c.id === conversationId) ?? null,
+    history,
+    messages,
+    status,
+    loading: status !== 'ready',
+    error,
+    send,
+    open: show,
+    newChat,
+    remove,
+  };
 }

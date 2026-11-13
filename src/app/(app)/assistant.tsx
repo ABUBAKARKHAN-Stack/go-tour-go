@@ -5,25 +5,31 @@ import {
   ChevronRight,
   Landmark,
   Mountain,
-  RotateCcw,
+  History,
+  MessageSquare,
   ScrollText,
   Send,
+  SquarePen,
+  Trash2,
   ShoppingBag,
   UtensilsCrossed,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { FlatList, Pressable, View } from 'react-native';
+import { Alert, FlatList, Pressable, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { IconButton } from '@/components/app-button';
+import { AppButton, IconButton } from '@/components/app-button';
+import { Sheet } from '@/components/sheet';
 import { AppHeader } from '@/components/screen';
 import { InlineError } from '@/components/states';
 import { Text, TextInput } from '@/components/text';
 import { AiQuota } from '@/features/ai/ai-quota';
 import { AiBadge, ChatBubble, ReplySkeleton } from '@/features/ai/chat-bubbles';
+import type { Conversation } from '@/features/ai/conversations';
 import { useChat, useChatContext, type ChatMessage } from '@/features/ai/use-chat';
+import { timeAgo } from '@/features/safety/friend-locations';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useDestinationsByDistance } from '@/features/destinations/api';
 import { flipX, tx } from '@/lib/i18n';
@@ -81,14 +87,26 @@ export default function AssistantScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { sorted, location } = useDestinationsByDistance();
-  const context = useChatContext(params.destination);
-  // One saved conversation per place in focus, or the general guide.
-  const chat = useChat(context, params.destination ? `place:${params.destination}` : 'guide');
+  // The place the conversation is about (from a destination page, or an older conversation reopened).
+  const [place, setPlace] = useState<string | null>(params.destination ?? null);
+  const focused = place ? sorted.find((d) => d.slug === place) : undefined;
+  const context = useChatContext(place ?? undefined);
+  const chat = useChat(context, { place, placeName: focused?.name ?? null, resume: Boolean(params.destination) });
   const { messages, status, error } = chat;
   const [input, setInput] = useState(params.q ?? '');
+  const [historyOpen, setHistoryOpen] = useState(false);
   const list = useRef<FlatList<ChatMessage>>(null);
 
-  const focused = params.destination ? sorted.find((d) => d.slug === params.destination) : undefined;
+  const openConversation = (c: Conversation) => {
+    setHistoryOpen(false);
+    setPlace(c.place);
+    chat.open(c.id);
+  };
+  const startNew = () => {
+    setHistoryOpen(false);
+    chat.newChat();
+  };
+
   const nearest = location ? sorted[0] : undefined;
   const area = focused ? `${focused.name}, ${focused.city}` : nearest?.city ?? context.locationLabel ?? 'Pakistan';
   const firstName = profile?.full_name?.split(' ')[0];
@@ -107,16 +125,21 @@ export default function AssistantScreen() {
       <StatusBar style="dark" />
       <AppHeader
         back
-        title={tx('AI travel guide')}
+        title={chat.conversation?.title ?? tx('AI travel guide')}
         subtitle={focused ? tx('About {0}', { 0: focused.name }) : (context.locationLabel ?? tx('Powered by Gemini'))}
-        right={chatting ? <IconButton icon={RotateCcw} label={tx('New chat')} onPress={chat.reset} /> : undefined}
+        right={
+          <View className="flex-row gap-1.5">
+            {chat.history.length ? <IconButton icon={History} label={tx('Chat history')} onPress={() => setHistoryOpen(true)} /> : null}
+            {chatting ? <IconButton icon={SquarePen} label={tx('New chat')} onPress={startNew} /> : null}
+          </View>
+        }
       />
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <FlatList
           ref={list}
           data={messages}
           keyExtractor={(m) => m.id}
-          contentContainerClassName="grow gap-3 px-4 pb-4 pt-2"
+          contentContainerClassName="grow gap-5 px-4 pb-4 pt-2"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           // Follow the answer as it is written.
@@ -134,6 +157,23 @@ export default function AssistantScreen() {
                   {tx('Ask me about places, food, culture or routes. Guides below are for {0}.', { 0: area })}
                 </Text>
               </View>
+              {chat.history.length ? (
+                <View className="gap-2">
+                  <View className="flex-row items-center px-1">
+                    <Text className="flex-1 text-xs font-semibold uppercase tracking-[1.2px] text-faint">{tx('Recent chats')}</Text>
+                    {chat.history.length > 3 ? (
+                      <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setHistoryOpen(true)}>
+                        <Text className="text-[13px] font-semibold text-accent">{tx('See all')}</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <View className="overflow-hidden rounded-[20px] bg-card" style={cardShadow}>
+                    {chat.history.slice(0, 3).map((c, i) => (
+                      <ConversationRow key={c.id} conversation={c} first={i === 0} onPress={() => openConversation(c)} />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
               <View className="overflow-hidden rounded-[20px] bg-card" style={cardShadow}>
                 {GUIDES.map((g, i) => (
                   <Pressable
@@ -199,6 +239,88 @@ export default function AssistantScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <Sheet
+        visible={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        height="80%"
+        padded={false}
+        header={
+          <View className="flex-row items-center gap-3 px-5 pb-3">
+            <Text accessibilityRole="header" className="flex-1 font-display text-[22px] leading-7 text-heading">
+              {tx('Chat history')}
+            </Text>
+            <AppButton label={tx('New chat')} icon={SquarePen} size="sm" variant="secondary" onPress={startNew} />
+          </View>
+        }
+      >
+        <FlatList
+          data={chat.history}
+          keyExtractor={(c) => c.id}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+          renderItem={({ item, index }) => {
+            const today = isToday(item.updatedAt);
+            const heading = index === 0 || isToday(chat.history[index - 1].updatedAt) !== today ? (today ? tx('Today') : tx('Earlier')) : null;
+            return (
+              <View>
+                {heading ? <Text className="px-5 pb-1.5 pt-3 text-xs font-semibold uppercase tracking-[1.2px] text-faint">{heading}</Text> : null}
+                <ConversationRow
+                  conversation={item}
+                  current={item.id === chat.conversationId}
+                  onPress={() => openConversation(item)}
+                  onDelete={() =>
+                    Alert.alert(tx('Delete this chat?'), item.title, [
+                      { text: tx('Cancel'), style: 'cancel' },
+                      { text: tx('Delete'), style: 'destructive', onPress: () => chat.remove(item.id) },
+                    ])
+                  }
+                />
+              </View>
+            );
+          }}
+        />
+      </Sheet>
     </View>
+  );
+}
+
+function isToday(at: number) {
+  return new Date(at).toDateString() === new Date().toDateString();
+}
+
+/** A saved conversation: its title, what it is about, and when. */
+function ConversationRow({
+  conversation: c,
+  onPress,
+  onDelete,
+  current,
+  first = true,
+}: {
+  conversation: Conversation;
+  onPress: () => void;
+  onDelete?: () => void;
+  current?: boolean;
+  first?: boolean;
+}) {
+  const when = timeAgo(new Date(c.updatedAt).toISOString());
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: current }}
+      onPress={onPress}
+      onLongPress={onDelete}
+      className={`min-h-14 flex-row items-center gap-3 px-4 py-2.5 active:bg-muted ${current ? 'bg-primary-soft' : ''} ${first ? '' : 'border-t border-border'}`}
+    >
+      <MessageSquare color={colors.primary} size={18} />
+      <View className="flex-1 gap-0.5">
+        <Text numberOfLines={2} className="text-[15px] font-medium text-heading">
+          {c.title}
+        </Text>
+        <Text numberOfLines={1} className="text-xs text-muted-foreground">
+          {c.placeName ? `${tx('About {0}', { 0: c.placeName })} · ${when}` : when}
+        </Text>
+      </View>
+      {onDelete ? <IconButton icon={Trash2} label={tx('Delete')} onPress={onDelete} /> : null}
+    </Pressable>
   );
 }

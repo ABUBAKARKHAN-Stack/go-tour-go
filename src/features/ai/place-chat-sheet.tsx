@@ -49,7 +49,8 @@ export function PlaceChatSheet({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const chat = useChat(useChatContext(place.slug), `place:${place.slug}`);
+  // Continues the latest conversation about this place (also listed in the AI guide's history).
+  const chat = useChat(useChatContext(place.slug), { place: place.slug, placeName: place.name, resume: true });
   const [input, setInput] = useState('');
   const list = useRef<FlatList<ChatMessage>>(null);
   const handled = useRef(0);
@@ -101,7 +102,7 @@ export function PlaceChatSheet({
           data={chat.messages}
           keyExtractor={(m) => m.id}
           className="flex-1"
-          contentContainerClassName="gap-3 px-4 py-4"
+          contentContainerClassName="gap-5 px-4 py-4"
           keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => {
             if (chat.messages.length) list.current?.scrollToEnd({ animated: true });
@@ -133,7 +134,7 @@ export function PlaceChatSheet({
         </ScrollView>
 
         <AiQuota compact className="pb-1.5" />
-        <View className="mx-4 min-h-[52px] flex-row items-end gap-2 rounded-[26px] border border-border-strong bg-card py-1.5 pe-1.5 ps-4" style={{ marginBottom: insets.bottom + 10 }}>
+        <View className="mx-4 min-h-[52px] flex-row items-end gap-2 rounded-[26px] border border-border-strong bg-card py-1.5" style={{ paddingEnd: 6, paddingStart: 16, marginBottom: insets.bottom + 10 }}>
           <TextInput
             value={input}
             onChangeText={setInput}
