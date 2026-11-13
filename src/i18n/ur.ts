@@ -1267,4 +1267,7 @@ export const ur: Record<string, string> = {
   "We could not get your location. Try again outdoors, or choose the spot on the map.": "آپ کا مقام معلوم نہیں ہو سکا۔ کھلی جگہ پر دوبارہ کوشش کریں، یا نقشے پر جگہ منتخب کریں۔",
   "Where is it?": "یہ کہاں ہے؟",
   "You're at this hazard. Slow down and take care.": "آپ اس خطرے کی جگہ پر ہیں۔ رفتار کم کریں اور احتیاط کریں۔",
+  "SOS active": "SOS فعال ہے",
+  "End it with I'm safe below before sending another.": "دوسرا بھیجنے سے پہلے نیچے \"میں محفوظ ہوں\" سے اسے ختم کریں۔",
+  "Runtime {0}": "رن ٹائم {0}",
 };
