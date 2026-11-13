@@ -12,7 +12,9 @@ export const hazardCard = {
     state = { alertId, distance, visible: true, shownAt: Date.now() };
     listeners.forEach((l) => l());
   },
-  dismiss() {
+  /** Hides the card; with an id, only if it still shows that hazard. */
+  dismiss(alertId?: string) {
+    if (alertId && state.alertId !== alertId) return;
     state = { ...state, visible: false };
     listeners.forEach((l) => l());
   },

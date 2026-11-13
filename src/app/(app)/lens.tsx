@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { Camera, ImagePlus, Languages, MapPin, ScanEye, Sparkles } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { Text } from '@/components/text';
 
@@ -30,6 +30,9 @@ export default function LensScreen() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LensResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Photo -> analysing -> result. Each analysis gets a number; picking a new
+  // photo moves it on, so the old photo's result never shows under the new one.
+  const request = useRef(0);
 
   const pick = async (source: 'camera' | 'library') => {
     setError(null);
@@ -43,23 +46,28 @@ export default function LensScreen() {
     const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8, allowsEditing: false };
     const res = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
     if (res.canceled || !res.assets[0]) return;
+    request.current += 1;
     setUri(res.assets[0].uri);
     setResult(null);
+    setError(null);
+    setLoading(false);
   };
 
   const analyze = async () => {
     if (!uri) return;
+    const id = ++request.current;
     setLoading(true);
     setError(null);
     setResult(null);
     try {
       const small = await compressImage(uri, 1024, true);
       if (!small.base64) throw new Error(tx('Could not read the image.'));
-      setResult(await analyzeImage(small.base64, { question: question.trim() || undefined, locale: prefs.aiLanguage }));
+      const found = await analyzeImage(small.base64, { question: question.trim() || undefined, locale: prefs.aiLanguage });
+      if (id === request.current) setResult(found);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'AI service unavailable.');
+      if (id === request.current) setError(e instanceof Error ? e.message : 'AI service unavailable.');
     } finally {
-      setLoading(false);
+      if (id === request.current) setLoading(false);
     }
   };
 

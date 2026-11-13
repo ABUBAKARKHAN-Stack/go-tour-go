@@ -83,6 +83,31 @@ let starts: number[] = [];
 let lastReroute = 0;
 let lastPersist = 0;
 let planController: AbortController | null = null;
+/**
+ * New-route requests while navigating (automatic re-route, "find a way
+ * around"). Each one gets a number; a reply is used only while its number is
+ * still the latest, so a slow reply can't replace a newer route or land on a
+ * different journey. Starting, stopping or planning a journey also bumps it.
+ */
+let routeRequest = 0;
+let routeController: AbortController | null = null;
+/** A "find a way around" request is running: automatic re-routes wait. */
+let avoiding = false;
+
+function newRouteRequest() {
+  routeController?.abort();
+  routeController = new AbortController();
+  routeRequest += 1;
+  return { id: routeRequest, signal: routeController.signal };
+}
+
+/** Drops any route request still on its way (new journey, or journey ended). */
+function cancelRouteRequests() {
+  routeController?.abort();
+  routeController = null;
+  routeRequest += 1;
+  avoiding = false;
+}
 let context: { landmarks: Landmark[]; alerts: RoadAlert[] } = { landmarks: [], alerts: [] };
 const listeners = new Set<() => void>();
 const eventListeners = new Set<(e: JourneyEvent) => void>();
@@ -201,6 +226,7 @@ export const journeyStore = {
   /** Calculates routes for every sensible travel mode, in parallel. */
   async plan(target: JourneyTarget, origin: LatLng, preferred: TravelMode) {
     planController?.abort();
+    cancelRouteRequests();
     planController = new AbortController();
     const signal = planController.signal;
     const crowKm = distanceMeters(origin, target) / 1000;
@@ -236,6 +262,7 @@ export const journeyStore = {
   loadSaved(target: JourneyTarget, route: Route) {
     if (state.phase === 'active') return;
     planController?.abort();
+    cancelRouteRequests();
     indexRoute(route);
     set({
       ...idle,
@@ -253,6 +280,7 @@ export const journeyStore = {
 
   start() {
     if (!state.route || !state.target) return;
+    cancelRouteRequests();
     lastReroute = 0;
     set({ phase: 'active', startedAt: Date.now(), progress: null, rerouting: false, warned: [] });
     persist(true);
@@ -267,6 +295,7 @@ export const journeyStore = {
   restore(): boolean {
     const saved = readStoredJourney(true);
     if (!saved || state.phase === 'active') return false;
+    cancelRouteRequests();
     indexRoute(saved.route);
     set({
       ...idle,
@@ -329,33 +358,40 @@ export const journeyStore = {
 
   /** New route from where the traveller is now (throttled). */
   async reroute(from: LatLng) {
-    if (state.rerouting || !state.target || Date.now() - lastReroute < REROUTE_MIN_INTERVAL_MS) return;
+    if (avoiding || state.rerouting || !state.target || Date.now() - lastReroute < REROUTE_MIN_INTERVAL_MS) return;
     lastReroute = Date.now();
+    const { id, signal } = newRouteRequest();
+    const target = state.target;
     set({ rerouting: true });
     speak('Recalculating');
     try {
-      const route = await fetchRoute(state.mode, from, state.target);
-      if (state.phase !== 'active') return;
+      const route = await fetchRoute(state.mode, from, target, signal);
+      if (id !== routeRequest || state.phase !== 'active') return;
       indexRoute(route);
       set({ route, routes: { ...state.routes, [state.mode]: route }, items: itemsFor(route), progress: null, rerouting: false });
       persist(true);
       emit({ type: 'rerouted' });
     } catch {
       // Offline or service busy: keep the old route and try again later.
-      set({ rerouting: false });
+    } finally {
+      if (id === routeRequest && state.rerouting) set({ rerouting: false });
     }
   },
 
   /**
    * Switches to the fastest alternative route that stays clear of a hazard.
    * Returns false when no alternative avoids it (or routing is unavailable).
+   * Takes over from an automatic re-route still on its way.
    */
   async avoid(hazard: LatLng & { radius: number }, from: LatLng): Promise<boolean> {
     if (state.phase !== 'active' || !state.target) return false;
+    const { id, signal } = newRouteRequest();
+    avoiding = true;
+    if (state.rerouting) set({ rerouting: false });
     try {
-      const routes = await fetchRoutes(state.mode, from, state.target);
+      const routes = await fetchRoutes(state.mode, from, state.target, signal);
       const route = routeAvoiding(routes, hazard);
-      if (!route || state.phase !== 'active') return false;
+      if (!route || id !== routeRequest || state.phase !== 'active') return false;
       indexRoute(route);
       set({ route, routes: { ...state.routes, [state.mode]: route }, items: itemsFor(route), progress: null });
       persist(true);
@@ -364,6 +400,8 @@ export const journeyStore = {
       return true;
     } catch {
       return false;
+    } finally {
+      if (id === routeRequest) avoiding = false;
     }
   },
 
@@ -376,6 +414,7 @@ export const journeyStore = {
   /** Ends navigation and clears the saved journey. */
   stop() {
     planController?.abort();
+    cancelRouteRequests();
     Speech.stop();
     storage.remove(StorageKeys.activeJourney);
     indexRoute(null);

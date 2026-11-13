@@ -15,6 +15,7 @@ import { LocationStatusCard } from '@/features/location/location-status-card';
 import { openWhatsApp, sosMessage, useTrustedContacts } from '@/features/safety/api';
 import { createShareLink, endLiveLinks, endShareLink, shareUrl, useOwnPhone } from '@/features/safety/share-links';
 import { timeAgo, useFriendLocations } from '@/features/safety/friend-locations';
+import { clearSosSession, saveSosSession, useSosSession } from '@/features/safety/sos-session';
 import { isSessionLive, SHARING_DURATIONS, setSharingAudience, startSharing, stopSharing, useSharingSession, type ShareAudience } from '@/features/safety/sharing';
 import { ViewerPicker } from '@/features/safety/viewer-picker';
 import { useShareViewers } from '@/features/safety/viewers';
@@ -28,16 +29,15 @@ import { useRequireAccount } from '@/features/auth/guest-gate';
 
 const EMERGENCY_NUMBERS = emergencyNumbers;
 
-type SosState = { message: string; lat: number | null; lng: number | null; token: string | null } | null;
-
 export default function SafetyScreen() {
   const requireAccount = useRequireAccount();
-  const { profile } = useAuth();
+  const { profile, userId } = useAuth();
   const contacts = useTrustedContacts();
   const session = useSharingSession();
   const friends = useFriendLocations();
   const location = useLocationState();
-  const [sos, setSos] = useState<SosState>(null);
+  // The open SOS is saved on the phone, so leaving this screen keeps "I'm safe".
+  const sos = useSosSession(userId);
   const [triggering, setTriggering] = useState(false);
   const [sharingBusy, setSharingBusy] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
@@ -107,7 +107,7 @@ export default function SafetyScreen() {
         contacts: contacts.data?.length ?? 0,
       }).catch(() => null);
       const message = sosMessage(name, token ? shareUrl('sos', token) : null, fix?.latitude ?? null, fix?.longitude ?? null);
-      setSos({ message, lat: fix?.latitude ?? null, lng: fix?.longitude ?? null, token });
+      if (userId) saveSosSession({ userId, message, lat: fix?.latitude ?? null, lng: fix?.longitude ?? null, token });
     } catch (e) {
       Alert.alert('SOS', errorMessage(e));
     } finally {
@@ -168,8 +168,10 @@ export default function SafetyScreen() {
   };
 
   const imSafe = async () => {
-    if (sos?.token) await endShareLink(sos.token).catch(() => undefined);
-    setSos(null);
+    // Clear first, so a second tap (or a slow network) can't end it twice.
+    const token = sos?.token;
+    clearSosSession();
+    if (token) await endShareLink(token).catch(() => undefined);
   };
 
   return (
