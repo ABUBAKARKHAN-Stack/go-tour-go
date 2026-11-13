@@ -135,7 +135,8 @@
           ]
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,
