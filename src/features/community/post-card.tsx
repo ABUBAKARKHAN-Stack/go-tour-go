@@ -123,7 +123,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
             {place ? (
               <Pressable disabled={!post.destination} onPress={openPlace} hitSlop={4} className="shrink flex-row items-center gap-1">
                 <MapPin color={colors.accent} size={12} />
-                <Text numberOfLines={1} className="shrink text-xs font-medium text-accent">
+                <Text numberOfLines={2} className="shrink text-xs font-medium text-accent">
                   {place}
                   {post.destination?.city ? `, ${post.destination.city}` : ''}
                 </Text>

@@ -336,6 +336,16 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
 - Hazard reports: at the traveller's location by default; on Explore, long-press the map or use
   "Choose on map" in the report sheet to report at a spot. Hazards draw as warning-triangle markers
   above the landmark layers; a hazard card's "Show on map" flies Explore to it and outlines its area.
+- Bottom sheets use `src/components/sheet.tsx` (`Sheet`): drag down or flick to close, short drags spring
+  back, backdrop and Android back close it; `inline` for sheets with a text input (AI chat), `dragAnywhere`
+  for sheets without a scrolling list. Use it for any new bottom sheet.
+- The AI guide and the place chat stream answers (`streamAssistant` in `features/ai/api.ts`, `expo/fetch` +
+  server-sent events from the `ai` function, `stream: true`); a skeleton bubble shows until the first words.
+  A question whose answer never started is not counted.
+- Guests can report hazards (3 a day, members 10) and vote; guest "gone" votes alone don't close a report
+  (needs a member's "gone" vote, or 4 more "gone" than "still there"). Migration `guest_hazards`.
+- Urdu voice: a road name in English letters is spoken by the English voice inside the Urdu sentence
+  (`spokenParts` in `features/journey/navigation.ts`).
 - Settings → Demo tools shows which OTA update is running (date + id) and the runtime version, to
   confirm before testing.
 - **OTA updates reach only an APK with the same runtime version** (fingerprint policy). Any change to

@@ -1,5 +1,6 @@
 import { Sparkles } from 'lucide-react-native';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 import Markdown from 'react-native-markdown-display';
 
 import { Avatar } from '@/components/avatar';
@@ -50,14 +51,30 @@ export function ChatBubble({ role, content }: { role: 'user' | 'assistant'; cont
   );
 }
 
-export function ThinkingBubble() {
+/**
+ * Where the AI's answer is about to appear: its bubble with soft placeholder
+ * lines (pulsing gently, still with Reduce Motion), replaced by the words as
+ * they stream in.
+ */
+export function ReplySkeleton() {
+  const reduced = useReducedMotion();
+  const pulse = reduced
+    ? undefined
+    : ({
+        animationName: { from: { opacity: 1 }, to: { opacity: 0.4 } },
+        animationDuration: 800,
+        animationIterationCount: 'infinite',
+        animationDirection: 'alternate',
+        animationTimingFunction: 'ease-in-out',
+      } as const);
   return (
-    <View className="flex-row items-center gap-2 self-start" accessibilityLiveRegion="polite">
+    <View className="max-w-[94%] flex-row items-start gap-2 self-start" accessibilityRole="progressbar" accessibilityLabel={tx('Writing an answer')}>
       <AiBadge />
-      <View className="flex-row items-center gap-2 rounded-[20px] rounded-tl-md bg-primary-soft px-4 py-3">
-        <ActivityIndicator color={colors.primary} size="small" />
-        <Text className="text-sm text-muted-foreground">{tx('Thinking...')}</Text>
-      </View>
+      <Animated.View className="w-60 gap-2 rounded-[20px] rounded-tl-md bg-primary-soft px-4 py-3.5" style={pulse}>
+        <View className="h-3 w-full rounded-full bg-white/80" />
+        <View className="h-3 w-11/12 rounded-full bg-white/80" />
+        <View className="h-3 w-3/5 rounded-full bg-white/80" />
+      </Animated.View>
     </View>
   );
 }

@@ -49,7 +49,7 @@ function PendingCard({ job }: { job: UploadJob }) {
           <Text numberOfLines={1} className="text-sm font-semibold text-heading">
             {title}
           </Text>
-          <Text numberOfLines={1} className={`text-xs ${failed ? 'text-destructive' : 'text-muted-foreground'}`}>
+          <Text numberOfLines={2} className={`text-xs ${failed ? 'text-destructive' : 'text-muted-foreground'}`}>
             {failed ? (job.error ?? tx('Check your connection.')) : job.caption || (job.place?.name ?? tx('Keep the app open until it finishes.'))}
           </Text>
         </View>

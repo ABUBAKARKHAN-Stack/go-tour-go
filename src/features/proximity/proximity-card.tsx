@@ -124,21 +124,21 @@ function LandmarkCard({
               <X color={colors.foreground} size={16} />
             </Pressable>
           </View>
-          <Text numberOfLines={1} className="font-display text-xl text-heading">
+          <Text numberOfLines={2} className="font-display text-xl text-heading">
             {d.name}
           </Text>
           <View className="flex-row items-center gap-1">
             <MapPin color={colors.primary} size={12} />
             <Text className="text-xs text-muted-foreground">{tx('{0} away · {1} · {2}', { 0: formatDistance(distance), 1: meta.label, 2: d.city })}</Text>
           </View>
-          <Text numberOfLines={2} className="text-xs text-foreground">
+          <Text numberOfLines={3} className="text-xs text-foreground">
             {d.short_description}
           </Text>
         </View>
       </View>
       <View className="gap-3 px-3 pb-3">
         {significance ? (
-          <Text numberOfLines={2} className="text-xs text-muted-foreground">
+          <Text numberOfLines={3} className="text-xs text-muted-foreground">
             <Text className="font-semibold text-heading">{tx('Why it matters:')}{' '}</Text>
             {significance}
           </Text>

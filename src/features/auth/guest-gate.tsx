@@ -1,13 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { UserPlus } from 'lucide-react-native';
-import { useCallback, useEffect, useSyncExternalStore, type ReactNode } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { Easing, ReduceMotion, SlideInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Alert, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { Screen } from '@/components/screen';
+import { Sheet } from '@/components/sheet';
 import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
 import { signOut } from '@/features/auth/api';
@@ -68,11 +67,8 @@ function isGuestRefusal(error: unknown) {
   return e?.code === '42501' || /row-level security|create a free account/i.test(e?.message ?? '');
 }
 
-const SHEET_IN = SlideInDown.duration(280).easing(Easing.bezier(0.32, 0.72, 0, 1)).reduceMotion(ReduceMotion.System);
-
 /** The prompt itself; rendered once in the signed-in layout. */
 export function GuestGateOverlay() {
-  const insets = useSafeAreaInsets();
   const { isGuest } = useAuth();
   const qc = useQueryClient();
   const why = useSyncExternalStore(guestGate.subscribe, guestGate.get);
@@ -87,7 +83,10 @@ export function GuestGateOverlay() {
     });
   }, [isGuest, qc]);
 
-  if (!isGuest || !why) return null;
+  // Keep the last reason on screen while the sheet slides away.
+  const [shownWhy, setShownWhy] = useState(why);
+  if (why && why !== shownWhy) setShownWhy(why);
+  if (!isGuest) return null;
 
   const createAccount = () => {
     guestGate.close();
@@ -106,32 +105,24 @@ export function GuestGateOverlay() {
     ]);
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={guestGate.close} statusBarTranslucent>
-      <View className="flex-1 justify-end">
-        <Pressable style={StyleSheet.absoluteFill} className="bg-black/40" onPress={guestGate.close} accessibilityRole="button" accessibilityLabel={tx('Not now')} />
-        <Animated.View entering={SHEET_IN} className="gap-4 rounded-t-[28px] bg-background px-6 pt-3" style={{ paddingBottom: insets.bottom + 16 }}>
-          <View className="items-center">
-            <View className="h-1 w-10 rounded-full bg-border-strong" />
-          </View>
-          <View className="items-center gap-3 pt-2">
-            <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-soft">
-              <UserPlus color={colors.primary} size={28} />
-            </View>
-            <Text accessibilityRole="header" className="text-center font-display text-2xl text-heading">
-              {tx('Create a free account')}
-            </Text>
-            <Text className="text-center text-[15px] leading-[22px] text-muted-foreground">
-              {tx('You need an account to {0}. Your saved places and trips come with you.', { 0: why })}
-            </Text>
-          </View>
-          <View className="gap-2 pt-1">
-            <AppButton label={tx('Create account')} icon={UserPlus} onPress={createAccount} />
-            <AppButton label={tx('I already have an account')} variant="secondary" onPress={signIn} />
-            <AppButton label={tx('Not now')} variant="ghost" onPress={guestGate.close} />
-          </View>
-        </Animated.View>
+    <Sheet visible={Boolean(why)} onClose={guestGate.close} dragAnywhere>
+      <View className="items-center gap-3">
+        <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-soft">
+          <UserPlus color={colors.primary} size={28} />
+        </View>
+        <Text accessibilityRole="header" className="text-center font-display text-2xl text-heading">
+          {tx('Create a free account')}
+        </Text>
+        <Text className="text-center text-[15px] leading-[22px] text-muted-foreground">
+          {tx('You need an account to {0}. Your saved places and trips come with you.', { 0: shownWhy ?? '' })}
+        </Text>
       </View>
-    </Modal>
+      <View className="gap-2 pt-1">
+        <AppButton label={tx('Create account')} icon={UserPlus} onPress={createAccount} />
+        <AppButton label={tx('I already have an account')} variant="secondary" onPress={signIn} />
+        <AppButton label={tx('Not now')} variant="ghost" onPress={guestGate.close} />
+      </View>
+    </Sheet>
   );
 }
 

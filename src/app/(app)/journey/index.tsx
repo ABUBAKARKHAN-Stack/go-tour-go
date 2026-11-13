@@ -188,8 +188,8 @@ export default function JourneyPreview() {
           <ArrowLeft color={colors.foreground} size={20} style={flipX} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-base font-semibold text-heading">{tx('Your location → {0}', { 0: target.name })}</Text>
-          <Text numberOfLines={1} className="text-xs text-faint">
+          <Text numberOfLines={2} className="text-base font-semibold text-heading">{tx('Your location → {0}', { 0: target.name })}</Text>
+          <Text numberOfLines={2} className="text-xs text-faint">
             {via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}
           </Text>
         </View>
@@ -321,10 +321,10 @@ function ItemRow({ item }: { item: JourneyItem }) {
         {hazard ? <TriangleAlert color={colors.destructive} size={18} /> : <Landmark color={colors.primary} size={18} />}
       </View>
       <View className="flex-1">
-        <Text numberOfLines={1} className="text-base font-semibold text-heading">
+        <Text numberOfLines={2} className="text-base font-semibold text-heading">
           {item.name}
         </Text>
-        <Text numberOfLines={1} className="text-xs text-faint">
+        <Text numberOfLines={2} className="text-xs text-faint">
           {where}
         </Text>
       </View>

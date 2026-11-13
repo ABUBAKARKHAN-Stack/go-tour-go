@@ -19,7 +19,7 @@ export function PersonRow({ profile, right, subtitle }: { profile: ProfileSummar
     >
       <Avatar profile={profile} size={44} />
       <View className="flex-1">
-        <Text numberOfLines={1} className="text-base font-semibold text-heading">
+        <Text numberOfLines={2} className="text-base font-semibold text-heading">
           {displayName(profile)}
         </Text>
         <Text numberOfLines={1} className="text-xs text-muted-foreground">

@@ -289,7 +289,7 @@ export default function DestinationDetails() {
               </Text>
               <View className="flex-row items-center gap-1.5">
                 <MapPin color={colors.primary} size={15} />
-                <Text numberOfLines={1} className="shrink text-sm text-muted-foreground">
+                <Text numberOfLines={2} className="shrink text-sm text-muted-foreground">
                   {d.city}, {d.region}
                 </Text>
               </View>
@@ -388,7 +388,7 @@ export default function DestinationDetails() {
               </View>
               <View className="flex-1">
                 <Text className="text-base font-semibold text-heading">{tx('Location')}</Text>
-                <Text numberOfLines={1} className="text-[13px] text-muted-foreground">
+                <Text numberOfLines={2} className="text-[13px] text-muted-foreground">
                   {d.city}, {d.region}
                 </Text>
               </View>

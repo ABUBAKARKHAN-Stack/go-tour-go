@@ -15,6 +15,7 @@ import { DestinationImage } from '@/components/destination-image';
 import { Chip, Segmented } from '@/components/form';
 import { FormTextField } from '@/components/form-field';
 import { Screen } from '@/components/screen';
+import { Sheet } from '@/components/sheet';
 import { EmptyState, ErrorState, InlineError, LoadingState } from '@/components/states';
 import { searchDestinations, useDestinations } from '@/features/destinations/api';
 import { TRIP_STATUSES, useTripActions, useTrips } from '@/features/trips/api';
@@ -157,7 +158,7 @@ const TripRow = memo(function TripRow({
       <Pressable onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })} className="flex-row gap-3 active:opacity-80">
         <DestinationImage uri={d.image_url} category={d.category} className="h-[72px] w-[72px] rounded-2xl" iconSize={24} recyclingKey={d.id} />
         <View className="flex-1 gap-0.5">
-          <Text numberOfLines={1} className="text-base font-semibold text-heading">
+          <Text numberOfLines={2} className="text-base font-semibold text-heading">
             {d.name}
           </Text>
           <View className="flex-row items-center gap-1">
@@ -171,7 +172,7 @@ const TripRow = memo(function TripRow({
             </View>
           ) : null}
           {item.notes ? (
-            <Text numberOfLines={2} className="text-xs text-foreground">
+            <Text numberOfLines={3} className="text-xs text-foreground">
               {item.notes}
             </Text>
           ) : null}
@@ -188,16 +189,30 @@ const TripRow = memo(function TripRow({
 });
 
 function EditTripModal({ item, destination, onClose }: { item: TripItem | null; destination?: DestinationSummary; onClose: () => void }) {
+  // Keep showing the last item while the sheet slides away.
+  const [shown, setShown] = useState<{ item: TripItem; destination?: DestinationSummary } | null>(item ? { item, destination } : null);
+  if (item && (item !== shown?.item || destination !== shown?.destination)) setShown({ item, destination });
   return (
-    <Modal visible={Boolean(item)} transparent animationType="slide" onRequestClose={onClose}>
-      {item ? <EditTripForm key={item.id} item={item} destination={destination} onClose={onClose} /> : null}
-    </Modal>
+    <Sheet
+      visible={Boolean(item)}
+      onClose={onClose}
+      dragAnywhere
+      header={
+        <View className="flex-row items-center justify-between gap-3">
+          <Text accessibilityRole="header" className="flex-1 font-display text-2xl text-heading">
+            {shown?.destination?.name ?? tx('Trip item')}
+          </Text>
+          <IconButton icon={X} label={tx('Close')} onPress={onClose} />
+        </View>
+      }
+    >
+      {shown ? <EditTripForm key={shown.item.id} item={shown.item} destination={shown.destination} onClose={onClose} /> : null}
+    </Sheet>
   );
 }
 
 function EditTripForm({ item, destination, onClose }: { item: TripItem; destination?: DestinationSummary; onClose: () => void }) {
   const actions = useTripActions();
-  const insets = useSafeAreaInsets();
   const { control, handleSubmit, setError, setValue, formState } = useZodForm(tripItemSchema, {
     defaultValues: { status: item.status, plannedDate: item.planned_date, notes: item.notes ?? '' },
   });
@@ -242,17 +257,7 @@ function EditTripForm({ item, destination, onClose }: { item: TripItem; destinat
   };
 
   return (
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="gap-4 rounded-t-[28px] bg-background px-5 pt-3" style={{ paddingBottom: insets.bottom + 16 }}>
-          <View className="items-center">
-            <View className="h-1 w-10 rounded-full bg-border-strong" />
-          </View>
-          <View className="flex-row items-center justify-between">
-            <Text numberOfLines={1} className="flex-1 font-display text-2xl text-heading">
-              {destination?.name ?? tx('Trip item')}
-            </Text>
-            <IconButton icon={X} label={tx('Close')} onPress={onClose} />
-          </View>
+        <View className="gap-4">
           {formState.errors.root?.message ? <InlineError message={formState.errors.root.message} /> : null}
           <Controller control={control} name="status" render={({ field }) => <Segmented value={field.value} onChange={field.onChange} options={TRIP_STATUSES} />} />
           <Pressable onPress={pickDate} className="min-h-[52px] flex-row items-center gap-2 rounded-full bg-primary-soft px-4 active:opacity-80">
@@ -270,7 +275,6 @@ function EditTripForm({ item, destination, onClose }: { item: TripItem; destinat
             <AppButton label={tx('Save')} onPress={save} loading={actions.update.isPending} className="flex-1" />
           </View>
         </View>
-      </View>
   );
 }
 

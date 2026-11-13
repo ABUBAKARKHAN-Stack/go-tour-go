@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { cardShadow } from '@/lib/theme';
 
-type Variant = 'list' | 'cards' | 'feed' | 'profile' | 'detail';
+type Variant = 'list' | 'cards' | 'feed' | 'profile' | 'detail' | 'result';
 
 /** Pulse for the whole skeleton at once (one animation, not one per block). */
 const PULSE = { from: { opacity: 1 }, to: { opacity: 0.45 } };
@@ -67,7 +67,22 @@ export function Skeleton({ variant, label }: { variant: Variant; label: string }
       } as const);
   return (
     <Animated.View accessibilityRole="progressbar" accessibilityLabel={label} className="gap-3 py-2" style={pulse ?? undefined}>
-      {variant === 'cards' ? (
+      {variant === 'result' ? (
+        // An answer card (Visual Lens): title and confidence, a few lines, then tips.
+        <View className="gap-3 rounded-[20px] bg-card p-4" style={cardShadow}>
+          <View className="flex-row items-center justify-between gap-3">
+            <Block className="h-6 w-1/2" />
+            <Block className="h-3 w-16" />
+          </View>
+          <Block className="h-3.5 w-full" />
+          <Block className="h-3.5 w-11/12" />
+          <Block className="h-3.5 w-3/5" />
+          <View className="gap-2 pt-1">
+            <Block className="h-3 w-4/5" />
+            <Block className="h-3 w-2/3" />
+          </View>
+        </View>
+      ) : variant === 'cards' ? (
         <View className="flex-row gap-4 overflow-hidden">
           <Tile />
           <Tile />

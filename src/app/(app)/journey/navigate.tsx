@@ -37,7 +37,6 @@ import type { RouteStep } from '@/features/routing/osrm';
 import { formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
-import { useRequireAccount } from '@/features/auth/guest-gate';
 
 function ManeuverIcon({ step }: { step: RouteStep | undefined }) {
   const props = { color: '#FFFFFF', size: 40, strokeWidth: 2.4 };
@@ -67,7 +66,6 @@ function ManeuverIcon({ step }: { step: RouteStep | undefined }) {
  * the route, time left, voice guidance, re-routing and arrival.
  */
 export default function JourneyNavigate() {
-  const requireAccount = useRequireAccount();
   useKeepAwake();
   const params = useLocalSearchParams<{ background?: string }>();
   const insets = useSafeAreaInsets();
@@ -185,7 +183,7 @@ export default function JourneyNavigate() {
           <ManeuverIcon step={next} />
           <View className="flex-1">
             <Text className="font-display text-[30px] leading-9 text-white">{formatDistance(progress?.toManeuver ?? route.steps[0]?.distance ?? 0)}</Text>
-            <Text numberOfLines={2} className="text-base text-white">
+            <Text numberOfLines={3} className="text-base text-white">
               {next?.instruction ?? tx('Follow the route')}
             </Text>
           </View>
@@ -197,7 +195,7 @@ export default function JourneyNavigate() {
           </View>
         ) : then ? (
           <View className="bg-primary-pressed px-4 py-2">
-            <Text numberOfLines={1} className="text-xs font-semibold text-white">{tx('Then {0}', { 0: then.instruction.charAt(0).toLowerCase() + then.instruction.slice(1) })}</Text>
+            <Text numberOfLines={2} className="text-xs font-semibold text-white">{tx('Then {0}', { 0: then.instruction.charAt(0).toLowerCase() + then.instruction.slice(1) })}</Text>
           </View>
         ) : null}
       </View>
@@ -233,7 +231,7 @@ export default function JourneyNavigate() {
           onPress={() => journeyStore.setVoice(!journey.voice)}
         />
         <MapButton icon={overview ? LocateFixed : RouteIcon} label={overview ? tx('Follow me') : tx('Show whole route')} onPress={() => setOverview((v) => !v)} />
-        <MapButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => requireAccount(tx('report hazards')) && setReporting(true)} />
+        <MapButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => setReporting(true)} />
       </View>
 
       <View

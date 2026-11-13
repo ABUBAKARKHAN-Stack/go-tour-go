@@ -34,12 +34,12 @@ export function AppHeader({ title, subtitle, back, right }: HeaderProps) {
       ) : null}
       <View className="flex-1">
         {title ? (
-          <Text numberOfLines={1} className="font-display text-[26px] leading-8 text-heading">
+          <Text numberOfLines={2} className="font-display text-[26px] leading-8 text-heading">
             {title}
           </Text>
         ) : null}
         {subtitle ? (
-          <Text numberOfLines={1} className="text-sm text-muted-foreground">
+          <Text numberOfLines={2} className="text-sm text-muted-foreground">
             {subtitle}
           </Text>
         ) : null}

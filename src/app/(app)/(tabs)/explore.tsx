@@ -51,7 +51,6 @@ import { colors, shadow } from '@/lib/theme';
 import type { DestinationCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 import { COUNTRY } from '@/constants/app.constants';
-import { useRequireAccount } from '@/features/auth/guest-gate';
 
 // Panel motion: the height follows Hide / Show, the cards fade; it slides away for an alert card.
 const PANEL_LAYOUT = LinearTransition.duration(240).easing(EASE_OUT).reduceMotion(ReduceMotion.System);
@@ -69,7 +68,6 @@ export default function ExploreScreen() {
   const params = useLocalSearchParams<{ focus?: string; alert?: string; at?: string }>();
   const map = useRef<TravelMapHandle>(null);
   const { userId } = useAuth();
-  const requireAccount = useRequireAccount();
 
   const destinations = useDestinations();
   const alerts = useRoadAlerts();
@@ -152,7 +150,6 @@ export default function ExploreScreen() {
   }, [handledAlert, alerts.data]);
 
   const startReport = (point: { latitude: number; longitude: number } | null) => {
-    if (!requireAccount(tx('report hazards'))) return;
     setReportPoint(point);
     setPicking(false);
     setReporting(true);
@@ -324,7 +321,7 @@ export default function ExploreScreen() {
           <View className="flex-row items-center gap-3 rounded-[20px] bg-primary p-3 ps-4" style={{ boxShadow: shadow(0.25, 6, 18) }}>
             <Navigation color={colors.primaryForeground} size={20} />
             <View className="flex-1">
-              <Text numberOfLines={1} className="text-base font-semibold text-white">{tx('Navigating to {0}', { 0: journey.target.name })}</Text>
+              <Text numberOfLines={2} className="text-base font-semibold text-white">{tx('Navigating to {0}', { 0: journey.target.name })}</Text>
               <Text className="text-xs text-white/80">
                 {journey.progress ? tx('{0} left', { 0: formatDistance(journey.progress.remaining) }) : tx('Tap Resume to continue')}
               </Text>

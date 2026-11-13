@@ -9,7 +9,8 @@ import { Text } from '@/components/text';
 import { AppButton } from '@/components/app-button';
 import { Card, TextField } from '@/components/form';
 import { Screen } from '@/components/screen';
-import { InlineError, LoadingState } from '@/components/states';
+import { InlineError } from '@/components/states';
+import { Skeleton } from '@/components/skeleton';
 import { analyzeImage, type LensResult } from '@/features/ai/api';
 import { useDestinations } from '@/features/destinations/api';
 import { usePreferences } from '@/lib/preferences';
@@ -94,11 +95,12 @@ export default function LensScreen() {
       {uri ? (
         <>
           <TextField label={tx('Question (optional)')} value={question} onChangeText={setQuestion} placeholder={tx('e.g. What does this sign say?')} maxLength={300} />
-          <AppButton label={tx('Analyze photo')} icon={Sparkles} variant="accent" onPress={analyze} loading={loading} />
+          <AppButton label={loading ? tx('Looking closely...') : tx('Analyze photo')} icon={Sparkles} variant="accent" onPress={analyze} disabled={loading} />
         </>
       ) : null}
 
-      {loading ? <LoadingState variant="spinner" label={tx('Looking closely...')} /> : null}
+      {/* The answer card's shape while the photo is analysed. */}
+      {loading ? <Skeleton variant="result" label={tx('Looking closely...')} /> : null}
       {error ? <InlineError message={error} /> : null}
 
       {result ? (

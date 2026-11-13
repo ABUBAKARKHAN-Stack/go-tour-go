@@ -1,10 +1,10 @@
 import { Ban, CarFront, CloudFog, Construction, Crosshair, Droplets, MapPin, Mountain, OctagonX, Snowflake, TriangleAlert, X, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
-import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
+import { Sheet } from '@/components/sheet';
 import { Segmented } from '@/components/form';
 import { FormTextField } from '@/components/form-field';
 import { Text } from '@/components/text';
@@ -50,7 +50,6 @@ export function ReportHazardSheet({
   onPickOnMap?: () => void;
   onUseMyLocation?: () => void;
 }) {
-  const insets = useSafeAreaInsets();
   const report = useReportHazard();
   const [locating, setLocating] = useState(false);
   const { control, handleSubmit, reset } = useZodForm(hazardReportSchema, { defaultValues: { hazardType: null, severity: 'medium', note: '' } });
@@ -84,23 +83,22 @@ export function ReportHazardSheet({
   });
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <Pressable className="flex-1 bg-black/40" onPress={close} accessibilityLabel={tx('Close')} />
-      <View className="rounded-t-[28px] bg-background px-6 pt-4" style={{ paddingBottom: insets.bottom + 16 }}>
-        <View className="mb-3 items-center">
-          <View className="h-1 w-10 rounded-full bg-border-strong" />
-        </View>
+    <Sheet
+      visible={visible}
+      onClose={close}
+      header={
         <View className="flex-row items-start gap-3">
           <View className="flex-1 gap-1">
-            <Text className="font-display text-2xl text-heading">{tx('Report a hazard')}</Text>
+            <Text accessibilityRole="header" className="font-display text-2xl text-heading">{tx('Report a hazard')}</Text>
             <Text className="text-sm text-muted-foreground">{tx('Reports expire on their own.')}</Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel={tx('Close')} hitSlop={10} onPress={close} className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
             <X color={colors.foreground} size={18} />
           </Pressable>
         </View>
-
-        <ScrollView className="mt-4 max-h-[440px]" contentContainerClassName="gap-4" keyboardShouldPersistTaps="handled">
+      }
+    >
+        <ScrollView className="mt-2 max-h-[440px]" contentContainerClassName="gap-4" keyboardShouldPersistTaps="handled">
           <View className="gap-2">
             <Text className="text-sm font-medium text-muted-foreground">{tx('Where is it?')}</Text>
             <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3">
@@ -171,8 +169,7 @@ export function ReportHazardSheet({
         <View className="pt-4">
           <AppButton label={tx('Report hazard')} loading={locating || report.isPending} onPress={submit} />
         </View>
-      </View>
-    </Modal>
+    </Sheet>
   );
 }
 

@@ -63,12 +63,12 @@ export function PlacePreview({ place, location, saved }: { place: DestinationSum
       <DestinationImage uri={place.image_url} category={place.category} className="h-24 w-24 rounded-2xl" recyclingKey={place.id} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-1.5">
-          <Text numberOfLines={1} className="shrink text-base font-bold text-heading">
+          <Text numberOfLines={2} className="shrink text-base font-bold text-heading">
             {place.name}
           </Text>
           {saved ? <Bookmark color={colors.accent} fill={colors.accent} size={14} accessibilityLabel={tx('Saved')} /> : null}
         </View>
-        <Text numberOfLines={1} className="text-xs text-muted-foreground">
+        <Text numberOfLines={2} className="text-xs text-muted-foreground">
           {DESTINATION_CATEGORIES[place.category].label} · {place.city}
           {location ? ` · ${formatDistance(distanceMeters(location, place))}` : ''}
         </Text>
@@ -96,7 +96,7 @@ export function PlacePreview({ place, location, saved }: { place: DestinationSum
             </View>
           ) : null}
         </View>
-        <Text numberOfLines={2} className="text-xs text-foreground">
+        <Text numberOfLines={3} className="text-xs text-foreground">
           {place.short_description}
         </Text>
         <View className="mt-1 flex-row gap-2">

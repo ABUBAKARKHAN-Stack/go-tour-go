@@ -216,10 +216,10 @@ export default function Home() {
                   {spotlightLabel}
                   {spotlight.distance != null ? ` · ${formatDistance(spotlight.distance)}` : ''}
                 </Text>
-                <Text numberOfLines={1} className="text-base font-semibold text-heading">
+                <Text numberOfLines={2} className="text-base font-semibold text-heading">
                   {spotlight.name}
                 </Text>
-                <Text numberOfLines={1} className="text-xs text-muted-foreground">
+                <Text numberOfLines={2} className="text-xs text-muted-foreground">
                   {spotlight.short_description}
                 </Text>
               </View>
@@ -273,7 +273,7 @@ export default function Home() {
                         <TriangleAlert color={severityColors[a.severity]} size={19} />
                       </View>
                       <View className="flex-1">
-                        <Text numberOfLines={1} className="text-sm font-semibold text-heading">
+                        <Text numberOfLines={2} className="text-sm font-semibold text-heading">
                           {a.title}
                         </Text>
                         <Text className="text-xs text-muted-foreground">
@@ -311,7 +311,7 @@ export default function Home() {
                           className="min-h-11 flex-row items-center gap-3 active:opacity-70"
                         >
                           <View className={`h-2.5 w-2.5 rounded-full ${t.status === 'in_progress' ? 'bg-accent' : 'bg-border-strong'}`} />
-                          <Text numberOfLines={1} className="flex-1 text-sm font-medium text-heading">
+                          <Text numberOfLines={2} className="flex-1 text-sm font-medium text-heading">
                             {d.name}
                           </Text>
                           <Text className="text-xs text-faint">{TRIP_STATUSES.find((s) => s.value === t.status)?.label}</Text>

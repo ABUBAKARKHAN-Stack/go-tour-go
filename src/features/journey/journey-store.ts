@@ -13,7 +13,7 @@ import { hazardLookahead, hazardsAhead, journeyItems, routeAvoiding, type Journe
 import { hazardCard } from '@/features/alerts/hazard-card-store';
 import { CHANNELS, notifyNow } from '@/features/notifications/local-notifications';
 import { formatDistance } from '@/lib/geo';
-import { advance, crossedThreshold, spokenInstruction, stepStarts, voiceThresholds, type NavFix, type NavProgress } from './navigation';
+import { advance, crossedThreshold, spokenParts, stepStarts, voiceThresholds, type NavFix, type NavProgress, type SpokenPart } from './navigation';
 import { buildRouteIndex, type RouteIndex } from './route-geometry';
 
 /**
@@ -198,13 +198,16 @@ let lastSaid = { text: '', at: 0 };
  * instead of cutting each other off; `now` interrupts for what can't wait
  * (a turn right here, arrival). The same phrase twice within 8 s is said once.
  */
-function say(text: string, now = false) {
+function say(what: string | SpokenPart[], now = false) {
+  const parts = typeof what === 'string' ? [{ text: what, english: speakEnglish() }] : what;
+  const text = parts.map((p) => p.text).join(' ');
   if (!state.voice || !text) return;
   const at = Date.now();
   if (text === lastSaid.text && at - lastSaid.at < 8000) return;
   lastSaid = { text, at };
   if (now) Speech.stop();
-  Speech.speak(text, { language: speakEnglish() ? 'en-US' : 'ur-PK', rate: 0.98 });
+  // Parts queue back to back, each in its own voice (an English road name inside an Urdu sentence).
+  for (const p of parts) Speech.speak(p.text, { language: p.english ? 'en-US' : 'ur-PK', rate: 0.98 });
 }
 
 /** Speaks a phrase (English source text with placeholders) in the voice language. */
@@ -299,7 +302,7 @@ export const journeyStore = {
     const first = state.route.steps[0];
     if (first) {
       speak('Starting your journey to {0}.', { 0: state.target.name }, true);
-      say(speakEnglish() ? first.instructionEn : first.instruction);
+      say(spokenParts(first, 0, true, speakEnglish()));
     }
   },
 
@@ -349,7 +352,7 @@ export const journeyStore = {
       const t = crossedThreshold(prev.toManeuver, progress.toManeuver, thresholds);
       if (t != null) {
         const last = t === thresholds[thresholds.length - 1];
-        say(spokenInstruction(upcoming, progress.toManeuver, last, speakEnglish()), last);
+        say(spokenParts(upcoming, progress.toManeuver, last, speakEnglish()), last);
       }
     }
 
