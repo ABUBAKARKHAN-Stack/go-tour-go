@@ -201,12 +201,21 @@ describe('hazards ahead', () => {
 });
 
 describe('route around a hazard', () => {
-  const { routeAvoiding } = journeyItemsModule;
+  const { routeAvoiding, hazardCore, HAZARD_CORE_M } = journeyItemsModule;
   test('picks the first route that stays clear', () => {
     const through = { id: 'through', coordinates: coords };
     const around = { id: 'around', coordinates: [[67.0, 24.85], [67.0, 24.9], [67.05, 24.9], [67.05, 24.88]] as [number, number][] };
     const hazard = { latitude: 24.8502, longitude: 67.04, radius: 300 };
     expect(routeAvoiding([through, around], hazard)?.id).toBe('around');
     expect(routeAvoiding([through], hazard)).toBeNull();
+  });
+
+  test('a wide warning area only has to be missed at its blocked spot', () => {
+    // Fog or snow is reported over tens of kilometres; the detour only needs to miss the core.
+    const around = { id: 'around', coordinates: [[67.0, 24.85], [67.0, 24.9], [67.05, 24.9], [67.05, 24.88]] as [number, number][] };
+    const fog = { latitude: 24.8502, longitude: 67.04, radius: 30_000 };
+    expect(routeAvoiding([around], fog)?.id).toBe('around');
+    expect(hazardCore(30_000)).toBe(HAZARD_CORE_M);
+    expect(hazardCore(120)).toBe(120);
   });
 });

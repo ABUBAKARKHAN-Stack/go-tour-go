@@ -23,7 +23,7 @@ export function useChatContext(destinationSlug?: string): ChatContext {
     const weather =
       location && qc.getQueryData<Weather>(['weather', Math.round(location.latitude * 100) / 100, Math.round(location.longitude * 100) / 100]);
     return {
-      locale: prefs.aiLanguage,
+      locale: prefs.locale,
       destinationSlug,
       latitude: location?.latitude,
       longitude: location?.longitude,
@@ -31,7 +31,7 @@ export function useChatContext(destinationSlug?: string): ChatContext {
       weather: weather ? `${describeWeather(weather.code)}, ${Math.round(weather.temperature)}°C` : undefined,
       nearby: location ? sorted.slice(0, 5).map((d) => ({ name: d.name, category: d.category, distanceKm: (d.distance ?? 0) / 1000 })) : undefined,
     };
-  }, [prefs.aiLanguage, destinationSlug, location, nearest, sorted, qc]);
+  }, [prefs.locale, destinationSlug, location, nearest, sorted, qc]);
 }
 
 /**

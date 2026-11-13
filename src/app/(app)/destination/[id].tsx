@@ -66,7 +66,7 @@ import { colors, shadow } from '@/lib/theme';
 import { flipX, isUrdu, tx } from '@/lib/i18n';
 import { useRequireAccount } from '@/features/auth/guest-gate';
 
-const SPEECH_LANG: Record<string, string> = { en: 'en-US', ur: 'ur-PK', ar: 'ar-SA', zh: 'zh-CN' };
+const SPEECH_LANG: Record<string, string> = { en: 'en-US', ur: 'ur-PK' };
 
 type Tab = 'overview' | 'history' | 'tips';
 

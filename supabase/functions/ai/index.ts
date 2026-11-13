@@ -8,7 +8,8 @@
 //   - "translate": Urdu translation of a landmark guide, made once and stored
 //     in destination_translations (marked machine_translated) for everyone.
 //
-// Secrets: GEMINI_API_KEY (required), GEMINI_MODEL, AI_DAILY_LIMIT, AI_DAILY_LIMIT_GUEST (optional).
+// Secrets: GEMINI_API_KEY (required), GEMINI_MODEL, GEMINI_FALLBACK_MODEL,
+//          AI_DAILY_LIMIT, AI_DAILY_LIMIT_GUEST (optional).
 // Deploy:  supabase functions deploy ai
 import { withSupabase } from 'npm:@supabase/server@1';
 
@@ -50,7 +51,24 @@ type Usage = { used: number; limit: number; guest: boolean };
 
 type GeminiPart = { text?: string; inline_data?: { mime_type: string; data: string } };
 
+/**
+ * Gemini models, tried in order. `-latest` names follow Google's newest Flash
+ * models; when the first is slow or busy the lighter one answers instead.
+ * Set GEMINI_MODEL / GEMINI_FALLBACK_MODEL to pin exact versions.
+ */
 const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-flash-latest';
+const FALLBACK_MODEL = Deno.env.get('GEMINI_FALLBACK_MODEL') ?? 'gemini-flash-lite-latest';
+/** The whole answer must arrive within this (the app waits for it). */
+const TOTAL_BUDGET_MS = 50_000;
+/** The first model gets this long before the fallback is asked. */
+const FIRST_TRY_MS = 22_000;
+/**
+ * Short thinking keeps answers quick: newer models read thinkingLevel, 2.5
+ * models thinkingBudget. A model that rejects one gets the next (remembered
+ * while this instance runs).
+ */
+const THINKING: (Record<string, unknown> | null)[] = [{ thinkingLevel: 'low' }, { thinkingBudget: 0 }, null];
+const thinkingChoice = new Map<string, number>();
 const DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT') ?? '50');
 /** Guests (anonymous sign-ins) get a smaller daily allowance. */
 const GUEST_DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT_GUEST') ?? '10');
@@ -61,8 +79,6 @@ const MAX_TURN_CHARS = 2000;
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   ur: 'Urdu',
-  ar: 'Arabic',
-  zh: 'Chinese',
 };
 
 const CHAT_SYSTEM = `You are GoTourGo, a friendly travel companion for visitors in Pakistan.
@@ -86,26 +102,73 @@ async function callGemini(body: Record<string, unknown>): Promise<string> {
   const key = Deno.env.get('GEMINI_API_KEY');
   if (!key) throw new HttpError(503, 'AI service is not configured.');
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30_000),
-    },
-  );
-
-  if (res.status === 429) throw new HttpError(429, 'The AI service is busy. Try again in a minute.');
-  if (!res.ok) {
-    console.error('Gemini error', res.status, await res.text());
-    throw new HttpError(502, 'AI service unavailable.');
+  const started = Date.now();
+  const models = [...new Set([MODEL, FALLBACK_MODEL])];
+  let lastError: unknown = null;
+  for (const [i, model] of models.entries()) {
+    const left = TOTAL_BUDGET_MS - (Date.now() - started);
+    if (left < 4000) break;
+    const budget = i === 0 && models.length > 1 ? Math.min(FIRST_TRY_MS, left) : left;
+    try {
+      return await callModel(key, model, body, budget);
+    } catch (error) {
+      lastError = error;
+      console.error('Gemini attempt failed', model, `${Date.now() - started}ms`, error instanceof Error ? error.message : error);
+    }
   }
-  const data = await res.json();
-  const parts: GeminiPart[] = data?.candidates?.[0]?.content?.parts ?? [];
-  const text = parts.map((p) => p.text ?? '').join('').trim();
-  if (!text) throw new HttpError(502, 'The AI service returned an empty answer.');
-  return text;
+  // Timeouts carry timing details for the log only; the traveller gets a plain message.
+  if (lastError instanceof HttpError && lastError.status !== 504) throw lastError;
+  throw new HttpError(504, 'The AI service is slow right now. Please try again in a moment.');
+}
+
+/** One model, within `budgetMs`; tries the next thinking setting if the model rejects one. */
+async function callModel(key: string, model: string, body: Record<string, unknown>, budgetMs: number): Promise<string> {
+  const deadline = Date.now() + budgetMs;
+  for (let t = thinkingChoice.get(model) ?? 0; t < THINKING.length; t++) {
+    const thinking = THINKING[t];
+    const generationConfig = { ...((body.generationConfig as Record<string, unknown>) ?? {}), ...(thinking ? { thinkingConfig: thinking } : {}) };
+    const left = deadline - Date.now();
+    if (left < 1000) break;
+    const startedAt = Date.now();
+    let res: Response;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({ ...body, generationConfig }),
+        signal: AbortSignal.timeout(left),
+      });
+    } catch (error) {
+      const timedOut = error instanceof DOMException && (error.name === 'TimeoutError' || error.name === 'AbortError');
+      throw new HttpError(504, timedOut ? `Timed out after ${Date.now() - startedAt}ms` : 'Could not reach the AI service.');
+    }
+
+    if (res.status === 400 || res.status === 404) {
+      const text = await res.text();
+      // This model doesn't take this thinking setting: try the next one.
+      if (res.status === 400 && thinking && /thinking/i.test(text)) continue;
+      console.error('Gemini rejected the request', model, res.status, text.slice(0, 500));
+      throw new HttpError(502, 'AI service unavailable.');
+    }
+    if (res.status === 429) throw new HttpError(429, 'The AI service is busy. Try again in a minute.');
+    if (!res.ok) {
+      console.error('Gemini error', model, res.status, (await res.text()).slice(0, 500));
+      throw new HttpError(502, 'AI service unavailable.');
+    }
+    thinkingChoice.set(model, t);
+    const data = await res.json();
+    const candidate = data?.candidates?.[0];
+    const parts: GeminiPart[] = candidate?.content?.parts ?? [];
+    const text = parts
+      .filter((p) => !(p as { thought?: boolean }).thought)
+      .map((p) => p.text ?? '')
+      .join('')
+      .trim();
+    console.log('Gemini answered', model, `${Date.now() - startedAt}ms`, candidate?.finishReason ?? '');
+    if (!text) throw new HttpError(502, 'The AI service returned an empty answer.');
+    return text;
+  }
+  throw new HttpError(504, 'Timed out');
 }
 
 class HttpError extends Error {
@@ -132,8 +195,15 @@ export default {
 
       if (payload.mode !== 'chat' && payload.mode !== 'lens') return json({ error: 'Unknown mode' }, 400);
       const usage = await consumeQuota(ctx.supabaseAdmin, userId, guest);
-      if (payload.mode === 'chat') return json({ ...(await handleChat(payload, ctx.supabase)), usage });
-      return json({ ...(await handleLens(payload, ctx.supabase)), usage });
+      try {
+        const answer = payload.mode === 'chat' ? await handleChat(payload, ctx.supabase) : await handleLens(payload, ctx.supabase);
+        return json({ ...answer, usage });
+      } catch (error) {
+        // No answer, so the question is not counted.
+        const refunded = await refundQuota(ctx.supabaseAdmin, userId, usage);
+        if (error instanceof HttpError) throw new HttpError(error.status, error.message, refunded);
+        throw error;
+      }
     } catch (error) {
       if (error instanceof HttpError) return json({ error: error.message, ...(error.usage ? { usage: error.usage } : {}) }, error.status);
       console.error(error);
@@ -164,6 +234,21 @@ async function consumeQuota(admin: Db, userId: string, guest: boolean): Promise<
     );
   }
   return { used: count, limit, guest };
+}
+
+/** Gives back a question whose answer failed (best effort). */
+async function refundQuota(admin: Db, userId: string, usage: Usage): Promise<Usage> {
+  const used = Math.max(0, usage.used - 1);
+  const { error } = await admin
+    .from('ai_usage')
+    .update({ request_count: used })
+    .eq('user_id', userId)
+    .eq('day', new Date().toISOString().slice(0, 10));
+  if (error) {
+    console.error('quota refund', error);
+    return usage;
+  }
+  return { ...usage, used };
 }
 
 function limitFor(guest: boolean) {
@@ -318,7 +403,7 @@ async function handleChat(payload: ChatRequest, supabase: Db) {
   const text = await callGemini({
     system_instruction: { parts: [{ text: system }] },
     contents: turns,
-    generationConfig: { temperature: 0.6, maxOutputTokens: 600 },
+    generationConfig: { temperature: 0.6, maxOutputTokens: 1200 },
   });
   return { text };
 }
@@ -356,7 +441,7 @@ Keep summary under 80 words and at most 3 tips. Say clearly when you are not sur
         parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: payload.image } }],
       },
     ],
-    generationConfig: { temperature: 0.3, maxOutputTokens: 700, responseMimeType: 'application/json' },
+    generationConfig: { temperature: 0.3, maxOutputTokens: 1200, responseMimeType: 'application/json' },
   });
 
   try {

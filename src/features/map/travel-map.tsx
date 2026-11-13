@@ -7,7 +7,9 @@ import {
   ViewAnnotation,
   type CameraRef,
   type GeoJSONSourceRef,
+  type MapRef,
 } from '@maplibre/maplibre-react-native';
+import { MapPin, TriangleAlert } from 'lucide-react-native';
 import { forwardRef, memo, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Text } from '@/components/text';
@@ -28,6 +30,8 @@ import { tx } from '@/lib/i18n';
 export type TravelMapHandle = {
   flyTo: (lng: number, lat: number, zoom?: number) => void;
   fitRoute: (route: Route) => void;
+  /** The map's centre as [longitude, latitude] (for "pick a spot"). */
+  getCenter: () => Promise<[number, number] | null>;
 };
 
 type Props = {
@@ -52,7 +56,13 @@ type Props = {
   initialZoom: number;
   onSelectDestination: (id: string) => void;
   onSelectAlert: (id: string) => void;
+  /** The hazard shown from a hazard card's "Show on map": its area is outlined. */
+  selectedAlertId?: string | null;
+  /** A spot picked for a hazard report, marked with a pin. */
+  pickedPoint?: { latitude: number; longitude: number } | null;
   onMapPress: () => void;
+  /** Long-press on the map (used to report a hazard at that spot). */
+  onLongPress?: (point: { latitude: number; longitude: number }) => void;
   onLoadError: () => void;
 };
 
@@ -79,6 +89,7 @@ const NOT_CLUSTER = ['!', ['has', 'point_count']];
 function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
   const mapStyle = useMapStyle();
   const camera = useRef<CameraRef>(null);
+  const mapRef = useRef<MapRef>(null);
   const landmarkSource = useRef<GeoJSONSourceRef>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -87,6 +98,10 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
     fitRoute: (route) => {
       const b = boundsOf(route.coordinates);
       if (b) camera.current?.fitBounds(b, { padding: { top: 140, right: 40, bottom: 280, left: 40 }, duration: 900 });
+    },
+    getCenter: async () => {
+      const c = await mapRef.current?.getCenter().catch(() => null);
+      return c ? [c[0], c[1]] : null;
     },
   }));
 
@@ -125,17 +140,14 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
     };
   }, [props.destinations, props.selectedId]);
 
-  const alertPoints = useMemo<GeoJSON.FeatureCollection>(
-    () => ({
+  // The hazard opened from "Show on map": its warning area, outlined in its severity colour.
+  const alertRing = useMemo<GeoJSON.FeatureCollection>(() => {
+    const a = props.selectedAlertId ? props.alerts.find((x) => x.id === props.selectedAlertId) : undefined;
+    return {
       type: 'FeatureCollection',
-      features: props.alerts.map((a) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [a.longitude, a.latitude] },
-        properties: { id: a.id, severity: a.severity, color: severityColors[a.severity] },
-      })),
-    }),
-    [props.alerts],
-  );
+      features: a ? [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [circleRing(a, a.radius_m, 64)] }, properties: { color: severityColors[a.severity] } }] : [],
+    };
+  }, [props.alerts, props.selectedAlertId]);
 
   const routeLine = useMemo<GeoJSON.FeatureCollection>(
     () => ({
@@ -155,7 +167,12 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
       compassPosition={{ top: 140, right: 12 }}
       attributionPosition={{ bottom: 8, left: 8 }}
       logo={false}
+      ref={mapRef}
       onPress={props.onMapPress}
+      onLongPress={(e) => {
+        const [longitude, latitude] = e.nativeEvent.lngLat;
+        props.onLongPress?.({ latitude, longitude });
+      }}
       onDidFinishLoadingMap={() => setLoaded(true)}
       onDidFailLoadingMap={() => {
         if (!loaded) props.onLoadError();
@@ -207,28 +224,9 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
         />
       </GeoJSONSource>
 
-      <GeoJSONSource
-        id="alerts"
-        data={alertPoints}
-        hitbox={{ top: 12, right: 12, bottom: 12, left: 12 }}
-        onPress={(e) => {
-          const id = e.nativeEvent.features?.[0]?.properties?.id;
-          if (id) {
-            e.stopPropagation();
-            props.onSelectAlert(String(id));
-          }
-        }}
-      >
-        <Layer
-          type="circle"
-          id="alert-halo"
-          paint={{ 'circle-radius': 14, 'circle-color': ['get', 'color'] as never, 'circle-opacity': 0.25 }}
-        />
-        <Layer
-          type="circle"
-          id="alert-dot"
-          paint={{ 'circle-radius': 6, 'circle-color': ['get', 'color'] as never, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 }}
-        />
+      <GeoJSONSource id="alert-ring" data={alertRing}>
+        <Layer type="fill" id="alert-ring-fill" paint={{ 'fill-color': ['get', 'color'] as never, 'fill-opacity': 0.1 }} />
+        <Layer type="line" id="alert-ring-line" paint={{ 'line-color': ['get', 'color'] as never, 'line-opacity': 0.8, 'line-width': 2, 'line-dasharray': [2, 1.5] }} />
       </GeoJSONSource>
 
       <GeoJSONSource
@@ -309,12 +307,29 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
         />
       </GeoJSONSource>
 
+      {/*
+        Hazards: a warning-triangle marker each (there are few), drawn after the
+        landmark layers so they sit on top and never look like a landmark.
+      */}
+      {props.alerts.map((a) => (
+        <ViewAnnotation key={a.id} id={`hazard-${a.id}`} lngLat={[a.longitude, a.latitude]} onPress={() => props.onSelectAlert(a.id)}>
+          <HazardMarker alert={a} selected={a.id === props.selectedAlertId} />
+        </ViewAnnotation>
+      ))}
+
+      {props.pickedPoint ? (
+        <ViewAnnotation key="picked-point" id="picked-point" lngLat={[props.pickedPoint.longitude, props.pickedPoint.latitude]} anchor="bottom">
+          <MapPin color={colors.destructive} fill={colors.card} size={36} />
+        </ViewAnnotation>
+      ) : null}
+
+      {/* Separate keys: React must not reuse one marker for the other (MapLibre forbids changing an id). */}
       {props.arrow ? (
-        <ViewAnnotation id="journey-arrow" lngLat={[props.arrow.longitude, props.arrow.latitude]}>
+        <ViewAnnotation key="journey-arrow" id="journey-arrow" lngLat={[props.arrow.longitude, props.arrow.latitude]}>
           <NavArrow rotation={props.arrow.bearing} size={30} />
         </ViewAnnotation>
       ) : props.simulatedFix ? (
-        <ViewAnnotation id="simulated-user" lngLat={[props.simulatedFix.longitude, props.simulatedFix.latitude]}>
+        <ViewAnnotation key="simulated-user" id="simulated-user" lngLat={[props.simulatedFix.longitude, props.simulatedFix.latitude]}>
           <View className="h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-info">
             <View className="h-2 w-2 rounded-full bg-white" />
           </View>
@@ -329,6 +344,22 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
     </Map>
   );
 }
+
+/** A hazard on the map: a warning triangle in the severity colour, unlike the round landmark dots. */
+const HazardMarker = memo(function HazardMarker({ alert, selected }: { alert: RoadAlert; selected: boolean }) {
+  const color = severityColors[alert.severity];
+  return (
+    <View
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={tx('Hazard: {0}', { 0: alert.title })}
+      className="items-center justify-center rounded-full border-2 border-white"
+      style={{ width: selected ? 38 : 32, height: selected ? 38 : 32, backgroundColor: color, boxShadow: '0 2px 6px rgba(21,56,79,0.35)' }}
+    >
+      <TriangleAlert color="#FFFFFF" size={selected ? 20 : 17} strokeWidth={2.4} />
+    </View>
+  );
+});
 
 const FriendMarker = memo(function FriendMarker({ friend }: { friend: FriendLocation }) {
   const name = displayName(friend.profile);

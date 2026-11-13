@@ -90,17 +90,33 @@ export function hazardsAhead(items: JourneyItem[], along: number, lookahead: num
 }
 
 /**
- * From a list of routes (best first), the first that keeps at least
- * `margin` metres outside the hazard's radius, or null if none does.
+ * The blocked spot of a hazard, in metres around its point. A report's radius
+ * is the area to warn about (up to tens of kilometres for fog or snow), not
+ * the road that is blocked, so "a way around" only has to miss this core.
+ */
+export const HAZARD_CORE_M = 300;
+/** Closer than this to a hazard's point, the traveller is already at it: no detour makes sense. */
+export const AT_HAZARD_M = HAZARD_CORE_M + 150;
+
+/** The part of a hazard a detour must stay clear of. */
+export function hazardCore(radius: number) {
+  return Math.min(radius, HAZARD_CORE_M);
+}
+
+/**
+ * From a list of routes (best first), the first whose closest approach to the
+ * hazard's point stays at least `margin` metres outside its core, or null if
+ * none does (often the case on mountain roads with a single way through).
  */
 export function routeAvoiding<R extends { coordinates: [number, number][] }>(
   routes: R[],
   hazard: { latitude: number; longitude: number; radius: number },
-  margin = 100,
+  margin = 150,
 ): R | null {
+  const clearance = hazardCore(hazard.radius) + margin;
   for (const r of routes) {
     const index = buildRouteIndex(r.coordinates);
-    if (projectPoint(index, hazard).offRoute > hazard.radius + margin) return r;
+    if (projectPoint(index, hazard).offRoute > clearance) return r;
   }
   return null;
 }

@@ -6,10 +6,12 @@ import {
   Crosshair,
   Download,
   Info,
+  MapPin,
   Navigation,
   Search,
   TriangleAlert,
   Users,
+  X,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
@@ -64,7 +66,7 @@ export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const tabSpace = useTabBarSpace();
-  const params = useLocalSearchParams<{ focus?: string }>();
+  const params = useLocalSearchParams<{ focus?: string; alert?: string; at?: string }>();
   const map = useRef<TravelMapHandle>(null);
   const { userId } = useAuth();
   const requireAccount = useRequireAccount();
@@ -85,6 +87,15 @@ export default function ExploreScreen() {
   const [category, setCategory] = useState<DestinationCategory | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
+  /*
+   * Reporting a hazard: the sheet (`reporting`), and where. `reportPoint` null
+   * means "at my location"; a long-press or "Choose on map" sets a spot.
+   * While `picking`, the sheet steps aside and a pin in the middle of the map
+   * marks the spot until "Use this spot".
+   */
+  const [reportPoint, setReportPoint] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [showRadius, setShowRadius] = useState(true);
   const [showFriends, setShowFriends] = useState(true);
   const [mapError, setMapError] = useState(false);
@@ -124,6 +135,36 @@ export default function ExploreScreen() {
     const d = handledFocus ? destinations.data?.find((x) => x.id === handledFocus) : undefined;
     if (d) map.current?.flyTo(d.longitude, d.latitude, 14);
   }, [handledFocus, destinations.data]);
+
+  // ?alert=<id>&at=<time> from a hazard card's "Show on map": outline it and fly there.
+  const alertRequest = params.alert ? `${params.alert}:${params.at ?? ''}` : undefined;
+  const [handledAlert, setHandledAlert] = useState<string | undefined>(undefined);
+  if (alertRequest && alertRequest !== handledAlert && alerts.data) {
+    setHandledAlert(alertRequest);
+    setSelectedId(null);
+    setSelectedAlertId(params.alert ?? null);
+  }
+  useEffect(() => {
+    const id = handledAlert?.split(':')[0];
+    const a = id ? alerts.data?.find((x) => x.id === id) : undefined;
+    // Zoom out far enough to see its whole warning area.
+    if (a) map.current?.flyTo(a.longitude, a.latitude, Math.max(7, Math.min(15, 14 - Math.log2(Math.max(a.radius_m, 250) / 500))));
+  }, [handledAlert, alerts.data]);
+
+  const startReport = (point: { latitude: number; longitude: number } | null) => {
+    if (!requireAccount(tx('report hazards'))) return;
+    setReportPoint(point);
+    setPicking(false);
+    setReporting(true);
+  };
+  const confirmPickedSpot = async () => {
+    const center = await map.current?.getCenter();
+    if (center) startReport({ longitude: center[0], latitude: center[1] });
+  };
+  const cancelPicking = () => {
+    setPicking(false);
+    setReporting(true);
+  };
 
   // Follow the simulated position (real GPS uses native camera tracking).
   useEffect(() => {
@@ -181,13 +222,18 @@ export default function ExploreScreen() {
         onSelectDestination={(id) => {
           setSelectedId(id);
         }}
+        selectedAlertId={selectedAlertId}
+        pickedPoint={reporting && reportPoint ? reportPoint : null}
+        onLongPress={userId && !picking ? (p) => startReport(p) : undefined}
         onSelectAlert={(id) => {
           setSelectedId(null);
+          setSelectedAlertId(id);
           const a = alerts.data?.find((x) => x.id === id);
           if (a) hazardCard.show(a.id, location ? distanceMeters(location, a) : a.radius_m + 1);
         }}
         onMapPress={() => {
           setSelectedId(null);
+          setSelectedAlertId(null);
         }}
         onLoadError={() => setMapError(true)}
       />
@@ -265,7 +311,7 @@ export default function ExploreScreen() {
       {/* Right-side controls */}
       <View className="absolute end-3 gap-2" style={{ top: insets.top + 196 }}>
         <IconButton icon={Crosshair} label={tx('Show my location')} onPress={locateMe} />
-        {userId ? <IconButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => requireAccount(tx('report hazards')) && setReporting(true)} /> : null}
+        {userId ? <IconButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => startReport(null)} /> : null}
         <IconButton icon={CircleDashed} label={tx('Toggle geofence radius')} active={showRadius} onPress={() => setShowRadius((v) => !v)} />
         {userId ? (
           <IconButton icon={Users} label={tx('Toggle friends on map')} active={showFriends} onPress={() => setShowFriends((v) => !v)} />
@@ -273,8 +319,8 @@ export default function ExploreScreen() {
       </View>
 
       {/* Bottom: active journey > tapped place > popular places nearby. */}
-      <View className="absolute left-3 right-3 gap-2" style={{ bottom: tabSpace - 12 }}>
-        {journeyActive && journey.target ? (
+      <View className="absolute left-3 right-3 gap-2" style={{ bottom: tabSpace - 12 }} pointerEvents={picking ? 'none' : 'box-none'}>
+        {picking ? null : journeyActive && journey.target ? (
           <View className="flex-row items-center gap-3 rounded-[20px] bg-primary p-3 ps-4" style={{ boxShadow: shadow(0.25, 6, 18) }}>
             <Navigation color={colors.primaryForeground} size={20} />
             <View className="flex-1">
@@ -322,7 +368,38 @@ export default function ExploreScreen() {
           </Animated.View>
         ) : null}
       </View>
-      <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />
+      {picking ? (
+        <>
+          {/* The pin marks the map's centre: move the map under it. */}
+          <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
+            <View style={{ transform: [{ translateY: -18 }] }}>
+              <MapPin color={colors.destructive} fill={colors.card} size={40} />
+            </View>
+          </View>
+          <View className="absolute left-3 right-3 gap-3 rounded-[28px] bg-card p-4" style={{ bottom: tabSpace - 12, boxShadow: shadow(0.18, 8, 24) }}>
+            <View className="flex-row items-start gap-3">
+              <Text className="flex-1 text-sm text-foreground">{tx('Move the map until the pin is on the hazard.')}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={tx('Cancel')} hitSlop={10} onPress={cancelPicking}>
+                <X color={colors.mutedForeground} size={18} />
+              </Pressable>
+            </View>
+            <AppButton label={tx('Use this spot')} icon={MapPin} onPress={confirmPickedSpot} />
+          </View>
+        </>
+      ) : null}
+      <ReportHazardSheet
+        visible={reporting && !picking}
+        point={reportPoint}
+        onPickOnMap={() => {
+          setReporting(false);
+          setPicking(true);
+        }}
+        onUseMyLocation={() => setReportPoint(null)}
+        onClose={() => {
+          setReporting(false);
+          setReportPoint(null);
+        }}
+      />
     </View>
   );
 }

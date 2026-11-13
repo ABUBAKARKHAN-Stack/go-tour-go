@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 
 import { useQuery } from '@tanstack/react-query';
 
-import type { AiLanguage } from '@/lib/preferences';
+import type { ContentLocale } from '@/lib/preferences';
 import { queryClient } from '@/lib/query-client';
 import type { DestinationTranslation } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
@@ -20,7 +20,7 @@ export type ChatContext = {
   nearby?: { name: string; category?: string; distanceKm?: number }[];
   destinationSlug?: string;
   weather?: string;
-  locale?: AiLanguage;
+  locale?: ContentLocale;
 };
 
 export type LensResult = {
@@ -79,7 +79,7 @@ export async function askAssistant(messages: ChatTurn[], context: ChatContext): 
   return res.text;
 }
 
-export async function analyzeImage(imageBase64: string, opts: { question?: string; locale?: AiLanguage }): Promise<LensResult> {
+export async function analyzeImage(imageBase64: string, opts: { question?: string; locale?: ContentLocale }): Promise<LensResult> {
   const res = await invoke<{ result: LensResult }>({
     mode: 'lens',
     image: imageBase64,

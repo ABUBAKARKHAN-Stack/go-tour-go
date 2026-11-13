@@ -1,4 +1,4 @@
-import { Ban, CarFront, CloudFog, Construction, Droplets, Mountain, OctagonX, Snowflake, TriangleAlert, X, type LucideIcon } from 'lucide-react-native';
+import { Ban, CarFront, CloudFog, Construction, Crosshair, Droplets, MapPin, Mountain, OctagonX, Snowflake, TriangleAlert, X, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
@@ -29,11 +29,27 @@ const ICONS: Record<HazardType, LucideIcon> = {
   other: TriangleAlert,
 };
 
+type Point = { latitude: number; longitude: number };
+
 /**
- * "Report a hazard" at the traveller's current position. Reports reach other
- * travellers on the map, in journeys and as alerts, and expire on their own.
+ * "Report a hazard". Reports reach other travellers on the map, in journeys
+ * and as alerts, and expire on their own. By default the report is at the
+ * traveller's current position; with `point` it is at that spot on the map
+ * (long-press, or "Choose on map" when `onPickOnMap` is given).
  */
-export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function ReportHazardSheet({
+  visible,
+  onClose,
+  point = null,
+  onPickOnMap,
+  onUseMyLocation,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  point?: Point | null;
+  onPickOnMap?: () => void;
+  onUseMyLocation?: () => void;
+}) {
   const insets = useSafeAreaInsets();
   const report = useReportHazard();
   const [locating, setLocating] = useState(false);
@@ -45,11 +61,14 @@ export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onCl
   };
 
   const submit = handleSubmit(async ({ hazardType, severity, note }) => {
-    setLocating(true);
-    const fix = await getCurrentFix();
-    setLocating(false);
+    let fix: Point | null = point;
     if (!fix) {
-      Alert.alert(tx('Location unavailable'), tx('We could not get your location. Try again outdoors.'));
+      setLocating(true);
+      fix = await getCurrentFix();
+      setLocating(false);
+    }
+    if (!fix) {
+      Alert.alert(tx('Location unavailable'), tx('We could not get your location. Try again outdoors, or choose the spot on the map.'));
       return;
     }
     report.mutate(
@@ -74,7 +93,7 @@ export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onCl
         <View className="flex-row items-start gap-3">
           <View className="flex-1 gap-1">
             <Text className="font-display text-2xl text-heading">{tx('Report a hazard')}</Text>
-            <Text className="text-sm text-muted-foreground">{tx('At your current location. Reports expire on their own.')}</Text>
+            <Text className="text-sm text-muted-foreground">{tx('Reports expire on their own.')}</Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel={tx('Close')} hitSlop={10} onPress={close} className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
             <X color={colors.foreground} size={18} />
@@ -82,6 +101,25 @@ export function ReportHazardSheet({ visible, onClose }: { visible: boolean; onCl
         </View>
 
         <ScrollView className="mt-4 max-h-[440px]" contentContainerClassName="gap-4" keyboardShouldPersistTaps="handled">
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-muted-foreground">{tx('Where is it?')}</Text>
+            <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3">
+              {point ? <MapPin color={colors.destructive} size={20} /> : <Crosshair color={colors.primary} size={20} />}
+              <Text className="flex-1 text-sm text-foreground" style={{ fontVariant: ['tabular-nums'] }}>
+                {point ? tx('Spot on the map · {0}, {1}', { 0: point.latitude.toFixed(4), 1: point.longitude.toFixed(4) }) : tx('My current location')}
+              </Text>
+            </View>
+            {onPickOnMap ? (
+              <View className="flex-row gap-2">
+                <AppButton label={point ? tx('Move the spot') : tx('Choose on map')} icon={MapPin} size="sm" variant="secondary" onPress={onPickOnMap} className="flex-1" />
+                {point && onUseMyLocation ? (
+                  <AppButton label={tx('Use my location')} icon={Crosshair} size="sm" variant="secondary" onPress={onUseMyLocation} className="flex-1" />
+                ) : null}
+              </View>
+            ) : null}
+            {onPickOnMap && !point ? <Text className="text-xs text-faint">{tx('Tip: long-press the map to report at that spot.')}</Text> : null}
+          </View>
+
           <Controller
             control={control}
             name="hazardType"

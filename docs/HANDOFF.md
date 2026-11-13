@@ -105,7 +105,7 @@ src/components/          shared UI (AppButton, form controls, Screen, states + s
 src/lib/                 supabase client, env, i18n (tx), theme, motion, forms, query cache, crash log, geo
 src/i18n/ur.ts           Urdu strings keyed by the English source text
 supabase/migrations/     SQL migrations (file names = the versions applied in the project)
-supabase/functions/ai/   Gemini edge function (secrets: GEMINI_API_KEY, optional GEMINI_MODEL, AI_DAILY_LIMIT)
+supabase/functions/ai/   Gemini edge function (secrets: GEMINI_API_KEY, optional GEMINI_MODEL, GEMINI_FALLBACK_MODEL, AI_DAILY_LIMIT, AI_DAILY_LIMIT_GUEST)
 scripts/                 import_pakistan_data.py (OSM → Supabase), build-pakistan-map.sh, make-water-polygons.py,
                          check-pakistan-map.py, build-share-site.mjs, check-translations.cjs, brand/, tests/
 site/                    static SOS / live-location web page (EAS Hosting)
@@ -272,7 +272,11 @@ with `PYTHONDONTWRITEBYTECODE=1` so no `__pycache__` files are left behind.
 - RPCs used by the app: `get_shared_location`, `end_shared_location`, `end_my_live_links` (share links),
   `username_available` (anon-callable, sign-up).
 - Run `get_advisors` (security + performance) after schema changes.
-- Edge function `ai`: secrets `GEMINI_API_KEY` (required), `GEMINI_MODEL`, `AI_DAILY_LIMIT`.
+- Edge function `ai`: secrets `GEMINI_API_KEY` (required), `GEMINI_MODEL` (default `gemini-flash-latest`),
+  `GEMINI_FALLBACK_MODEL` (default `gemini-flash-lite-latest`, asked when the first is slow or busy),
+  `AI_DAILY_LIMIT`, `AI_DAILY_LIMIT_GUEST`. Thinking is kept short (`thinkingLevel: low`, or
+  `thinkingBudget: 0` on 2.5 models); every attempt logs its model and time. A failed answer does not
+  use up a question.
 - Edge function `translate-urdu` (owner-run machine-Urdu job, `verify_jwt = false`, single-use tokens),
   driven by `pg_cron` job `urdu-translation`; it unschedules itself when done. See
   [LANDMARKS-IMPORT.md](LANDMARKS-IMPORT.md) section 7.
@@ -327,8 +331,12 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
 - Every user-facing string goes through `tx('English text', { 0: value })` from `src/lib/i18n.ts`.
 - Add the Urdu entry to `src/i18n/ur.ts` (keyed by the English text); `check-translations.cjs` must report
   0 missing. Urdu switches the app to RTL (restart) and uses Noto Nastaliq Urdu.
-- Landmark content in Urdu lives in `destination_translations` (locale `ur`). The AI can also reply in
-  Chinese or Arabic (AI only, not the UI).
+- Landmark content in Urdu lives in `destination_translations` (locale `ur`). There is one language for
+  everything: the AI guide, Visual Lens and voice guidance follow the app language (English or Urdu).
+- Hazard reports: at the traveller's location by default; on Explore, long-press the map or use
+  "Choose on map" in the report sheet to report at a spot. Hazards draw as warning-triangle markers
+  above the landmark layers; a hazard card's "Show on map" flies Explore to it and outlines its area.
+- Settings → Demo tools shows which OTA update is running (date + id), to confirm before testing.
 
 ## 13. Design system
 
