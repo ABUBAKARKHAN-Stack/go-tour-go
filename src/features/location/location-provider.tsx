@@ -24,14 +24,25 @@ const NAVIGATION_OPTIONS: Location.LocationOptions = {
   mayShowUserSettingsDialog: true,
 };
 
+/*
+ * Watcher states: stopped -> starting -> watching (balanced or navigation).
+ * `wanted` is what the app asked for last; `generation` changes on every stop,
+ * so a start that was still waiting when the app stopped it (for example the
+ * app went to the background) drops its watcher instead of leaving GPS on.
+ */
 let subscription: Location.LocationSubscription | null = null;
 let starting = false;
+let wanted = false;
+let generation = 0;
 let navigationMode = false;
+/** The accuracy the running watcher was started with. */
+let watchingNavigation = false;
 
 /** Switches the foreground watcher between battery-friendly and navigation accuracy. */
 export function setNavigationMode(on: boolean) {
   if (navigationMode === on) return;
   navigationMode = on;
+  // A start in progress picks the new mode up when it finishes.
   if (subscription) {
     stopWatching();
     startWatching();
@@ -64,11 +75,14 @@ async function refreshPermissionState() {
 }
 
 export async function startWatching() {
+  wanted = true;
   if (subscription || starting) return;
   starting = true;
+  const gen = generation;
+  const stale = () => gen !== generation;
   try {
     const granted = await refreshPermissionState();
-    if (!granted) return;
+    if (!granted || stale()) return;
     if (locationStore.get().servicesEnabled === false) {
       locationStore.set({ status: 'error', error: 'Location services are turned off.' });
       return;
@@ -77,24 +91,45 @@ export async function startWatching() {
 
     // Show something quickly: last known position first (cheap, no GPS fix needed).
     const last = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60_000 }).catch(() => null);
+    if (stale()) return;
     if (last) locationStore.pushFix(toFix(last));
 
-    subscription = await Location.watchPositionAsync(
-      navigationMode ? NAVIGATION_OPTIONS : WATCH_OPTIONS,
+    const nav = navigationMode;
+    const sub = await Location.watchPositionAsync(
+      nav ? NAVIGATION_OPTIONS : WATCH_OPTIONS,
       (l) => locationStore.pushFix(toFix(l)),
       (reason) => locationStore.set({ status: 'error', error: reason || 'Location unavailable.' }),
     );
+    if (stale()) {
+      // Stopped while starting: don't leave this watcher running.
+      sub.remove();
+      return;
+    }
+    subscription = sub;
+    watchingNavigation = nav;
   } catch (error) {
-    locationStore.set({
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Location unavailable.',
-    });
+    if (!stale()) {
+      locationStore.set({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Location unavailable.',
+      });
+    }
   } finally {
     starting = false;
+    if (stale()) {
+      // Stopped while starting, then asked to start again: start fresh now.
+      if (wanted) void startWatching();
+    } else if (subscription && watchingNavigation !== navigationMode) {
+      // Navigation mode changed while starting.
+      stopWatching();
+      void startWatching();
+    }
   }
 }
 
 export function stopWatching() {
+  wanted = false;
+  generation += 1;
   subscription?.remove();
   subscription = null;
 }

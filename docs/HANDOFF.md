@@ -383,7 +383,8 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
    - stories: progress bar fills, hold pauses, seen authors turn grey and move last, the viewer continues
      to the next person, own story is the first bubble with +.
    Also PR 6: SOS from Safety (WhatsApp message carries `https://go-tour-go.expo.app/sos?t=…`,
-   which opens the in-app SOS screen on the phone and the web page on a desktop); "I'm safe" ends it;
+   which opens the in-app SOS screen on the phone and the web page on a desktop); "I'm safe" ends it
+   (the open SOS is saved on the phone, `gtg.safety.sos`, so leaving Safety or restarting keeps "I'm safe");
    Share live link. Add the passing checks to `docs/TESTING.md`.
 2. Then section 0 "Remaining work" in order.
 

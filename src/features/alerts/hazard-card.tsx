@@ -33,7 +33,8 @@ export function HazardCardOverlay() {
   const { userId } = useAuth();
   const vote = useVoteHazard();
   const insets = useSafeAreaInsets();
-  const [avoiding, setAvoiding] = useState(false);
+  // Which hazard "Find a way around" is working on (the card can switch to another meanwhile).
+  const [avoidingId, setAvoidingId] = useState<string | null>(null);
   const [voted, setVoted] = useState<string | null>(null);
   const now = useNow(30_000);
 
@@ -54,13 +55,19 @@ export function HazardCardOverlay() {
       },
     );
 
+  const avoiding = avoidingId === alert.id;
   const findWayAround = async () => {
-    setAvoiding(true);
-    const fix = await getCurrentFix();
-    const ok = fix ? await journeyStore.avoid({ latitude: alert.latitude, longitude: alert.longitude, radius: alert.radius_m }, fix) : false;
-    setAvoiding(false);
-    if (ok) hazardCard.dismiss();
-    else Alert.alert(tx('No way around found'), tx('None of the other routes avoid this hazard. Slow down and take care.'));
+    const id = alert.id;
+    setAvoidingId(id);
+    try {
+      const fix = await getCurrentFix();
+      const ok = fix ? await journeyStore.avoid({ latitude: alert.latitude, longitude: alert.longitude, radius: alert.radius_m }, fix) : false;
+      // Close only this hazard's card, not one that replaced it while we waited.
+      if (ok) hazardCard.dismiss(id);
+      else Alert.alert(tx('No way around found'), tx('None of the other routes avoid this hazard. Slow down and take care.'));
+    } finally {
+      setAvoidingId((current) => (current === id ? null : current));
+    }
   };
 
   return (
