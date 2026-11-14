@@ -1,19 +1,12 @@
 import { useKeepAwake } from 'expo-keep-awake';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
-  ArrowUp,
-  ArrowUpLeft,
-  ArrowUpRight,
-  CornerUpLeft,
-  CornerUpRight,
   Flag,
   Landmark,
   LocateFixed,
   RefreshCw,
   Route as RouteIcon,
-  RotateCw,
   TriangleAlert,
-  Undo2,
   Volume2,
   VolumeX,
   X,
@@ -28,38 +21,16 @@ import { Text } from '@/components/text';
 import { ReportHazardSheet } from '@/features/alerts/report-hazard-sheet';
 import { JourneyMap } from '@/features/journey/journey-map';
 import { journeyStore, routeIndex, speak, useJourney } from '@/features/journey/journey-store';
+import { ManeuverIcon } from '@/features/journey/maneuver-icon';
 import { arrivalClock, formatEta } from '@/features/journey/navigation';
 import { useLastLocation } from '@/features/location/location-store';
 import { useProximityCard } from '@/features/proximity/proximity-store';
 import { useTripActions, useTrips } from '@/features/trips/api';
 import { simulator, useSimulator } from '@/features/proximity/simulator';
-import type { RouteStep } from '@/features/routing/osrm';
 import { formatDistance } from '@/lib/geo';
 import { colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 
-function ManeuverIcon({ step }: { step: RouteStep | undefined }) {
-  const props = { color: '#FFFFFF', size: 40, strokeWidth: 2.4 };
-  if (!step) return <ArrowUp {...props} />;
-  if (step.type === 'arrive') return <Flag {...props} />;
-  if (step.type === 'roundabout' || step.type === 'rotary' || step.type === 'roundabout turn') return <RotateCw {...props} />;
-  switch (step.modifier) {
-    case 'uturn':
-      return <Undo2 {...props} />;
-    case 'right':
-    case 'sharp right':
-      return <CornerUpRight {...props} />;
-    case 'left':
-    case 'sharp left':
-      return <CornerUpLeft {...props} />;
-    case 'slight right':
-      return <ArrowUpRight {...props} />;
-    case 'slight left':
-      return <ArrowUpLeft {...props} />;
-    default:
-      return <ArrowUp {...props} />;
-  }
-}
 
 /**
  * Active navigation (design screen 09): next manoeuvre, what is coming up on

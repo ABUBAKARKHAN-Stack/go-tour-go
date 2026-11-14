@@ -26,6 +26,11 @@ type Props = {
   follow: boolean;
   /** Extra space for overlays: top banner and bottom sheet. */
   padding: { top: number; bottom: number };
+  /**
+   * Route preview: the turn being looked at. The camera flies there, tilted
+   * and turned to face along the road, and a dot marks it.
+   */
+  focus?: { latitude: number; longitude: number; bearing: number } | null;
   onLoadError?: () => void;
 };
 
@@ -34,7 +39,7 @@ type Props = {
  * strong, what was travelled faded), landmark and hazard markers along it,
  * the destination and the traveller.
  */
-function JourneyMapBase({ route, index, items, progress, fix, follow, padding, onLoadError }: Props) {
+function JourneyMapBase({ route, index, items, progress, fix, follow, padding, focus, onLoadError }: Props) {
   const mapStyle = useMapStyle();
   const remaining = useMemo<GeoJSON.Feature | null>(() => {
     if (!route) return null;
@@ -97,14 +102,15 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
     [items, route, progress],
   );
   // Screen offset for a direction on the map: the map turns with the traveller while navigating.
-  const camBearing = follow ? bearing : 0;
+  const camBearing = focus ? focus.bearing : follow ? bearing : 0;
   const offsetToward = (mapBearing: number, r: number): [number, number] => {
     const t = ((mapBearing - camBearing) * Math.PI) / 180;
     return [Math.round(Math.sin(t) * r), Math.round(-Math.cos(t) * r)];
   };
 
-  const cameraStop =
-    follow && here
+  const cameraStop = focus
+    ? { center: [focus.longitude, focus.latitude] as [number, number], zoom: 17, pitch: 45, bearing: focus.bearing, padding: { top: padding.top, bottom: padding.bottom, left: 0, right: 0 }, duration: 900, easing: 'ease' as const }
+    : follow && here
       ? { center: here, zoom: 16.5, pitch: 50, bearing, padding: { top: padding.top, bottom: padding.bottom, left: 0, right: 0 }, duration: 900, easing: 'ease' as const }
       : bounds
         ? { bounds, padding: { top: padding.top + 24, bottom: padding.bottom + 24, left: 48, right: 48 }, duration: 800, easing: 'ease' as const }
@@ -121,6 +127,20 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, o
       onDidFailLoadingMap={onLoadError}
     >
       {cameraStop ? <Camera {...cameraStop} /> : <Camera initialViewState={{ center: COUNTRY.center, zoom: 5 }} />}
+
+      {focus ? (
+        <GeoJSONSource
+          id="journey-focus"
+          data={{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [focus.longitude, focus.latitude] } }}
+        >
+          <Layer type="circle" id="journey-focus-halo" paint={{ 'circle-radius': 16, 'circle-color': colors.primary, 'circle-opacity': 0.18 }} />
+          <Layer
+            type="circle"
+            id="journey-focus-dot"
+            paint={{ 'circle-radius': 7, 'circle-color': colors.primary, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 3 }}
+          />
+        </GeoJSONSource>
+      ) : null}
 
       {full && progress ? (
         <GeoJSONSource id="journey-travelled" data={full}>

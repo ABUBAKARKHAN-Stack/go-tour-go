@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, ListOrdered, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppButton } from '@/components/app-button';
+import { AppButton, IconButton } from '@/components/app-button';
 import { useIsOnline } from '@/components/offline-banner';
 import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
@@ -138,26 +138,12 @@ export default function JourneyPreview() {
     );
   };
 
+  // A flipped route starts at the place: guidance follows you, so starting needs you there; otherwise preview it.
+  const awayFromStart = reverse && journey.origin && location ? distanceMeters(location, journey.origin) : null;
+  const canStart = !reverse || (awayFromStart != null && awayFromStart <= START_RADIUS_M);
+
   const start = async () => {
     if (!route) return;
-    // A flipped route starts at the place: guidance follows you, so you need to be there.
-    if (reverse && journey.origin) {
-      const fix = await getCurrentFix();
-      const away = fix ? distanceMeters(fix, journey.origin) : null;
-      if (away == null || away > START_RADIUS_M) {
-        Alert.alert(
-          tx('You are not at the start yet'),
-          away == null
-            ? tx('We could not get your location. This route starts at {0}.', { 0: target.name })
-            : tx('This route starts at {0}, {1} from you. Go there first, then start the journey.', { 0: target.name, 1: formatDistance(away) }),
-          [
-            { text: tx('Cancel'), style: 'cancel' },
-            { text: tx('Directions to the start'), onPress: () => router.setParams({ reverse: '0' }) },
-          ],
-        );
-        return;
-      }
-    }
     setStarting(true);
     try {
       await requestNotificationPermission();
@@ -352,15 +338,33 @@ export default function JourneyPreview() {
           )}
         </ScrollView>
         <View className="border-t border-border px-6 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
-          <View className="flex-row gap-2">
-            <AppButton
-              label={savedEntry ? tx('Saved') : tx('Save offline')}
+          {!canStart && awayFromStart != null ? (
+            // Like map apps: a route that starts elsewhere can be previewed; guidance needs you at the start.
+            <View className="flex-row flex-wrap items-center gap-x-1.5 pb-2.5">
+              <Text className="text-sm text-muted-foreground">{tx('Starts {0} from you.', { 0: formatDistance(awayFromStart) })}</Text>
+              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.setParams({ reverse: '0' })}>
+                <Text className="text-sm font-semibold text-accent">{tx('Directions to the start')}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          <View className="flex-row items-center gap-2">
+            <IconButton
               icon={savedEntry ? CheckCircle2 : CloudDownload}
-              variant="secondary"
-              onPress={saveOffline}
-              disabled={!route || journey.phase !== 'preview'}
+              label={savedEntry ? tx('Saved offline') : tx('Save offline')}
+              active={Boolean(savedEntry)}
+              onPress={() => route && journey.phase === 'preview' && saveOffline()}
             />
-            <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
+            <AppButton
+              label={tx('Preview')}
+              icon={ListOrdered}
+              variant={canStart ? 'secondary' : 'primary'}
+              disabled={!route || journey.phase !== 'preview'}
+              onPress={() => router.push('/journey/steps')}
+              className={canStart ? undefined : 'flex-1'}
+            />
+            {canStart ? (
+              <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
+            ) : null}
           </View>
         </View>
       </View>
