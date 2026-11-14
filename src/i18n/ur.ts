@@ -1326,4 +1326,13 @@ export const ur: Record<string, string> = {
   "We could not get your location. This route starts at {0}.": "آپ کا مقام معلوم نہیں ہو سکا۔ یہ راستہ {0} سے شروع ہوتا ہے۔",
   "This route starts at {0}, {1} from you. Go there first, then start the journey.": "یہ راستہ {0} سے شروع ہوتا ہے، جو آپ سے {1} دور ہے۔ پہلے وہاں جائیں، پھر سفر شروع کریں۔",
   "Directions to the start": "شروع کے مقام تک راستہ",
+  // Route preview
+  "No route to preview": "دکھانے کے لیے کوئی راستہ نہیں",
+  "Plan a journey first.": "پہلے سفر کا منصوبہ بنائیں۔",
+  "Preview": "جائزہ",
+  "Route preview": "راستے کا جائزہ",
+  "Saved offline": "آف لائن محفوظ",
+  "Starts {0} from you.": "آپ سے {0} دور سے شروع ہوتا ہے۔",
+  "To {0}": "{0} تک",
+  "Whole route": "پورا راستہ",
 };

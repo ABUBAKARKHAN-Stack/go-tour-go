@@ -347,8 +347,10 @@ QR codes made before the rename (`gotourgodevelopment://destination/…`) still 
 - Comment replies: `post_comments.parent_id` (migration `comment_replies`), one level deep; a reply to a reply
   joins the same thread (database trigger).
 - Plan a journey: the swap button reverses the route (from the searched place to your location, also on the
-  journey preview's route bar). Start journey works when you are within 300 m of the start; otherwise it offers
-  directions to the start.
+  journey preview's route bar). Start journey works when you are within 300 m of the start; otherwise Preview is
+  the main action, with a link for directions to the start.
+- Route preview (`journey/steps`): step through the turns like map apps; the journey map's `focus` prop flies the
+  camera to each turn (tilted, facing along the road) and marks it.
 - Text: never cut off place names, route or navigation text, names or messages (no `numberOfLines`); limits stay
   only in fixed-width spots (tabs, chips, story names, map labels, photo tiles) and short previews.
 - Bottom sheets use `src/components/sheet.tsx` (`Sheet`): drag down or flick to close, short drags spring
