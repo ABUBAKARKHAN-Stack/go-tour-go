@@ -4,6 +4,7 @@ import {
   Bookmark,
   ChevronRight,
   ClipboardList,
+  Grid3x3,
   Compass,
   LogOut,
   MapPin,
@@ -17,7 +18,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
@@ -129,13 +130,13 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {isGuest ? null : <MyPosts userId={userId} total={posts.data ?? 0} onSeeAll={openCommunityProfile} />}
-
         <View className="flex-row gap-2.5">
           <TravelStat value={visited} label={tx('Visited')} onPress={() => router.navigate('/trips')} />
           <TravelStat value={saved.data?.length ?? 0} label={tx('Saved')} onPress={() => router.push({ pathname: '/saved', params: { tab: 'places' } })} />
           {isGuest ? null : <TravelStat value={friends.friends.length} label={tx('Friends')} onPress={() => router.push('/friends')} />}
         </View>
+
+        {isGuest ? null : <MyPosts userId={userId} total={posts.data ?? 0} onSeeAll={openCommunityProfile} />}
 
         <Group title={tx('Travel')}>
           <Row icon={ClipboardList} label={tx('My trip')} value={`${trips.data?.length ?? 0}`} onPress={() => router.navigate('/trips')} />
@@ -177,13 +178,10 @@ export default function ProfileScreen() {
 
 /** Your latest posts in a small grid; "See all" opens your community profile. */
 function MyPosts({ userId, total, onSeeAll }: { userId: string | null; total: number; onSeeAll: () => void }) {
-  const { width } = useWindowDimensions();
   const feed = useFeed(userId ? { authorId: userId } : undefined);
-  const latest = (feed.data?.pages[0] ?? []).slice(0, 6);
-  // The grid spans the card's inner width: screen minus page and card padding, minus two gaps.
-  const tile = (width - 32 - 24 - 4) / 3;
+  const latest = (feed.data?.pages[0] ?? []).slice(0, 10);
   return (
-    <View className="gap-2">
+    <View className="gap-2.5">
       <View className="flex-row items-center px-1">
         <Text className="flex-1 text-xs font-semibold uppercase tracking-[1.2px] text-faint">{tx('My posts')}</Text>
         {total ? (
@@ -192,29 +190,42 @@ function MyPosts({ userId, total, onSeeAll }: { userId: string | null; total: nu
           </Pressable>
         ) : null}
       </View>
-      <View className="overflow-hidden rounded-[20px] bg-card p-3" style={cardShadow}>
-        {feed.isLoading ? (
-          <View className="flex-row gap-0.5">
-            {[0, 1, 2].map((i) => (
-              <View key={i} className="rounded-md bg-muted" style={{ width: tile, height: tile }} />
-            ))}
-          </View>
-        ) : latest.length ? (
-          <View className="flex-row flex-wrap gap-0.5 overflow-hidden rounded-xl">
-            {latest.map((p) => (
-              <PostTile key={p.id} post={p} size={tile} />
-            ))}
-          </View>
-        ) : (
-          <View className="items-center gap-2 py-3">
-            <Text className="text-center text-sm text-muted-foreground">{tx('Share your first travel moment')}</Text>
-            <AppButton label={tx('New post')} icon={Plus} size="sm" variant="secondary" onPress={() => router.push('/post/new')} />
-          </View>
-        )}
-      </View>
+      {feed.isLoading ? (
+        <View className="flex-row gap-2.5">
+          {[0, 1, 2].map((i) => (
+            <View key={i} className="rounded-2xl bg-muted" style={{ width: TILE, height: TILE }} />
+          ))}
+        </View>
+      ) : latest.length ? (
+        // A row you swipe sideways, running to the screen edge; the last tile opens all posts.
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-4 -my-2" contentContainerClassName="gap-2.5 px-4 py-2">
+          {latest.map((p) => (
+            <View key={p.id} className="overflow-hidden rounded-2xl" style={cardShadow}>
+              <PostTile post={p} size={TILE} />
+            </View>
+          ))}
+          <Pressable
+            accessibilityRole="button"
+            onPress={onSeeAll}
+            className="items-center justify-center gap-1.5 rounded-2xl bg-primary-soft active:opacity-80"
+            style={{ width: TILE, height: TILE }}
+          >
+            <Grid3x3 color={colors.primary} size={22} />
+            <Text className="text-[13px] font-semibold text-primary">{tx('See all')}</Text>
+          </Pressable>
+        </ScrollView>
+      ) : (
+        <View className="items-center gap-2 rounded-[20px] bg-card px-4 py-5" style={cardShadow}>
+          <Text className="text-center text-sm text-muted-foreground">{tx('Share your first travel moment')}</Text>
+          <AppButton label={tx('New post')} icon={Plus} size="sm" variant="secondary" onPress={() => router.push('/post/new')} />
+        </View>
+      )}
     </View>
   );
 }
+
+/** Size of a post in the My posts row. */
+const TILE = 116;
 
 function CardStat({ value, label, onPress, divider }: { value: number; label: string; onPress: () => void; divider?: boolean }) {
   return (
