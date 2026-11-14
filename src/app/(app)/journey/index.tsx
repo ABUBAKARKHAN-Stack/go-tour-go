@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ArrowUpDown, Bike, Car, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpDown, Bike, Pencil, Car, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -163,6 +163,12 @@ export default function JourneyPreview() {
     }
   };
 
+  // Tapping the route bar goes back to planning, with this destination filled in.
+  const editRoute = () => {
+    if (journeyStore.get().phase !== 'active') journeyStore.stop();
+    router.replace({ pathname: '/search', params: { q: target.name, ...(reverse ? { reverse: '1' } : {}) } });
+  };
+
   const back = () => {
     if (journeyStore.get().phase !== 'active') journeyStore.stop();
     if (router.canGoBack()) router.back();
@@ -195,14 +201,22 @@ export default function JourneyPreview() {
         <Pressable accessibilityRole="button" accessibilityLabel={tx('Go back')} onPress={back} hitSlop={8} className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft">
           <ArrowLeft color={colors.foreground} size={20} style={flipX} />
         </Pressable>
-        <View className="flex-1">
-          <Text numberOfLines={2} className="text-base font-semibold text-heading">
-            {reverse ? tx('{0} → Your location', { 0: target.name }) : tx('Your location → {0}', { 0: target.name })}
-          </Text>
-          <Text numberOfLines={2} className="text-xs text-faint">
-            {via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}
-          </Text>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint={tx('Change the route')}
+          onPress={editRoute}
+          className="flex-1 flex-row items-center gap-2 active:opacity-70"
+        >
+          <View className="flex-1">
+            <Text numberOfLines={2} className="text-base font-semibold text-heading">
+              {reverse ? tx('{0} → Your location', { 0: target.name }) : tx('Your location → {0}', { 0: target.name })}
+            </Text>
+            <Text numberOfLines={2} className="text-xs text-faint">
+              {via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}
+            </Text>
+          </View>
+          <Pencil color={colors.faint} size={16} />
+        </Pressable>
       </View>
 
       <View
