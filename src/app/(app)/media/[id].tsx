@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { Text } from '@/components/text';
+import { Zoomable } from '@/components/zoomable';
 import { usePost } from '@/features/community/api';
 import { takeViewerPost, viewerItems, type ViewerItem } from '@/features/community/media-viewer';
 import { displayName } from '@/features/social/api';
@@ -18,8 +19,8 @@ import { tx } from '@/lib/i18n';
 
 /**
  * A post's photos and videos full screen on black: swipe sideways between
- * them, swipe down (or back) to close. A video plays only while it is the
- * one on screen.
+ * them, swipe down (or back) to close, pinch or double-tap to zoom (photos
+ * and videos). A video plays only while it is the one on screen.
  */
 export default function MediaViewer() {
   const { id, index } = useLocalSearchParams<{ id: string; index?: string }>();
@@ -31,11 +32,14 @@ export default function MediaViewer() {
   const items = post ? viewerItems(post) : [];
   const start = Math.min(Math.max(0, Number(index) || 0), Math.max(0, items.length - 1));
   const [current, setCurrent] = useState(start);
+  // While a photo or video is zoomed in, swipes move it instead of paging or closing.
+  const [zoomed, setZoomed] = useState(false);
 
   // Swipe down to close: the photo follows the finger and the black fades.
   const y = useSharedValue(0);
   const close = () => (router.canGoBack() ? router.back() : router.replace('/community'));
   const pan = usePanGesture({
+    enabled: !zoomed,
     activeOffsetY: [-14, 14],
     failOffsetX: [-18, 18],
     onUpdate: (e) => {
@@ -70,13 +74,19 @@ export default function MediaViewer() {
               keyExtractor={(m) => m.key}
               horizontal
               pagingEnabled
+              scrollEnabled={!zoomed}
               showsHorizontalScrollIndicator={false}
               initialScrollIndex={start}
               getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-              onMomentumScrollEnd={(e) => setCurrent(Math.round(e.nativeEvent.contentOffset.x / width))}
+              onMomentumScrollEnd={(e) => {
+                setCurrent(Math.round(e.nativeEvent.contentOffset.x / width));
+                setZoomed(false);
+              }}
               renderItem={({ item, index: i }) => (
-                <View style={{ width, height }} className="items-center justify-center">
-                  <Page item={item} active={i === current} width={width} height={height} />
+                <View style={{ width, height }} className="items-center justify-center overflow-hidden">
+                  <Zoomable width={width} height={height} onZoomChange={setZoomed}>
+                    <Page item={item} active={i === current} width={width} height={height} />
+                  </Zoomable>
                 </View>
               )}
             />

@@ -161,7 +161,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
       {(post.media?.length ?? 0) > 1 ? (
         <MediaCarousel media={post.media!} postId={post.id} onPhotoPress={(i) => openMediaViewer(post, i)} />
       ) : post.video_url ? (
-        <PostVideo url={post.video_url} poster={post.image_url} durationMs={post.video_duration_ms} postId={post.id} />
+        <PostVideo url={post.video_url} poster={post.image_url} durationMs={post.video_duration_ms} postId={post.id} onOpen={() => openMediaViewer(post, 0)} />
       ) : post.image_url ? (
         <Pressable
           accessibilityRole="imagebutton"

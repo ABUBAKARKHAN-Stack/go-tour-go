@@ -12,18 +12,30 @@ const FRAME = { width: '100%', aspectRatio: 4 / 3, borderRadius: 18, overflow: '
 
 /**
  * A post's video. Nothing loads until the traveller taps play (a feed of
- * auto-playing videos would cost data and battery); then it plays inline with
- * the system controls and a full-screen button. Scrolling it away unmounts
- * the player and frees it.
+ * auto-playing videos would cost data and battery). With `onOpen` (the feed),
+ * the tap opens it full screen in the media viewer; otherwise it plays inline
+ * with the system controls. Scrolling it away unmounts the player.
  */
-export function PostVideo({ url, poster, durationMs, postId }: { url: string; poster: string | null; durationMs: number | null; postId: string }) {
+export function PostVideo({
+  url,
+  poster,
+  durationMs,
+  postId,
+  onOpen,
+}: {
+  url: string;
+  poster: string | null;
+  durationMs: number | null;
+  postId: string;
+  onOpen?: () => void;
+}) {
   const [playing, setPlaying] = useState(false);
   if (playing) return <InlinePlayer url={url} />;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={durationMs ? tx('Play video, {0}', { 0: formatDuration(durationMs) }) : tx('Play video')}
-      onPress={() => setPlaying(true)}
+      onPress={() => (onOpen ? onOpen() : setPlaying(true))}
       style={FRAME}
       className="items-center justify-center bg-inverse"
     >
