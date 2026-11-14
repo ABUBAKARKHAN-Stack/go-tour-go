@@ -71,6 +71,7 @@ export default function AppLayout() {
           <Stack.Screen name="post/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="story/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="story/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+          <Stack.Screen name="media/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="review/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="create-account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         </Stack>

@@ -61,7 +61,7 @@ function useDebounced<T>(value: T, ms: number) {
  * come from Photon when online and the local results are thin.
  */
 export default function SearchScreen() {
-  const params = useLocalSearchParams<{ q?: string; category?: DestinationCategory }>();
+  const params = useLocalSearchParams<{ q?: string; category?: DestinationCategory; reverse?: string }>();
   const insets = useSafeAreaInsets();
   const [term, setTerm] = useState(params.q ?? '');
   const [category, setCategory] = useState<DestinationCategory | null>(params.category ?? null);
@@ -155,7 +155,7 @@ export default function SearchScreen() {
   const remember = (r: Recent) => setRecent([r, ...recent.filter((x) => x.id !== r.id)].slice(0, 8));
 
   // Swapped: the place you search is where you start, and the route ends at your location.
-  const [reversed, setReversed] = useState(false);
+  const [reversed, setReversed] = useState(params.reverse === '1');
 
   const choose = (row: Row) => {
     if (reversed) {

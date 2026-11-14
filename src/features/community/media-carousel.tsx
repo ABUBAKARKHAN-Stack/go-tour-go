@@ -9,9 +9,9 @@ import type { PostMedia } from '@/lib/types';
 
 /**
  * Several photos/videos in one post: swipe sideways, with a "2/5" counter and
- * dots. Videos keep their tap-to-play poster.
+ * dots. Videos keep their tap-to-play poster; tapping a photo opens it full screen.
  */
-export function MediaCarousel({ media, postId, onPhotoPress }: { media: PostMedia[]; postId: string; onPhotoPress?: () => void }) {
+export function MediaCarousel({ media, postId, onPhotoPress }: { media: PostMedia[]; postId: string; onPhotoPress?: (index: number) => void }) {
   const [width, setWidth] = useState(0);
   const [index, setIndex] = useState(0);
   return (
@@ -31,7 +31,7 @@ export function MediaCarousel({ media, postId, onPhotoPress }: { media: PostMedi
               {item.type === 'video' ? (
                 <PostVideo url={item.url} poster={item.poster_url} durationMs={item.duration_ms} postId={`${postId}-${i}`} />
               ) : (
-                <Pressable accessibilityRole="imagebutton" accessibilityLabel={tx('Photo {0} of {1}', { 0: i + 1, 1: media.length })} onPress={onPhotoPress}>
+                <Pressable accessibilityRole="imagebutton" accessibilityLabel={tx('Photo {0} of {1}', { 0: i + 1, 1: media.length })} accessibilityHint={tx('Opens full screen')} onPress={() => onPhotoPress?.(i)}>
                   <Image source={{ uri: item.url }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 18 }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={item.id} />
                 </Pressable>
               )}

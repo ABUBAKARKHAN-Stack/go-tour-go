@@ -9,6 +9,7 @@ import { Text } from '@/components/text';
 import { Avatar } from '@/components/avatar';
 import { formatCount, useCommunityActions } from '@/features/community/api';
 import { MediaCarousel } from '@/features/community/media-carousel';
+import { openMediaViewer } from '@/features/community/media-viewer';
 import { MentionText } from '@/features/community/mention-text';
 import { PostVideo } from '@/features/community/post-video';
 import { useRatings } from '@/features/destinations/api';
@@ -74,8 +75,8 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
     actions.toggleLike.mutate({ postId: post.id, like: value });
   };
 
-  // Photo: double-tap likes (never unlikes); a single tap opens the post, after
-  // waiting just long enough to tell the two apart.
+  // Photo: double-tap likes (never unlikes); a single tap opens it full screen,
+  // after waiting just long enough to tell the two apart.
   const onPhotoPress = () => {
     const now = Date.now();
     if (now - lastTap.current < DOUBLE_TAP_MS) {
@@ -86,8 +87,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
       return;
     }
     lastTap.current = now;
-    if (detail) return;
-    singleTap.current = setTimeout(open, DOUBLE_TAP_MS);
+    singleTap.current = setTimeout(() => openMediaViewer(post, 0), DOUBLE_TAP_MS);
   };
 
   const openPlace = () => post.destination && router.push({ pathname: '/destination/[id]', params: { id: post.destination.id } });
@@ -159,15 +159,16 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
         </Pressable>
       ) : null}
       {(post.media?.length ?? 0) > 1 ? (
-        <MediaCarousel media={post.media!} postId={post.id} onPhotoPress={detail ? undefined : open} />
+        <MediaCarousel media={post.media!} postId={post.id} onPhotoPress={(i) => openMediaViewer(post, i)} />
       ) : post.video_url ? (
         <PostVideo url={post.video_url} poster={post.image_url} durationMs={post.video_duration_ms} postId={post.id} />
       ) : post.image_url ? (
         <Pressable
           accessibilityRole="imagebutton"
           accessibilityLabel={tx('Photo. Double-tap to like.')}
+          accessibilityHint={tx('Opens full screen')}
           accessibilityActions={[{ name: 'activate' }, { name: 'longpress', label: tx('Like') }]}
-          onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'longpress' ? like(true) : open())}
+          onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'longpress' ? like(true) : openMediaViewer(post, 0))}
           onPress={onPhotoPress}
         >
           <Image source={{ uri: post.image_url }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 16 }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={post.id} />

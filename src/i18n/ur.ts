@@ -1317,4 +1317,8 @@ export const ur: Record<string, string> = {
   "View {0} more replies": "مزید {0} جوابات دیکھیں",
   "Where are you starting from?": "آپ کہاں سے شروع کر رہے ہیں؟",
   "{0} → Your location": "{0} ← آپ کا مقام",
+  // Full-screen media, change route
+  "Change the route": "راستہ تبدیل کریں",
+  "Opens full screen": "پوری اسکرین پر کھولتا ہے",
+  "Photo": "تصویر",
 };
