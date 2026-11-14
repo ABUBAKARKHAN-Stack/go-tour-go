@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ArrowUpDown, Bike, Pencil, Car, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +18,7 @@ import { useLastLocation, useLocationState } from '@/features/location/location-
 import { requestNotificationPermission } from '@/features/notifications/local-notifications';
 import { saveRouteOffline, useSavedRoutes } from '@/features/offline/saved-routes';
 import type { TravelMode } from '@/features/routing/osrm';
-import { formatDistance } from '@/lib/geo';
+import { distanceMeters, formatDistance } from '@/lib/geo';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
 import { haptics } from '@/lib/haptics';
@@ -51,6 +51,8 @@ function mainRoad(steps: { name: string | null; distance: number }[]) {
  */
 /** The traveller's own position as a route end (a reversed journey). */
 const YOUR_LOCATION = tx('Your location');
+/** How close to the start of a flipped route you need to be to start it. */
+const START_RADIUS_M = 300;
 
 export default function JourneyPreview() {
   // `reverse=1`: the place is where the route starts and it ends at your location (From/To swapped).
@@ -138,6 +140,24 @@ export default function JourneyPreview() {
 
   const start = async () => {
     if (!route) return;
+    // A flipped route starts at the place: guidance follows you, so you need to be there.
+    if (reverse && journey.origin) {
+      const fix = await getCurrentFix();
+      const away = fix ? distanceMeters(fix, journey.origin) : null;
+      if (away == null || away > START_RADIUS_M) {
+        Alert.alert(
+          tx('You are not at the start yet'),
+          away == null
+            ? tx('We could not get your location. This route starts at {0}.', { 0: target.name })
+            : tx('This route starts at {0}, {1} from you. Go there first, then start the journey.', { 0: target.name, 1: formatDistance(away) }),
+          [
+            { text: tx('Cancel'), style: 'cancel' },
+            { text: tx('Directions to the start'), onPress: () => router.setParams({ reverse: '0' }) },
+          ],
+        );
+        return;
+      }
+    }
     setStarting(true);
     try {
       await requestNotificationPermission();
@@ -208,13 +228,17 @@ export default function JourneyPreview() {
           onPress={editRoute}
           className="flex-1 flex-row items-center gap-2 active:opacity-70"
         >
-          <View className="flex-1">
-            <Text numberOfLines={2} className="text-base font-semibold text-heading">
-              {reverse ? tx('{0} → Your location', { 0: target.name }) : tx('Your location → {0}', { 0: target.name })}
-            </Text>
-            <Text numberOfLines={2} className="text-xs text-faint">
-              {via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}
-            </Text>
+          {/* Start and destination on their own lines, in full (wrapping, never cut off). */}
+          <View className="flex-1 gap-1">
+            <View className="flex-row items-start gap-2">
+              <CircleDot color={colors.primary} size={14} style={{ marginTop: 3 }} />
+              <Text className="flex-1 text-sm font-semibold text-heading">{reverse ? target.name : tx('Your location')}</Text>
+            </View>
+            <View className="flex-row items-start gap-2">
+              <MapPin color={colors.accent} size={14} style={{ marginTop: 3 }} />
+              <Text className="flex-1 text-sm font-semibold text-heading">{reverse ? tx('Your location') : target.name}</Text>
+            </View>
+            <Text className="text-xs text-faint">{via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}</Text>
           </View>
           <Pencil color={colors.faint} size={16} />
         </Pressable>
@@ -336,17 +360,7 @@ export default function JourneyPreview() {
               onPress={saveOffline}
               disabled={!route || journey.phase !== 'preview'}
             />
-            {reverse ? (
-              // Turn-by-turn follows you from where you are, so this direction is a preview.
-              <AppButton
-                label={tx('Navigate from my location')}
-                icon={ArrowUpDown}
-                onPress={() => router.setParams({ reverse: '0' })}
-                className="flex-1"
-              />
-            ) : (
-              <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
-            )}
+            <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
           </View>
         </View>
       </View>
@@ -369,10 +383,10 @@ function ItemRow({ item }: { item: JourneyItem }) {
         {hazard ? <TriangleAlert color={colors.destructive} size={18} /> : <Landmark color={colors.primary} size={18} />}
       </View>
       <View className="flex-1">
-        <Text numberOfLines={2} className="text-base font-semibold text-heading">
+        <Text className="text-base font-semibold text-heading">
           {item.name}
         </Text>
-        <Text numberOfLines={2} className="text-xs text-faint">
+        <Text className="text-xs text-faint">
           {where}
         </Text>
       </View>

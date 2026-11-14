@@ -124,7 +124,7 @@ function LandmarkCard({
               <X color={colors.foreground} size={16} />
             </Pressable>
           </View>
-          <Text numberOfLines={2} className="font-display text-xl text-heading">
+          <Text className="font-display text-xl text-heading">
             {d.name}
           </Text>
           <View className="flex-row items-center gap-1">

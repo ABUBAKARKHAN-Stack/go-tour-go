@@ -158,7 +158,7 @@ const TripRow = memo(function TripRow({
       <Pressable onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })} className="flex-row gap-3 active:opacity-80">
         <DestinationImage uri={d.image_url} category={d.category} className="h-[72px] w-[72px] rounded-2xl" iconSize={24} recyclingKey={d.id} />
         <View className="flex-1 gap-0.5">
-          <Text numberOfLines={2} className="text-base font-semibold text-heading">
+          <Text className="text-base font-semibold text-heading">
             {d.name}
           </Text>
           <View className="flex-row items-center gap-1">
@@ -172,7 +172,7 @@ const TripRow = memo(function TripRow({
             </View>
           ) : null}
           {item.notes ? (
-            <Text numberOfLines={3} className="text-xs text-foreground">
+            <Text className="text-xs text-foreground">
               {item.notes}
             </Text>
           ) : null}

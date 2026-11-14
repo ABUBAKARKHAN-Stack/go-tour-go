@@ -119,11 +119,11 @@ export function PlacePicker({ visible, onClose, onPick }: { visible: boolean; on
                 {item.landmark ? <Landmark color={colors.primary} size={18} /> : <MapPin color={colors.primary} size={18} />}
               </View>
               <View className="flex-1">
-                <Text numberOfLines={2} className="text-base font-semibold text-heading">
+                <Text className="text-base font-semibold text-heading">
                   {item.title}
                 </Text>
                 {item.subtitle ? (
-                  <Text numberOfLines={2} className="text-xs text-muted-foreground">
+                  <Text className="text-xs text-muted-foreground">
                     {item.subtitle}
                   </Text>
                 ) : null}
@@ -148,7 +148,7 @@ export function PlaceField({ value, onChange }: { value: PlaceTag | null; onChan
         <View className="min-h-14 flex-row items-center gap-3 rounded-2xl bg-primary-soft px-4">
           <MapPin color={colors.primary} size={18} />
           <Pressable accessibilityRole="button" accessibilityHint={tx('Change location')} onPress={() => setOpen(true)} className="flex-1 py-3">
-            <Text numberOfLines={2} className="text-base font-semibold text-primary">
+            <Text className="text-base font-semibold text-primary">
               {value.name}
             </Text>
           </Pressable>

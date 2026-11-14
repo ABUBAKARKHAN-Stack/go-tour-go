@@ -313,7 +313,7 @@ function ConversationRow({
     >
       <MessageSquare color={colors.primary} size={18} />
       <View className="flex-1 gap-0.5">
-        <Text numberOfLines={2} className="text-[15px] font-medium text-heading">
+        <Text className="text-[15px] font-medium text-heading">
           {c.title}
         </Text>
         <Text numberOfLines={1} className="text-xs text-muted-foreground">

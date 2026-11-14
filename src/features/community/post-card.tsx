@@ -116,14 +116,14 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           <Avatar profile={post.author} size={44} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-[15px] font-semibold text-heading">
+          <Text className="text-[15px] font-semibold text-heading">
             {displayName(post.author)}
           </Text>
           <View className="flex-row items-center gap-1">
             {place ? (
               <Pressable disabled={!post.destination} onPress={openPlace} hitSlop={4} className="shrink flex-row items-center gap-1">
                 <MapPin color={colors.accent} size={12} />
-                <Text numberOfLines={2} className="shrink text-xs font-medium text-accent">
+                <Text className="shrink text-xs font-medium text-accent">
                   {place}
                   {post.destination?.city ? `, ${post.destination.city}` : ''}
                 </Text>
@@ -252,7 +252,7 @@ function PostCardBase({ post, userId, detail, commenterRating }: Props) {
           <Avatar profile={topComment.author} size={32} />
           <View className="flex-1 gap-0.5">
             <View className="flex-row items-center gap-2">
-              <Text numberOfLines={1} className="shrink text-sm font-semibold text-heading">
+              <Text className="shrink text-sm font-semibold text-heading">
                 {displayName(topComment.author)}
               </Text>
               {commenterRating ? (

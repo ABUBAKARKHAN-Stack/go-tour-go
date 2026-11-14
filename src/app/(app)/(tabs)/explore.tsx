@@ -330,7 +330,7 @@ export default function ExploreScreen() {
           <View className="flex-row items-center gap-3 rounded-[20px] bg-primary p-3" style={{ paddingStart: 16, boxShadow: shadow(0.25, 6, 18) }}>
             <Navigation color={colors.primaryForeground} size={20} />
             <View className="flex-1">
-              <Text numberOfLines={2} className="text-base font-semibold text-white">{tx('Navigating to {0}', { 0: journey.target.name })}</Text>
+              <Text className="text-base font-semibold text-white">{tx('Navigating to {0}', { 0: journey.target.name })}</Text>
               <Text className="text-xs text-white/80">
                 {journey.progress ? tx('{0} left', { 0: formatDistance(journey.progress.remaining) }) : tx('Tap Resume to continue')}
               </Text>
