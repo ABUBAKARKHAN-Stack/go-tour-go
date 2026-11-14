@@ -202,7 +202,7 @@ export function SavedRouteRow({ saved }: { saved: SavedRoute }) {
           <ModeIcon color={colors.primary} size={20} />
         </View>
         <View className="flex-1">
-          <Text numberOfLines={2} className="text-base font-semibold text-heading">
+          <Text className="text-base font-semibold text-heading">
             {saved.target.name}
           </Text>
           <Text className="text-xs text-faint">

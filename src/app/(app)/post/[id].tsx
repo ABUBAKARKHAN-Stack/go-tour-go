@@ -205,7 +205,7 @@ function CommentRow({
       <View className="flex-1 gap-1">
         <View className="rounded-[18px] rounded-tl-md bg-primary-soft px-3 py-2">
           <View className="flex-row items-center gap-1.5">
-            <Text numberOfLines={1} className="shrink text-xs font-semibold text-heading">
+            <Text className="shrink text-xs font-semibold text-heading">
               {displayName(item.author)}
             </Text>
             {isAuthor ? (

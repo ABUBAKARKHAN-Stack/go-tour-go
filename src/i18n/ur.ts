@@ -1321,4 +1321,9 @@ export const ur: Record<string, string> = {
   "Change the route": "راستہ تبدیل کریں",
   "Opens full screen": "پوری اسکرین پر کھولتا ہے",
   "Photo": "تصویر",
+  // Starting a flipped route
+  "You are not at the start yet": "آپ ابھی شروع کے مقام پر نہیں ہیں",
+  "We could not get your location. This route starts at {0}.": "آپ کا مقام معلوم نہیں ہو سکا۔ یہ راستہ {0} سے شروع ہوتا ہے۔",
+  "This route starts at {0}, {1} from you. Go there first, then start the journey.": "یہ راستہ {0} سے شروع ہوتا ہے، جو آپ سے {1} دور ہے۔ پہلے وہاں جائیں، پھر سفر شروع کریں۔",
+  "Directions to the start": "شروع کے مقام تک راستہ",
 };

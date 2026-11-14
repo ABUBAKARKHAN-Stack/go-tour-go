@@ -425,11 +425,11 @@ function ResultRow({
         <Icon color={color} size={19} />
       </View>
       <View className="flex-1">
-        <Text numberOfLines={2} className="text-base font-semibold text-heading">
+        <Text className="text-base font-semibold text-heading">
           {title}
         </Text>
         {subtitle ? (
-          <Text numberOfLines={2} className="text-xs text-faint">
+          <Text className="text-xs text-faint">
             {subtitle}
           </Text>
         ) : null}

@@ -85,12 +85,12 @@ function DestinationCardBase({ destination: d, distance, rating, variant = 'tile
           <Text numberOfLines={1} className="text-[11px] font-bold uppercase tracking-[1.2px] text-accent">
             {meta.label}
           </Text>
-          <Text numberOfLines={2} className="text-base font-semibold text-heading">
+          <Text className="text-base font-semibold text-heading">
             {d.name}
           </Text>
           <View className="flex-row items-center gap-2">
             <MapPin color={colors.faint} size={12} />
-            <Text numberOfLines={2} className="shrink text-xs text-muted-foreground">
+            <Text className="shrink text-xs text-muted-foreground">
               {where}
             </Text>
             {rating ? <Rating value={rating} /> : null}

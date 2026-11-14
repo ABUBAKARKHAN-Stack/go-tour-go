@@ -72,7 +72,7 @@ export default function NearbyScreen() {
                   <Icon color={SERVICE_CATEGORIES[item.category].color} size={20} />
                 </View>
                 <View className="flex-1">
-                  <Text numberOfLines={2} className="text-base font-semibold text-heading">
+                  <Text className="text-base font-semibold text-heading">
                     {item.name}
                   </Text>
                   <View className="flex-row items-center gap-2">
@@ -84,7 +84,7 @@ export default function NearbyScreen() {
                       </View>
                     ) : null}
                     {item.address ? (
-                      <Text numberOfLines={2} className="flex-1 text-xs text-muted-foreground">
+                      <Text className="flex-1 text-xs text-muted-foreground">
                         {item.address}
                       </Text>
                     ) : null}

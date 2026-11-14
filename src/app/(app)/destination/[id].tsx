@@ -289,7 +289,7 @@ export default function DestinationDetails() {
               </Text>
               <View className="flex-row items-center gap-1.5">
                 <MapPin color={colors.primary} size={15} />
-                <Text numberOfLines={2} className="shrink text-sm text-muted-foreground">
+                <Text className="shrink text-sm text-muted-foreground">
                   {d.city}, {d.region}
                 </Text>
               </View>
@@ -388,7 +388,7 @@ export default function DestinationDetails() {
               </View>
               <View className="flex-1">
                 <Text className="text-base font-semibold text-heading">{tx('Location')}</Text>
-                <Text numberOfLines={2} className="text-[13px] text-muted-foreground">
+                <Text className="text-[13px] text-muted-foreground">
                   {d.city}, {d.region}
                 </Text>
               </View>
@@ -446,7 +446,7 @@ export default function DestinationDetails() {
                   <Avatar profile={r.author} size={40} />
                   <View className="flex-1 gap-1">
                     <View className="flex-row flex-wrap items-center gap-x-2">
-                      <Text numberOfLines={1} className="shrink text-sm font-semibold text-heading">
+                      <Text className="shrink text-sm font-semibold text-heading">
                         {displayName(r.author)}
                       </Text>
                       <RatingStars value={r.rating} size={12} />

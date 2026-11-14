@@ -183,7 +183,7 @@ export default function JourneyNavigate() {
           <ManeuverIcon step={next} />
           <View className="flex-1">
             <Text className="font-display text-[30px] leading-9 text-white">{formatDistance(progress?.toManeuver ?? route.steps[0]?.distance ?? 0)}</Text>
-            <Text numberOfLines={3} className="text-base text-white">
+            <Text className="text-base text-white">
               {next?.instruction ?? tx('Follow the route')}
             </Text>
           </View>
@@ -195,7 +195,7 @@ export default function JourneyNavigate() {
           </View>
         ) : then ? (
           <View className="bg-primary-pressed px-4 py-2">
-            <Text numberOfLines={2} className="text-xs font-semibold text-white">{tx('Then {0}', { 0: then.instruction.charAt(0).toLowerCase() + then.instruction.slice(1) })}</Text>
+            <Text className="text-xs font-semibold text-white">{tx('Then {0}', { 0: then.instruction.charAt(0).toLowerCase() + then.instruction.slice(1) })}</Text>
           </View>
         ) : null}
       </View>
