@@ -21,6 +21,7 @@ import type { TravelMode } from '@/features/routing/osrm';
 import { formatDistance } from '@/lib/geo';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
+import { haptics } from '@/lib/haptics';
 import { flipX, tx } from '@/lib/i18n';
 
 const MODES: { mode: TravelMode; label: string; icon: LucideIcon }[] = [
@@ -217,6 +218,19 @@ export default function JourneyPreview() {
           </View>
           <Pencil color={colors.faint} size={16} />
         </Pressable>
+        {/* Flip the route: from the place to you, or back. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tx('Swap start and destination')}
+          onPress={() => {
+            haptics.select();
+            router.setParams({ reverse: reverse ? '0' : '1' });
+          }}
+          hitSlop={6}
+          className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft active:opacity-70"
+        >
+          <ArrowUpDown color={colors.primary} size={18} />
+        </Pressable>
       </View>
 
       <View
@@ -327,7 +341,7 @@ export default function JourneyPreview() {
               <AppButton
                 label={tx('Navigate from my location')}
                 icon={ArrowUpDown}
-                onPress={() => router.setParams({ reverse: undefined })}
+                onPress={() => router.setParams({ reverse: '0' })}
                 className="flex-1"
               />
             ) : (

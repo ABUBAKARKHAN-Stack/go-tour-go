@@ -172,6 +172,13 @@ export default function SearchScreen() {
     navigateTo({ id: `place:${row.id}`, name: row.name, latitude: row.latitude, longitude: row.longitude });
   };
 
+  /** A landmark from a list: its page normally; straight to the route when start and destination are swapped. */
+  const openLandmark = (d: { id: string; name: string; city: string; latitude: number; longitude: number }) => {
+    if (reversed) navigateTo({ id: d.id, name: d.name, subtitle: d.city, latitude: d.latitude, longitude: d.longitude }, { reverse: true });
+    else router.push({ pathname: '/destination/[id]', params: { id: d.id } });
+  };
+  const pickOnMap = () => router.push({ pathname: '/journey/pick', params: reversed ? { reverse: '1' } : {} });
+
   const openRecent = (r: Recent) => {
     if (reversed) {
       navigateTo({ id: r.landmarkId ?? `place:${r.id}`, name: r.name, subtitle: r.subtitle, latitude: r.latitude, longitude: r.longitude }, { reverse: true });
@@ -216,6 +223,16 @@ export default function SearchScreen() {
     </View>
   );
 
+  const mapRow = (
+    <ResultRow
+      icon={MapPinned}
+      tint="accent"
+      title={tx('Choose on map')}
+      subtitle={reversed ? tx('Pick any spot as your start') : tx('Pick any spot as your destination')}
+      onPress={pickOnMap}
+    />
+  );
+
   const browsing = q.length < 2;
   const browseList = category ? sorted.filter((d) => d.category === category).slice(0, 60) : [];
   const nearby = sorted.slice(0, 6);
@@ -238,7 +255,7 @@ export default function SearchScreen() {
           <Text className="font-display text-2xl text-heading">{tx('Plan a journey')}</Text>
         </View>
 
-        <View className="flex-row items-center gap-3 rounded-full bg-card px-4 py-1" style={cardShadow}>
+        <View className="flex-row items-center gap-3 rounded-[20px] bg-card px-4 py-1" style={cardShadow}>
           <View className="flex-1">
             {/* The searched place and your location trade places when swapped. */}
             {reversed ? searchRow('From') : mineRow('From')}
@@ -274,9 +291,21 @@ export default function SearchScreen() {
           {category ? (
             browseList.length ? (
               <View className="gap-2.5">
-                {browseList.map((d) => (
-                  <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.[d.id]?.average_rating} variant="row" />
-                ))}
+                {browseList.map((d) =>
+                  reversed ? (
+                    <ResultRow
+                      key={d.id}
+                      icon={Landmark}
+                      tint="primary"
+                      title={d.name}
+                      subtitle={`${DESTINATION_CATEGORIES[d.category].label} · ${d.city}`}
+                      right={d.distance != null ? formatDistance(d.distance) : undefined}
+                      onPress={() => openLandmark(d)}
+                    />
+                  ) : (
+                    <DestinationCard key={d.id} destination={d} distance={d.distance} rating={ratings.data?.[d.id]?.average_rating} variant="row" />
+                  ),
+                )}
               </View>
             ) : isLoading ? (
               <LoadingState />
@@ -285,7 +314,7 @@ export default function SearchScreen() {
             )
           ) : (
             <>
-              <ResultRow icon={MapPinned} tint="accent" title={tx('Choose on map')} subtitle={reversed ? tx('Pick any spot as your start') : tx('Pick any spot as your destination')} onPress={() => router.push({ pathname: '/journey/pick', params: reversed ? { reverse: '1' } : {} })} />
+              {mapRow}
               {recent.length ? (
                 <View className="gap-1">
                   <SectionTitle title={tx('RECENT')} action={tx('Clear')} onAction={() => setRecent([])} />
@@ -305,7 +334,7 @@ export default function SearchScreen() {
                       title={d.name}
                       subtitle={`${DESTINATION_CATEGORIES[d.category].label} · ${d.city}`}
                       right={d.distance != null ? formatDistance(d.distance) : undefined}
-                      onPress={() => router.push({ pathname: '/destination/[id]', params: { id: d.id } })}
+                      onPress={() => openLandmark(d)}
                     />
                   ))}
                 </View>
@@ -315,14 +344,17 @@ export default function SearchScreen() {
           )}
         </ScrollView>
       ) : searching ? (
-        <LoadingState variant="spinner" label={tx('Searching...')} />
+        <View className="px-5">
+          {mapRow}
+          <LoadingState variant="spinner" label={tx('Searching...')} />
+        </View>
       ) : sections.length === 0 ? (
         <EmptyState
           icon={SearchX}
           title={tx('No matches')}
           message={online.isFetching ? tx('Still looking online...') : tx('Try another spelling, or a nearby area or landmark.')}
           actionLabel={tx('Choose on map')}
-          onAction={() => router.push({ pathname: '/journey/pick', params: reversed ? { reverse: '1' } : {} })}
+          onAction={pickOnMap}
         />
       ) : (
         <SectionList
@@ -332,6 +364,8 @@ export default function SearchScreen() {
           stickySectionHeadersEnabled={false}
           contentContainerClassName="px-5"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          // Not in the results? Pick the spot on the map instead.
+          ListHeaderComponent={mapRow}
           renderSectionHeader={({ section }) => <SectionTitle title={section.title} />}
           renderItem={({ item }) => (
             <ResultRow
