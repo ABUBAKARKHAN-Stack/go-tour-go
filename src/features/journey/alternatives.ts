@@ -8,7 +8,11 @@ import type { Route } from '@/features/routing/osrm';
 import { buildRouteIndex, projectPoint, type RouteIndex } from './route-geometry';
 
 export type AltRoute = {
+  /** Stable for the same road (keys, taps). */
+  id: string;
   route: Route;
+  /** Only the part that differs from the main route: what is drawn and tappable. */
+  segment: [number, number][];
   /** Metres along the main route where this one leaves it (gone once passed). */
   splitAlong: number;
   /** Seconds slower (+) or faster (−) than the main route. */
@@ -27,10 +31,15 @@ const MAX_ALTERNATIVES = 2;
  * How `alt` relates to the main route: where it splits off and the middle of
  * the stretch that differs. Null when it is (nearly) the same road.
  */
-export function compareRoute(main: RouteIndex, alt: Route): { splitAlong: number; label: [number, number] } | null {
+export function compareRoute(
+  main: RouteIndex,
+  alt: Route,
+): { splitAlong: number; label: [number, number]; segment: [number, number][] } | null {
   const own = buildRouteIndex(alt.coordinates);
   let first = -1;
   let last = -1;
+  let before = 0; // last sampled point still on the main route before it splits
+  let after = -1; // first sampled point back on it after the last differing one
   let splitAlong = 0;
   // Sample the route (about 400 points at most) so long routes stay quick on a phone.
   const step = Math.max(25, own.total / 400);
@@ -44,8 +53,12 @@ export function compareRoute(main: RouteIndex, alt: Route): { splitAlong: number
     if (p.offRoute > APART_M) {
       if (first < 0) first = i;
       last = i;
+      after = -1;
     } else if (first < 0) {
       splitAlong = p.along;
+      before = i;
+    } else if (after < 0) {
+      after = i;
     }
   }
   if (first < 0) return null;
@@ -55,7 +68,7 @@ export function compareRoute(main: RouteIndex, alt: Route): { splitAlong: number
   const middle = own.cum[first] + differs / 2;
   let k = first;
   while (k < last && own.cum[k] < middle) k++;
-  return { splitAlong, label: alt.coordinates[k] };
+  return { splitAlong, label: alt.coordinates[k], segment: alt.coordinates.slice(before, (after < 0 ? alt.coordinates.length - 1 : after) + 1) };
 }
 
 /** Up to two alternatives that really differ from the main route, quickest first. */
@@ -67,7 +80,14 @@ export function pickAlternatives(main: Route, mainIndex: RouteIndex, candidates:
     if (!c) continue;
     // Skip near-copies of an alternative already kept.
     if (out.some((o) => !compareRoute(buildRouteIndex(o.route.coordinates), r))) continue;
-    out.push({ route: r, splitAlong: c.splitAlong, delta: Math.round(r.duration - main.duration), label: c.label });
+    out.push({
+      id: `${Math.round(r.distance)}-${Math.round(r.duration)}-${r.coordinates.length}`,
+      route: r,
+      segment: c.segment,
+      splitAlong: c.splitAlong,
+      delta: Math.round(r.duration - main.duration),
+      label: c.label,
+    });
   }
   return out.sort((a, b) => a.delta - b.delta).slice(0, MAX_ALTERNATIVES);
 }

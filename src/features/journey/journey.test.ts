@@ -316,6 +316,14 @@ describe('alternative routes', () => {
     expect(c).not.toBeNull();
     expect(Math.abs(c.splitAlong - index.cum[20])).toBeLessThan(120);
     expect(c.label[1]).toBeCloseTo(24.853, 5);
+    // Only the different stretch is drawn: it starts and ends on the main road, near the split and the rejoin.
+    const [startLng] = c.segment[0];
+    const [endLng, endLat] = c.segment[c.segment.length - 1];
+    expect(startLng).toBeGreaterThan(67.015);
+    expect(startLng).toBeLessThanOrEqual(67.021);
+    expect(endLat).toBeCloseTo(24.85, 5);
+    expect(endLng).toBeLessThan(67.046);
+    expect(c.segment.length).toBeLessThan(altCoords.length - 20);
   });
 
   test('the same road twice is not an alternative', () => {
@@ -326,6 +334,8 @@ describe('alternative routes', () => {
   test('time difference, and gone once its turn-off is behind', () => {
     const [alt] = pickAlternatives(route, index, [altRoute]);
     expect(alt.delta).toBe(240);
+    // Same road, same id: taps and labels stay attached to the right route.
+    expect(pickAlternatives(route, index, [{ ...altRoute, createdAt: 9 }])[0].id).toBe(alt.id);
     expect(alternativesAhead([alt], index.cum[10])).toHaveLength(1);
     expect(alternativesAhead([alt], index.cum[30])).toHaveLength(0);
   });

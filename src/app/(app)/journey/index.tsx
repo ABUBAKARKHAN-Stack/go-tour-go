@@ -341,7 +341,7 @@ export default function JourneyPreview() {
                       <Text className="pb-1 text-[11px] font-bold tracking-[1.6px] text-faint">{tx('OTHER ROUTES')}</Text>
                       {journey.alternatives.map((alt) => (
                         <AltRow
-                          key={`${alt.route.createdAt}-${alt.route.distance}`}
+                          key={alt.id}
                           alt={alt}
                           onPress={() => {
                             haptics.select();

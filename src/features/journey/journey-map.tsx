@@ -1,4 +1,4 @@
-import { Camera, GeoJSONSource, Layer, Map, ViewAnnotation } from '@maplibre/maplibre-react-native';
+import { Camera, GeoJSONSource, Images, Layer, Map, ViewAnnotation } from '@maplibre/maplibre-react-native';
 import { Landmark, MapPin, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -7,7 +7,7 @@ import { Text } from '@/components/text';
 
 import type { Fix } from '@/features/location/location-store';
 import type { Route } from '@/features/routing/osrm';
-import { NavArrow, validHeading } from '@/features/map/nav-arrow';
+import { validHeading } from '@/features/map/nav-arrow';
 import { useMapStyle } from '@/features/offline/use-map-style';
 import { bearingTo } from '@/features/proximity/heading';
 import { boundsOf, distanceMeters } from '@/lib/geo';
@@ -42,6 +42,27 @@ type Props = {
   onLoadError?: () => void;
 };
 
+const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+
+/**
+ * Layers bottom to top. Each is placed just below the next (`beforeId`), and
+ * every source stays mounted (empty when unused), so the order never depends
+ * on what loaded first: alternatives under the route, the route under the
+ * place dots, and the traveller's arrow always on top.
+ */
+const STACK = [
+  'journey-alternative-casing',
+  'journey-alternative-line',
+  'journey-travelled-line',
+  'journey-route-casing',
+  'journey-route-line',
+  'journey-dot',
+  'journey-focus-halo',
+  'journey-focus-dot',
+  'journey-user-arrow',
+] as const;
+const below = (id: (typeof STACK)[number]) => STACK[STACK.indexOf(id) + 1];
+
 /** Camera glide between navigation fixes (about one a second). */
 const FOLLOW_MS = 1000;
 /** Turns smaller than this keep the map still (GPS wobble). */
@@ -65,18 +86,17 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
     [route],
   );
 
-  const alternativeLines = useMemo<GeoJSON.FeatureCollection | null>(
-    () =>
-      alternatives.length
-        ? {
-            type: 'FeatureCollection',
-            features: alternatives.map((a, i) => ({
-              type: 'Feature' as const,
-              properties: { i },
-              geometry: { type: 'LineString' as const, coordinates: a.route.coordinates },
-            })),
-          }
-        : null,
+  // Only the stretch where each alternative differs is drawn (and tappable):
+  // shared roads stay the chosen route's, so a tap can't pick the wrong one.
+  const alternativeLines = useMemo<GeoJSON.FeatureCollection>(
+    () => ({
+      type: 'FeatureCollection',
+      features: alternatives.map((a) => ({
+        type: 'Feature' as const,
+        properties: { id: a.id },
+        geometry: { type: 'LineString' as const, coordinates: a.segment },
+      })),
+    }),
     [alternatives],
   );
 
@@ -163,77 +183,66 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
     >
       {cameraStop ? <Camera {...cameraStop} /> : <Camera initialViewState={{ center: COUNTRY.center, zoom: 5 }} />}
 
-      {focus ? (
-        <GeoJSONSource
-          id="journey-focus"
-          data={{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [focus.longitude, focus.latitude] } }}
-        >
-          <Layer type="circle" id="journey-focus-halo" paint={{ 'circle-radius': 16, 'circle-color': colors.primary, 'circle-opacity': 0.18 }} />
-          <Layer
-            type="circle"
-            id="journey-focus-dot"
-            paint={{ 'circle-radius': 7, 'circle-color': colors.primary, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 3 }}
-          />
-        </GeoJSONSource>
-      ) : null}
+      <Images images={{ 'gtg-nav-arrow': require('../../../assets/map/nav-arrow.png') }} />
 
-      {alternativeLines ? (
-        <GeoJSONSource
-          id="journey-alternatives"
-          data={alternativeLines}
-          onPress={(e) => {
-            const i = Number(e.nativeEvent.features?.[0]?.properties?.i);
-            const alt = alternatives[i];
-            if (alt && onSelectRoute) onSelectRoute(alt);
-          }}
-        >
-          <Layer
-            type="line"
-            id="journey-alternative-casing"
-            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': colors.routeCasing, 'line-width': ROUTE_CASING_WIDTH as never }}
-          />
-          <Layer
-            type="line"
-            id="journey-alternative-line"
-            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': ALT_ROUTE, 'line-width': ROUTE_WIDTH as never }}
-          />
-        </GeoJSONSource>
-      ) : null}
+      <GeoJSONSource
+        id="journey-alternatives"
+        data={alternativeLines}
+        hitbox={{ top: 14, bottom: 14, left: 14, right: 14 }}
+        onPress={(e) => {
+          const id = e.nativeEvent.features?.[0]?.properties?.id;
+          const alt = alternatives.find((x) => x.id === id);
+          if (alt && onSelectRoute) onSelectRoute(alt);
+        }}
+      >
+        <Layer
+          type="line"
+          id="journey-alternative-casing"
+          beforeId={below('journey-alternative-casing')}
+          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+          paint={{ 'line-color': colors.routeCasing, 'line-width': ROUTE_CASING_WIDTH as never }}
+        />
+        <Layer
+          type="line"
+          id="journey-alternative-line"
+          beforeId={below('journey-alternative-line')}
+          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+          paint={{ 'line-color': ALT_ROUTE, 'line-width': ROUTE_WIDTH as never }}
+        />
+      </GeoJSONSource>
 
-      {full && progress ? (
-        <GeoJSONSource id="journey-travelled" data={full}>
-          <Layer
-            type="line"
-            id="journey-travelled-line"
-            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': colors.borderStrong, 'line-width': ROUTE_WIDTH as never }}
-          />
-        </GeoJSONSource>
-      ) : null}
+      <GeoJSONSource id="journey-travelled" data={full && progress ? full : EMPTY}>
+        <Layer
+          type="line"
+          id="journey-travelled-line"
+          beforeId={below('journey-travelled-line')}
+          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+          paint={{ 'line-color': colors.borderStrong, 'line-width': ROUTE_WIDTH as never }}
+        />
+      </GeoJSONSource>
 
-      {remaining ? (
-        <GeoJSONSource id="journey-route" data={remaining}>
-          <Layer
-            type="line"
-            id="journey-route-casing"
-            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': colors.routeCasing, 'line-width': ROUTE_CASING_WIDTH as never }}
-          />
-          <Layer
-            type="line"
-            id="journey-route-line"
-            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            paint={{ 'line-color': colors.route, 'line-width': ROUTE_WIDTH as never }}
-          />
-        </GeoJSONSource>
-      ) : null}
+      <GeoJSONSource id="journey-route" data={remaining ?? EMPTY}>
+        <Layer
+          type="line"
+          id="journey-route-casing"
+          beforeId={below('journey-route-casing')}
+          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+          paint={{ 'line-color': colors.routeCasing, 'line-width': ROUTE_CASING_WIDTH as never }}
+        />
+        <Layer
+          type="line"
+          id="journey-route-line"
+          beforeId={below('journey-route-line')}
+          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+          paint={{ 'line-color': colors.route, 'line-width': ROUTE_WIDTH as never }}
+        />
+      </GeoJSONSource>
 
       <GeoJSONSource id="journey-dots" data={dots}>
         <Layer
           type="circle"
           id="journey-dot"
+          beforeId={below('journey-dot')}
           paint={{
             'circle-radius': 4.5,
             'circle-color': ['get', 'color'] as never,
@@ -244,6 +253,26 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
           }}
         />
       </GeoJSONSource>
+
+      <GeoJSONSource
+        id="journey-focus"
+        data={focus ? { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [focus.longitude, focus.latitude] } } : EMPTY}
+      >
+        <Layer
+          type="circle"
+          id="journey-focus-halo"
+          beforeId={below('journey-focus-halo')}
+          paint={{ 'circle-radius': 16, 'circle-color': colors.primary, 'circle-opacity': 0.18 }}
+        />
+        <Layer
+          type="circle"
+          id="journey-focus-dot"
+          beforeId={below('journey-focus-dot')}
+          paint={{ 'circle-radius': 7, 'circle-color': colors.primary, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 3 }}
+        />
+      </GeoJSONSource>
+
+      <UserArrow to={here} heading={rawBearing} size={follow ? 0.8 : 0.62} glide={Boolean(progress)} />
 
       {placed.map(({ item, perp }) => (
         <ViewAnnotation
@@ -266,10 +295,10 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
         </ViewAnnotation>
       ) : null}
 
-      {alternatives.map((alt, i) => (
+      {alternatives.map((alt) => (
         <ViewAnnotation
-          key={`alt-${i}-${alt.route.createdAt}`}
-          id={`journey-alt-${i}-${alt.route.createdAt}`}
+          key={`alt-${alt.id}`}
+          id={`journey-alt-${alt.id}`}
           lngLat={alt.label}
           onPress={() => onSelectRoute?.(alt)}
         >
@@ -277,16 +306,6 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
         </ViewAnnotation>
       ))}
 
-      {here ? (
-        <UserArrow
-          to={here}
-          heading={rawBearing}
-          // Navigating, the map turns with the traveller (the arrow is drawn relative to it); in the preview the map faces north.
-          mapBearing={camBearing}
-          size={follow ? 38 : 30}
-          glide={Boolean(progress)}
-        />
-      ) : null}
     </Map>
   );
 }
@@ -343,52 +362,69 @@ function useSteadyBearing(bearing: number) {
 }
 
 /**
- * The traveller's arrow. While navigating it glides from one fix to the next
- * (and turns the short way round) instead of jumping, like in map apps.
- * Only this marker re-renders during the glide, not the map.
+ * The traveller's arrow, drawn by the map itself as its top layer (so no
+ * route line can cover it) and turned with the map. While navigating it
+ * glides from one fix to the next and turns the short way round, like in
+ * map apps.
  */
-function UserArrow({
-  to,
-  heading,
-  mapBearing,
-  size,
-  glide,
-}: {
-  to: [number, number];
-  heading: number;
-  mapBearing: number;
-  size: number;
-  glide: boolean;
-}) {
-  const [shown, setShown] = useState({ at: to, heading });
+function UserArrow({ to, heading, size, glide }: { to: [number, number] | null; heading: number; size: number; glide: boolean }) {
+  const [shown, setShown] = useState<{ at: [number, number]; heading: number } | null>(to ? { at: to, heading } : null);
   const current = useRef(shown);
-  const [lng, lat] = to;
+  const lng = to?.[0];
+  const lat = to?.[1];
 
   useEffect(() => {
-    const start = current.current;
+    if (lng == null || lat == null) return;
+    const start = current.current ?? { at: [lng, lat] as [number, number], heading };
     const jump = distanceMeters({ longitude: start.at[0], latitude: start.at[1] }, { longitude: lng, latitude: lat });
     const turn = ((heading - start.heading + 540) % 360) - 180;
     // Far jumps (a new route, a GPS gap) and the preview move at once.
     const duration = !glide || jump > 300 ? 0 : GLIDE_MS;
     const t0 = Date.now();
     let frame = 0;
+    let lastDrawn = 0;
     const tick = () => {
-      const k = duration ? Math.min(1, (Date.now() - t0) / duration) : 1;
+      const now = Date.now();
+      const k = duration ? Math.min(1, (now - t0) / duration) : 1;
       current.current = {
         at: [start.at[0] + (lng - start.at[0]) * k, start.at[1] + (lat - start.at[1]) * k],
         heading: (start.heading + turn * k + 360) % 360,
       };
-      setShown(current.current);
+      // About 30 updates a second is smooth and light on the map.
+      if (k === 1 || now - lastDrawn >= 33) {
+        lastDrawn = now;
+        setShown(current.current);
+      }
       if (k < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [lng, lat, heading, glide]);
 
+  const data = useMemo<GeoJSON.Feature | GeoJSON.FeatureCollection>(
+    () =>
+      shown && to
+        ? { type: 'Feature', properties: { heading: shown.heading }, geometry: { type: 'Point', coordinates: shown.at } }
+        : EMPTY,
+    [shown, to],
+  );
+
   return (
-    <ViewAnnotation id="journey-user" lngLat={shown.at}>
-      <NavArrow rotation={shown.heading - mapBearing} size={size} />
-    </ViewAnnotation>
+    <GeoJSONSource id="journey-user" data={data}>
+      <Layer
+        type="symbol"
+        id="journey-user-arrow"
+        layout={{
+          'icon-image': 'gtg-nav-arrow',
+          'icon-size': size,
+          'icon-rotate': ['get', 'heading'] as never,
+          'icon-rotation-alignment': 'map',
+          'icon-pitch-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        }}
+      />
+    </GeoJSONSource>
   );
 }
 
