@@ -464,7 +464,7 @@ export default function DestinationDetails() {
             )}
           </View>
 
-          {d.machine_translated || isFallback || d.wikipedia_url || d.image_credit ? (
+          {d.machine_translated || isFallback || d.wikipedia_url ? (
             <View className="gap-1">
               {d.machine_translated ? <Text className="text-xs text-faint">{tx('Parts of this guide were translated into Urdu by AI and may contain mistakes.')}</Text> : null}
               {isFallback ? <Text className="text-xs text-faint">{tx('Showing the offline summary. The full guide loads when you are connected.')}</Text> : null}
@@ -474,9 +474,6 @@ export default function DestinationDetails() {
                     {tx('Text from')} <Text className="text-xs font-semibold text-primary">{tx('Wikipedia')}</Text> {tx('(CC BY-SA 4.0)')}
                   </Text>
                 </Pressable>
-              ) : null}
-              {d.image_credit ? (
-                <Text className="text-xs text-faint">{tx('Photo: {0}, Wikimedia Commons', { 0: d.image_credit })}</Text>
               ) : null}
             </View>
           ) : null}

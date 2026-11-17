@@ -182,7 +182,6 @@ export function useDestinationDetail(id: string | undefined) {
       entry_fee: null,
       best_time: null,
       wikipedia_url: null,
-      image_credit: null,
     };
   }, [summary, translations.data]);
 

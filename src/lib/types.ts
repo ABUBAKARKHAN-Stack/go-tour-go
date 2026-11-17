@@ -47,7 +47,6 @@ export type Destination = DestinationSummary & {
   entry_fee: string | null;
   best_time: string | null;
   wikipedia_url: string | null;
-  image_credit: string | null;
   /** Set when parts of the text shown are AI translations. */
   machine_translated?: boolean;
 };
