@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Route as RouteIcon,
   TriangleAlert,
+  Undo2,
   Volume2,
   VolumeX,
   X,
@@ -147,6 +148,8 @@ export default function JourneyNavigate() {
         fix={fix}
         follow={!overview}
         padding={{ top: insets.top + 190, bottom: insets.bottom + 120 }}
+        alternatives={journey.alternatives}
+        onSelectRoute={(alt) => journeyStore.selectRoute(alt)}
       />
 
       <View className="absolute left-3 right-3 overflow-hidden rounded-[20px] bg-primary" style={{ top: insets.top + 8, boxShadow: '0 8px 24px rgba(21,56,79,0.30)' }}>
@@ -159,10 +162,22 @@ export default function JourneyNavigate() {
             </Text>
           </View>
         </View>
-        {journey.rerouting || progress?.offRoute ? (
+        {progress?.wrongWay && !journey.rerouting ? (
+          // Going back along the route: say so plainly, like map apps.
+          <View className="flex-row items-center gap-2 bg-destructive px-4 py-2.5">
+            <Undo2 color="#FFFFFF" size={16} />
+            <Text className="flex-1 text-sm font-semibold text-white">{tx('Wrong way · make a U-turn when safe')}</Text>
+          </View>
+        ) : journey.rerouting || progress?.offRoute || journey.rerouteFailed ? (
           <View className="flex-row items-center gap-2 bg-accent px-4 py-2">
             <RefreshCw color="#FFFFFF" size={14} />
-            <Text className="text-xs font-semibold text-white">{journey.rerouting ? tx('Off route · finding a new route…') : tx('Off route · will recalculate when online')}</Text>
+            <Text className="flex-1 text-xs font-semibold text-white">
+              {journey.rerouting
+                ? tx('Finding a new route…')
+                : journey.rerouteFailed
+                  ? tx('No new route yet · retrying')
+                  : tx('Off route · finding a new route')}
+            </Text>
           </View>
         ) : then ? (
           <View className="bg-primary-pressed px-4 py-2">

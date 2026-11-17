@@ -85,7 +85,7 @@ working MVP, not a mock-up.
 | Data | Supabase (Postgres + RLS, Auth, Storage, Realtime Broadcast), project id `bovepoelpxsstguclftl` |
 | Server code | One Supabase Edge Function, `ai`, which calls Gemini (chat + Visual Lens) and enforces a per-user daily quota |
 | Maps | MapLibre RN v11 with a self-built PMTiles map of Pakistan, published as a GitHub release; online fallback is OpenFreeMap |
-| Routing / weather / nearby | FOSSGIS OSRM, Open-Meteo and Overpass (all keyless public services) |
+| Routing / weather / nearby | FOSSGIS Valhalla (main) with FOSSGIS OSRM as automatic fallback, Open-Meteo and Overpass (all keyless public services) |
 | Client state | TanStack Query, persisted to `expo-sqlite` localStorage (offline reads); React Hook Form + Zod for forms |
 | Animation | Reanimated 4 (CSS transitions + layout animations), see `src/lib/motion.ts` |
 | Builds | EAS Build (`preview` profile, APK), EAS Update (OTA, `runtimeVersion: fingerprint`), EAS Hosting for the share site |
@@ -191,7 +191,7 @@ build `4df88d41-dd7f-49ef-ba7f-c507fb1bb53d`, commit 9eb6665 (#25), runtime vers
 
 `src/constants/app.constants.ts` holds what the whole app shares: the app's name, slug, scheme and Android
 package (read from `app.json`, which stays the source for native values), the share-site address, every
-external service URL (map style, OSRM routing, Open-Meteo, Overpass, Photon, offline-map release), hand-off
+external service URL (map style, Valhalla + OSRM routing, Open-Meteo, Overpass, Photon, offline-map release), hand-off
 links (Google Maps, OpenStreetMap, WhatsApp), Pakistan's map centre and search box, and the emergency
 numbers (labels translated in `src/features/safety/emergency.ts`). It is plain data with no app imports, so
 pure, unit-tested modules can use it. Secrets never go there (`src/lib/env.ts` reads `EXPO_PUBLIC_*`).

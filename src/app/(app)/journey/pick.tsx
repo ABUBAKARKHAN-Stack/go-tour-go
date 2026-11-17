@@ -14,7 +14,7 @@ import { getCurrentFix } from '@/features/location/location-provider';
 import { useLastLocation, useLocationState } from '@/features/location/location-store';
 import { useSpotName } from '@/features/map/spot-name';
 import { TravelMap, type TravelMapHandle } from '@/features/map/travel-map';
-import { navigateTo } from '@/features/routing/navigate';
+import { navigateTo, placeOnly, type JourneyEnd, type Target } from '@/features/routing/navigate';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
 import { colors, shadow } from '@/lib/theme';
@@ -27,8 +27,25 @@ import { colors, shadow } from '@/lib/theme';
  */
 export default function PickDestination() {
   const insets = useSafeAreaInsets();
-  // From the planner with start and destination swapped: the spot is where the route starts.
-  const reverse = useLocalSearchParams<{ reverse?: string }>().reverse === '1';
+  // Which end the spot is (`role`), and the journey's other end: you by default, a place
+  // (`other*`), or still to choose (`otherNone`). `reverse=1` is the older "spot is the start, ending at you".
+  const params = useLocalSearchParams<{
+    role?: 'from' | 'to';
+    reverse?: string;
+    otherName?: string;
+    otherLat?: string;
+    otherLng?: string;
+    otherId?: string;
+    otherSubtitle?: string;
+    otherNone?: string;
+  }>();
+  const reverse = params.role === 'from' || params.reverse === '1';
+  const otherLat = Number(params.otherLat);
+  const otherLng = Number(params.otherLng);
+  const otherPlace: Target | null =
+    params.otherName && Number.isFinite(otherLat) && Number.isFinite(otherLng)
+      ? { name: params.otherName, latitude: otherLat, longitude: otherLng, id: params.otherId ?? `pin:${otherLat}, ${otherLng}`, ...(params.otherSubtitle ? { subtitle: params.otherSubtitle } : {}) }
+      : null;
   const map = useRef<TravelMapHandle>(null);
   const location = useLastLocation();
   const locationState = useLocationState();
@@ -52,7 +69,15 @@ export default function PickDestination() {
 
   const go = () => {
     if (!spot.data) return;
-    navigateTo({ id: spot.data.id, name: spot.data.name, subtitle: spot.data.subtitle, ...center }, { replace: true, reverse });
+    const picked: Target = { id: spot.data.id, name: spot.data.name, subtitle: spot.data.subtitle, ...center };
+    // The other end still has to be chosen: back to the planner with this one filled in.
+    if (params.otherNone === '1') {
+      router.replace({ pathname: '/search', params: { ...placeOnly(picked, reverse ? 'from' : 'to'), open: reverse ? 'to' : 'from' } });
+      return;
+    }
+    const other: JourneyEnd = otherPlace ?? 'me';
+    if (reverse) navigateTo(other, { from: picked, replace: true });
+    else navigateTo(picked, { from: other, replace: true });
   };
 
   if (mapError) {

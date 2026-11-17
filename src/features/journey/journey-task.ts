@@ -24,6 +24,7 @@ import {
   PROXIMITY_CATEGORY,
 } from '@/features/notifications/local-notifications';
 import { formatDistance } from '@/lib/geo';
+import { tx } from '@/lib/i18n';
 import { getPreferences } from '@/lib/preferences';
 import { storage, StorageKeys } from '@/lib/storage';
 import { colors } from '@/lib/theme';
@@ -48,12 +49,15 @@ TaskManager.defineTask<{ locations: Location.LocationObject[] }>(JOURNEY_TASK, a
   const index = buildRouteIndex(saved.route.coordinates);
   const starts = stepStarts(saved.route.steps);
   let progress = saved.progress;
+  const wasWrongWay = Boolean(saved.progress?.wrongWay);
   for (const l of data.locations) {
     progress = advance(saved.route, index, starts, {
       latitude: l.coords.latitude,
       longitude: l.coords.longitude,
       accuracy: l.coords.accuracy ?? null,
       timestamp: l.timestamp,
+      heading: l.coords.heading ?? null,
+      speed: l.coords.speed ?? null,
     }, progress);
   }
   if (!progress) return;
@@ -69,6 +73,16 @@ TaskManager.defineTask<{ locations: Location.LocationObject[] }>(JOURNEY_TASK, a
     });
     await stopJourneyUpdates();
     return;
+  }
+
+  // Going back along the route: one notification per wrong-way stretch.
+  if (progress.wrongWay && !wasWrongWay) {
+    await notifyNow({
+      title: tx('Wrong way'),
+      body: tx('You are going away from {0}. Make a U-turn when it is safe.', { 0: saved.target.name }),
+      channel: CHANNELS.alerts,
+      data: { type: 'journey-wrong-way' },
+    });
   }
 
   // Landmarks and hazards on the route: shared engine and cooldown state.

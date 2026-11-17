@@ -2,18 +2,20 @@ import * as Speech from 'expo-speech';
 import { useSyncExternalStore } from 'react';
 
 import type { Landmark } from '@/features/destinations/api';
-import { fetchRoute, fetchRoutes, type Route, type TravelMode } from '@/features/routing/osrm';
+import type { Route, TravelMode } from '@/features/routing/osrm';
+import { getRoutes } from '@/features/routing/routes';
 import { distanceMeters, type LatLng } from '@/lib/geo';
 import { isUrdu, tx, txEn } from '@/lib/i18n';
 
 import { storage, StorageKeys } from '@/lib/storage';
 import type { RoadAlert } from '@/lib/types';
 
-import { hazardLookahead, hazardsAhead, journeyItems, routeAvoiding, type JourneyItem } from './journey-items';
+import { hazardCore, hazardLookahead, hazardsAhead, journeyItems, routeAvoiding, type JourneyItem } from './journey-items';
 import { hazardCard } from '@/features/alerts/hazard-card-store';
 import { CHANNELS, notifyNow } from '@/features/notifications/local-notifications';
 import { formatDistance } from '@/lib/geo';
-import { advance, crossedThreshold, spokenParts, stepStarts, voiceThresholds, type NavFix, type NavProgress, type SpokenPart } from './navigation';
+import { alternativesAhead, pickAlternatives, type AltRoute } from './alternatives';
+import { advance, crossedThreshold, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress, type SpokenPart } from './navigation';
 import { buildRouteIndex, type RouteIndex } from './route-geometry';
 
 /**
@@ -27,14 +29,19 @@ export type JourneyPhase = 'idle' | 'planning' | 'preview' | 'active' | 'arrived
 export type JourneyState = {
   phase: JourneyPhase;
   target: JourneyTarget | null;
-  origin: LatLng | null;
+  /** Where the route starts: the traveller ("Your location") or a chosen place. */
+  origin: JourneyTarget | null;
   mode: TravelMode;
   routes: Partial<Record<TravelMode, Route>>;
+  /** Other ways to go for the selected travel mode (grey on the map, tap to switch). */
+  alternatives: AltRoute[];
   routeErrors: Partial<Record<TravelMode, string>>;
   route: Route | null;
   items: JourneyItem[];
   progress: NavProgress | null;
   rerouting: boolean;
+  /** The last attempt to find a new route failed; another follows shortly. */
+  rerouteFailed: boolean;
   voice: boolean;
   startedAt: number | null;
   /** Hazards already announced on this journey. */
@@ -58,6 +65,8 @@ const MODES: TravelMode[] = ['driving', 'cycling', 'walking'];
 /** Skip modes that make no sense for the distance (as the crow flies). */
 const MODE_MAX_KM: Record<TravelMode, number> = { driving: Infinity, cycling: 120, walking: 25 };
 const REROUTE_MIN_INTERVAL_MS = 20_000;
+/** After a failed attempt, try again sooner. */
+const REROUTE_RETRY_MS = 10_000;
 const PERSIST_INTERVAL_MS = 10_000;
 
 const idle: JourneyState = {
@@ -66,11 +75,13 @@ const idle: JourneyState = {
   origin: null,
   mode: 'driving',
   routes: {},
+  alternatives: [],
   routeErrors: {},
   route: null,
   items: [],
   progress: null,
   rerouting: false,
+  rerouteFailed: false,
   voice: true,
   startedAt: null,
   warned: [],
@@ -81,6 +92,11 @@ let state: JourneyState = idle;
 let index: RouteIndex | null = null;
 let starts: number[] = [];
 let lastReroute = 0;
+let rerouteWait = REROUTE_MIN_INTERVAL_MS;
+/** Routes found per travel mode while planning (the first is the best). */
+let planned: Partial<Record<TravelMode, Route[]>> = {};
+/** Travel modes whose alternatives were already asked for in this plan. */
+let askedAlternatives = new Set<TravelMode>();
 let lastPersist = 0;
 let planController: AbortController | null = null;
 /**
@@ -114,7 +130,7 @@ const eventListeners = new Set<(e: JourneyEvent) => void>();
 
 export type AvoidResult = 'switched' | 'none' | 'unavailable';
 
-export type JourneyEvent = { type: 'arrived' } | { type: 'rerouted' } | { type: 'off-route' };
+export type JourneyEvent = { type: 'arrived' } | { type: 'rerouted' } | { type: 'off-route' } | { type: 'wrong-way' };
 
 function set(patch: Partial<JourneyState>) {
   state = { ...state, ...patch };
@@ -128,6 +144,12 @@ function emit(e: JourneyEvent) {
 function indexRoute(route: Route | null) {
   index = route ? buildRouteIndex(route.coordinates) : null;
   starts = route ? stepStarts(route.steps) : [];
+}
+
+/** The alternatives worth showing next to `route` (from the same request). */
+function alternativesFor(route: Route | null, candidates: Route[]): AltRoute[] {
+  if (!route || !index) return [];
+  return pickAlternatives(route, index, candidates);
 }
 
 function itemsFor(route: Route | null) {
@@ -238,23 +260,34 @@ export const journeyStore = {
     }
   },
 
-  /** Calculates routes for every sensible travel mode, in parallel. */
-  async plan(target: JourneyTarget, origin: LatLng, preferred: TravelMode) {
+  /**
+   * Calculates routes for every sensible travel mode, in parallel; the
+   * preferred mode also gets alternative routes. `origin` is the traveller
+   * or any chosen place (planning a trip that starts somewhere else).
+   */
+  async plan(target: JourneyTarget, origin: LatLng | JourneyTarget, preferred: TravelMode) {
     planController?.abort();
     cancelRouteRequests();
     planController = new AbortController();
     const signal = planController.signal;
     const crowKm = distanceMeters(origin, target) / 1000;
     const modes = MODES.filter((m) => crowKm <= MODE_MAX_KM[m]);
-    set({ ...idle, voice: state.voice, phase: 'planning', target, origin, mode: preferred });
+    const start: JourneyTarget = { name: 'name' in origin ? origin.name : tx('Your location'), ...origin };
+    planned = {};
+    askedAlternatives = new Set([preferred]);
+    set({ ...idle, voice: state.voice, phase: 'planning', target, origin: start, mode: preferred });
 
-    const results = await Promise.allSettled(modes.map((m) => fetchRoute(m, origin, target, signal)));
+    const results = await Promise.allSettled(
+      modes.map((m) => getRoutes(m, origin, target, { signal, alternatives: m === preferred })),
+    );
     if (signal.aborted) return;
     const routes: JourneyState['routes'] = {};
     const routeErrors: JourneyState['routeErrors'] = {};
     results.forEach((r, i) => {
-      if (r.status === 'fulfilled') routes[modes[i]] = r.value;
-      else routeErrors[modes[i]] = r.reason instanceof Error ? r.reason.message : 'Unable to calculate route.';
+      if (r.status === 'fulfilled') {
+        routes[modes[i]] = r.value[0];
+        planned[modes[i]] = r.value;
+      } else routeErrors[modes[i]] = r.reason instanceof Error ? r.reason.message : 'Unable to calculate route.';
     });
     const mode = routes[preferred] ? preferred : (modes.find((m) => routes[m]) ?? preferred);
     const route = routes[mode] ?? null;
@@ -263,14 +296,56 @@ export const journeyStore = {
       return;
     }
     indexRoute(route);
-    set({ phase: 'preview', routes, routeErrors, mode, route, items: itemsFor(route), error: null });
+    set({ phase: 'preview', routes, routeErrors, mode, route, alternatives: alternativesFor(route, planned[mode] ?? []), items: itemsFor(route), error: null });
+    if (mode !== preferred) journeyStore.loadAlternatives(mode).catch(() => undefined);
   },
 
   selectMode(mode: TravelMode) {
     const route = state.routes[mode];
     if (!route) return;
     indexRoute(route);
-    set({ mode, route, items: itemsFor(route) });
+    set({ mode, route, alternatives: alternativesFor(route, planned[mode] ?? []), items: itemsFor(route) });
+    journeyStore.loadAlternatives(mode).catch(() => undefined);
+  },
+
+  /** Asks for the other ways to go in a travel mode (once, while planning). */
+  async loadAlternatives(mode: TravelMode) {
+    if (state.phase !== 'preview' || !state.origin || !state.target || askedAlternatives.has(mode)) return;
+    askedAlternatives.add(mode);
+    const signal = planController?.signal;
+    const target = state.target;
+    const routes = await getRoutes(mode, state.origin, target, { signal, alternatives: true });
+    if (signal?.aborted || state.target !== target || state.phase !== 'preview') return;
+    const main = state.routes[mode];
+    if (!main) return;
+    planned[mode] = [main, ...routes];
+    if (state.mode === mode) set({ alternatives: alternativesFor(main, routes) });
+  },
+
+  /**
+   * Switches to one of the alternative routes (tapped on the map or in the
+   * list). The route being left becomes an alternative in its place.
+   */
+  selectRoute(alt: AltRoute) {
+    const current = state.route;
+    if (!current || !state.alternatives.includes(alt)) return;
+    const route = alt.route;
+    indexRoute(route);
+    const others = [current, ...state.alternatives.filter((a) => a !== alt).map((a) => a.route)];
+    const alternatives = state.phase === 'active' ? [] : alternativesFor(route, others);
+    if (state.phase !== 'active') planned[state.mode] = [route, ...others];
+    set({
+      route,
+      routes: { ...state.routes, [state.mode]: route },
+      alternatives,
+      items: itemsFor(route),
+      progress: state.phase === 'active' ? null : state.progress,
+    });
+    if (state.phase === 'active') {
+      persist(true);
+      speak('Switched to the other route');
+      emit({ type: 'rerouted' });
+    }
   },
 
   /** Shows a route saved for offline use in the preview, without asking the routing server. */
@@ -284,7 +359,7 @@ export const journeyStore = {
       voice: state.voice,
       phase: 'preview',
       target,
-      origin: route.from,
+      origin: { name: tx('Your location'), ...route.from },
       mode: route.mode,
       routes: { [route.mode]: route },
       route,
@@ -297,7 +372,9 @@ export const journeyStore = {
     if (!state.route || !state.target) return;
     cancelRouteRequests();
     lastReroute = 0;
-    set({ phase: 'active', startedAt: Date.now(), progress: null, rerouting: false, warned: [] });
+    rerouteWait = REROUTE_MIN_INTERVAL_MS;
+    // The alternatives from planning stay on the map until their turn-off is behind.
+    set({ phase: 'active', startedAt: Date.now(), progress: null, rerouting: false, rerouteFailed: false, warned: [] });
     persist(true);
     const first = state.route.steps[0];
     if (first) {
@@ -364,33 +441,64 @@ export const journeyStore = {
       return;
     }
     const ahead = hazardsAhead(state.items, progress.along, hazardLookahead(state.mode), state.warned);
-    set({ progress, warned: ahead.length ? [...state.warned, ...ahead.map((h) => h.id)] : state.warned });
+    const alternatives = alternativesAhead(state.alternatives, progress.along);
+    set({
+      progress,
+      alternatives,
+      warned: ahead.length ? [...state.warned, ...ahead.map((h) => h.id)] : state.warned,
+    });
     for (const h of ahead.slice(0, 1)) {
       announceHazard(h, Math.max(0, h.along - progress.along), speak).catch(() => undefined);
       hazardCard.show(h.id.replace(/^alert:/, ''), Math.max(0, h.along - progress.along));
     }
     persist(ahead.length > 0);
     if (progress.offRoute && !prev?.offRoute) emit({ type: 'off-route' });
-    if (progress.offRoute) journeyStore.reroute(fix).catch(() => undefined);
+    // Going back along the route: warn at once, then plan from here if it goes on.
+    if (progress.wrongWay && !prev?.wrongWay) {
+      emit({ type: 'wrong-way' });
+      speak("You're going the wrong way. Make a U-turn when it is safe.", undefined, true);
+    }
+    if (progress.offRoute || wrongWayNeedsReroute(progress, fix.timestamp)) {
+      journeyStore.reroute(fix, progress.heading).catch(() => undefined);
+    }
   },
 
-  /** New route from where the traveller is now (throttled). */
-  async reroute(from: LatLng) {
-    if (avoiding || state.rerouting || !state.target || Date.now() - lastReroute < REROUTE_MIN_INTERVAL_MS) return;
+  /**
+   * New route from where the traveller is now, starting in the direction
+   * they are going (a U-turn when that is the way). The first try is
+   * immediate; after that at most every 20 s, or 10 s after a failure.
+   * Alternatives come back with it.
+   */
+  async reroute(from: LatLng, heading: number | null = null) {
+    if (avoiding || state.rerouting || !state.target || Date.now() - lastReroute < rerouteWait) return;
     lastReroute = Date.now();
     const { id, signal } = newRouteRequest();
     const target = state.target;
     set({ rerouting: true });
     speak('Recalculating');
     try {
-      const route = await fetchRoute(state.mode, from, target, signal);
+      const routes = await getRoutes(state.mode, from, target, { signal, heading, alternatives: true });
       if (id !== routeRequest || state.phase !== 'active') return;
+      const route = routes[0];
       indexRoute(route);
-      set({ route, routes: { ...state.routes, [state.mode]: route }, items: itemsFor(route), progress: null, rerouting: false });
+      rerouteWait = REROUTE_MIN_INTERVAL_MS;
+      set({
+        route,
+        routes: { ...state.routes, [state.mode]: route },
+        alternatives: alternativesFor(route, routes),
+        items: itemsFor(route),
+        progress: null,
+        rerouting: false,
+        rerouteFailed: false,
+      });
       persist(true);
       emit({ type: 'rerouted' });
     } catch {
-      // Offline or service busy: keep the old route and try again later.
+      // Offline or service busy: keep the old route and try again shortly.
+      if (id === routeRequest && state.phase === 'active') {
+        rerouteWait = REROUTE_RETRY_MS;
+        set({ rerouteFailed: true });
+      }
     } finally {
       if (id === routeRequest && state.rerouting) set({ rerouting: false });
     }
@@ -408,12 +516,20 @@ export const journeyStore = {
     avoiding = true;
     if (state.rerouting) set({ rerouting: false });
     try {
-      const routes = await fetchRoutes(state.mode, from, state.target, signal);
+      // Valhalla routes around the hazard's core; OSRM's alternatives are checked against it.
+      const core = { latitude: hazard.latitude, longitude: hazard.longitude, radius: hazardCore(hazard.radius) };
+      const routes = await getRoutes(state.mode, from, state.target, { signal, alternatives: true, avoid: [core] });
       if (id !== routeRequest || state.phase !== 'active') return 'unavailable';
       const route = routeAvoiding(routes, hazard);
       if (!route) return 'none';
       indexRoute(route);
-      set({ route, routes: { ...state.routes, [state.mode]: route }, items: itemsFor(route), progress: null });
+      set({
+        route,
+        routes: { ...state.routes, [state.mode]: route },
+        alternatives: alternativesFor(route, routes.filter((r) => r !== route && routeAvoiding([r], hazard))),
+        items: itemsFor(route),
+        progress: null,
+      });
       persist(true);
       speak('Taking a route around the hazard');
       emit({ type: 'rerouted' });
@@ -438,6 +554,8 @@ export const journeyStore = {
     Speech.stop();
     storage.remove(StorageKeys.activeJourney);
     indexRoute(null);
+    planned = {};
+    askedAlternatives = new Set();
     set({ ...idle, voice: state.voice });
   },
 };

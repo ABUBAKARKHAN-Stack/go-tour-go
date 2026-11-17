@@ -6,12 +6,22 @@
  */
 import { describeStep, type Route, type RouteStep, type TravelMode } from '@/features/routing/osrm';
 import { hasArabicScript } from '@/features/data/search-text';
+import { angleDiff, bearingTo } from '@/features/proximity/heading';
 import { distanceMeters } from '@/lib/geo';
 
 import { projectPoint, type RouteIndex } from './route-geometry';
 import { tx, txEn } from '@/lib/i18n';
 
-export type NavFix = { latitude: number; longitude: number; accuracy: number | null; timestamp: number };
+export type NavFix = {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  timestamp: number;
+  /** GPS course over ground, degrees (-1 or null when unknown). */
+  heading?: number | null;
+  /** Metres per second (null when unknown). */
+  speed?: number | null;
+};
 
 export type NavProgress = {
   along: number;
@@ -24,7 +34,25 @@ export type NavProgress = {
   toManeuver: number;
   segment: number;
   snapped: [number, number];
+  /** Direction of the route where the traveller is. */
   bearing: number;
+  /** Where to draw the traveller: on the route, or their real spot when off it or going the wrong way. */
+  position: [number, number];
+  /** Which way the traveller is really going (null before they have moved). */
+  heading: number | null;
+  /** Unsmoothed distance along the route (detects going backwards). */
+  rawAlong: number;
+  /** Furthest point reached along the route. */
+  maxAlong: number;
+  /** Last point a movement direction was measured from. */
+  anchor: [number, number];
+  /** Consecutive fixes going against / with the route. */
+  wrongCount: number;
+  rightCount: number;
+  /** Travelling along the route in the wrong direction. */
+  wrongWay: boolean;
+  /** When the wrong-way stretch began (ms), or null. */
+  wrongSince: number | null;
   offRouteMeters: number;
   /** Consecutive fixes beyond the off-route threshold. */
   offCount: number;
@@ -34,6 +62,13 @@ export type NavProgress = {
 };
 
 const OFF_ROUTE_FIXES = 3;
+/** Fixes against the route before "wrong way" (or fewer once clearly behind). */
+const WRONG_WAY_FIXES = 3;
+const RIGHT_WAY_FIXES = 2;
+/** Metres back from the furthest point reached that count as going backwards. */
+const WRONG_WAY_BACK_M = 40;
+/** Moving less than this between fixes gives no usable direction. */
+const HEADING_MIN_MOVE_M = 8;
 const ARRIVE_REMAINING_M = 30;
 const ARRIVE_DISTANCE_M = 35;
 /** Segments searched behind/ahead of the last position before a full search. */
@@ -52,6 +87,30 @@ export function stepStarts(steps: RouteStep[]): number[] {
 
 export function offRouteThreshold(accuracy: number | null) {
   return Math.min(100, Math.max(35, (accuracy ?? 20) * 1.5));
+}
+
+/** GPS heading is trustworthy above this speed (m/s): a brisk walk, or a slow vehicle. */
+export function headingSpeed(mode: TravelMode) {
+  return mode === 'walking' ? 0.8 : 1.5;
+}
+
+/**
+ * Which way the traveller is going on this fix: the GPS course when moving
+ * fast enough, else the direction from the last measured point once they
+ * have moved a few metres, else null (standing still).
+ */
+export function movementHeading(fix: NavFix, anchor: [number, number] | null, mode: TravelMode): number | null {
+  const course = fix.heading;
+  if (course != null && Number.isFinite(course) && course >= 0 && (fix.speed ?? 0) >= headingSpeed(mode)) return course % 360;
+  if (!anchor) return null;
+  const from = { longitude: anchor[0], latitude: anchor[1] };
+  if (distanceMeters(from, fix) < HEADING_MIN_MOVE_M) return null;
+  return bearingTo(from, fix);
+}
+
+/** Has the wrong-way stretch gone on long enough to plan a new route from here? */
+export function wrongWayNeedsReroute(p: NavProgress, now: number) {
+  return p.wrongWay && ((p.wrongSince != null && now - p.wrongSince >= 15_000) || p.maxAlong - p.rawAlong >= 80);
 }
 
 export function advance(
@@ -73,9 +132,36 @@ export function advance(
   const threshold = offRouteThreshold(fix.accuracy);
   const isOff = proj.offRoute > threshold;
   const offCount = isOff ? (prev?.offCount ?? 0) + 1 : 0;
+  const here: [number, number] = [fix.longitude, fix.latitude];
 
-  // Do not let jitter move the position backwards while on the route.
-  const along = !isOff && prev && proj.along < prev.along && prev.along - proj.along < 25 ? prev.along : proj.along;
+  // Direction of travel, and whether it goes with or against the route.
+  const moved = movementHeading(fix, prev?.anchor ?? null, route.mode);
+  const anchor = moved != null || !prev ? here : prev.anchor;
+  const rawAlong = proj.along;
+  const prevRaw = prev?.rawAlong ?? rawAlong;
+  let wrongCount = 0;
+  let rightCount = 0;
+  let wrongWay = false;
+  let maxAlong = Math.max(prev?.maxAlong ?? rawAlong, rawAlong);
+  if (!isOff && prev) {
+    const against = moved != null ? angleDiff(moved, proj.bearing) > 135 : rawAlong < prevRaw - HEADING_MIN_MOVE_M;
+    const along = moved != null ? angleDiff(moved, proj.bearing) < 60 : rawAlong > prevRaw + HEADING_MIN_MOVE_M;
+    // (Progress saved by an older version has no counters yet.)
+    wrongCount = against ? (prev.wrongCount ?? 0) + 1 : along ? 0 : (prev.wrongCount ?? 0);
+    rightCount = along ? (prev.rightCount ?? 0) + 1 : against ? 0 : (prev.rightCount ?? 0);
+    if (prev.wrongWay) {
+      wrongWay = rightCount < RIGHT_WAY_FIXES;
+      // Turned round: start counting progress from here again.
+      if (!wrongWay) maxAlong = rawAlong;
+    } else {
+      wrongWay = wrongCount >= WRONG_WAY_FIXES || (wrongCount >= 1 && maxAlong - rawAlong > WRONG_WAY_BACK_M);
+    }
+  }
+  const wrongSince = wrongWay ? (prev?.wrongWay ? prev.wrongSince : fix.timestamp) : null;
+
+  // Do not let jitter move the position backwards while going the right way on the route.
+  const along =
+    !isOff && !wrongWay && prev && rawAlong < prev.along && prev.along - rawAlong < 25 ? prev.along : rawAlong;
   const remaining = Math.max(0, index.total - along);
 
   let stepIndex = 0;
@@ -89,6 +175,15 @@ export function advance(
   const dest = { latitude: route.to.latitude, longitude: route.to.longitude };
   const arrived = remaining < ARRIVE_REMAINING_M || distanceMeters(fix, dest) < ARRIVE_DISTANCE_M;
 
+  // The arrow follows the road when going its way; otherwise it shows where the traveller really goes.
+  const onRouteForward = !isOff && !wrongWay;
+  const heading =
+    moved != null
+      ? onRouteForward && angleDiff(moved, proj.bearing) < 60
+        ? proj.bearing
+        : moved
+      : (prev?.heading ?? null);
+
   return {
     along,
     remaining,
@@ -98,6 +193,15 @@ export function advance(
     segment: proj.segment,
     snapped: proj.point,
     bearing: proj.bearing,
+    position: onRouteForward ? proj.point : here,
+    heading,
+    rawAlong,
+    maxAlong,
+    anchor,
+    wrongCount,
+    rightCount,
+    wrongWay: wrongWay && !arrived,
+    wrongSince,
     offRouteMeters: proj.offRoute,
     offCount,
     offRoute: offCount >= OFF_ROUTE_FIXES && !arrived,

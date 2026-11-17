@@ -217,7 +217,7 @@ src/lib/                 supabase client, storage, query client, geo maths, them
   permission and location "Allow all the time". Shared persisted state de-duplicates it against the foreground engine.
 - **Notifications** have *Learn more* / *Navigate* actions. While the app is open, a contextual card shows the image,
   description, why it matters, nearby attractions and distance, with Learn more / Navigate / Dismiss.
-- **Navigate** computes an OSRM route from the current location and draws it on the map, without searching again.
+- **Navigate** computes a route (Valhalla, OSRM fallback) from the current location and draws it on the map, without searching again.
 - **Settings → Demo tools → Simulate journey** drives a synthetic path through any landmark's radius, so the whole flow can
   be shown without travelling. *Reset landmark cooldowns* lets you repeat it.
 
@@ -238,8 +238,22 @@ Search "Qayyumabad" → route preview (drive / bike / walk, landmarks and road a
 turn-by-turn with voice, landmark alerts and "hazard ahead" warnings → automatic re-route when off route → arrival
 ```
 
-- **Routing:** FOSSGIS OSRM car, bike and foot profiles, fetched in parallel for the preview (modes that make no sense
-  for the distance are skipped). Re-routing is throttled to once per 20 s.
+- **Routing:** FOSSGIS Valhalla (`src/features/routing/valhalla.ts`) for car, bike and foot, with the FOSSGIS OSRM
+  servers as automatic fallback when Valhalla is down, busy or finds nothing (`routes.ts`). Modes are fetched in
+  parallel for the preview (modes that make no sense for the distance are skipped); the chosen mode also gets up to
+  two alternative routes, drawn grey with their time difference, tap to switch (also while navigating, until their
+  turn-off is behind). Re-routes start in the traveller's direction (Valhalla `heading`, OSRM `bearings`), so going
+  the other way gives a proper U-turn. "Find a way around" a hazard asks Valhalla to avoid it (`exclude_polygons`).
+  The first re-route is immediate, then at most every 20 s (10 s after a failure, shown as "retrying").
+- **Wrong way:** `navigation.ts` compares the direction of travel (GPS course, or movement between fixes) with the
+  route. Three fixes against it, or one once 40 m behind the furthest point reached, shows "Wrong way" (banner,
+  voice, a notification in the background); after 15 s or 80 m it plans a new route from there. Two fixes the right
+  way clear it. Settings → Demo tools → "Drive the wrong way" shows it without travelling.
+- **Arrow and camera:** the arrow sits on the route while going its way and at the real spot otherwise, points the
+  way the traveller really goes, and glides between fixes; the camera follows with a linear glide and ignores turns
+  under 8°.
+- **Start anywhere:** in Plan a journey both From and To can be changed (search, choose on map, or "Your location").
+  A route that starts somewhere else can be previewed; guidance starts once you are within 300 m of its start.
 - **Along the route** (`features/journey/route-geometry.ts`, `journey-items.ts`): landmarks within their alert radius or
   800 m of the route and active medium/high/critical road alerts are found on the phone with a grid-indexed corridor
   search, so it works with thousands of landmarks and offline.
@@ -306,7 +320,8 @@ Radii vary per landmark, for example: Wazir Khan Mosque 300 m, Minar-e-Pakistan 
 |---|---|---|---|
 | Supabase | Auth, DB, Realtime, Storage, Edge Functions | publishable key (client), secrets (server) | Free tier pauses inactive projects |
 | OpenFreeMap | Vector map tiles/style | none | Fair use; keep offline downloads small |
-| FOSSGIS OSRM (`routing.openstreetmap.de`) | Car/foot routes | none | Fair use, no SLA; one request per user action |
+| FOSSGIS Valhalla (`valhalla1.openstreetmap.de`) | Routes, alternatives, U-turn re-routes, hazard avoidance | none | Fair use, no SLA; one request per user action |
+| FOSSGIS OSRM (`routing.openstreetmap.de`) | Fallback routes | none | Fair use, no SLA; only when Valhalla fails |
 | Overpass API | Live nearby services (OSM) | none | Rate-limited; falls back to seeded `nearby_services` |
 | Open-Meteo | Weather | none | Non-commercial free use; cached 30 min |
 | Google Gemini | AI assistant, Visual Lens | `GEMINI_API_KEY` (server) | Free-tier quotas; per-user daily cap enforced |

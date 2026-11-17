@@ -9,7 +9,8 @@ import { useIsOnline } from '@/components/offline-banner';
 import { Text } from '@/components/text';
 import { useRatings } from '@/features/destinations/api';
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
-import { fetchRoute, type TravelMode } from '@/features/routing/osrm';
+import type { TravelMode } from '@/features/routing/osrm';
+import { getRoute } from '@/features/routing/routes';
 import { navigateTo } from '@/features/routing/navigate';
 import { distanceMeters, formatDistance, formatDuration, type LatLng } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
@@ -40,7 +41,7 @@ function useTravelTime(from: LatLng | null, to: DestinationSummary, mode: Travel
   const route = useQuery({
     queryKey: ['travel-time', to.id, mode, cell],
     enabled: Boolean(from) && online,
-    queryFn: ({ signal }) => fetchRoute(mode, from!, { latitude: to.latitude, longitude: to.longitude, id: to.id, name: to.name }, signal),
+    queryFn: ({ signal }) => getRoute(mode, from!, { latitude: to.latitude, longitude: to.longitude, id: to.id, name: to.name }, { signal }),
     staleTime: 1000 * 60 * 15,
     retry: 0,
   });

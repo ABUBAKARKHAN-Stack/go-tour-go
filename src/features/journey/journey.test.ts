@@ -3,7 +3,8 @@ import { describe, expect, test } from 'bun:test';
 import { parseOsrmResponse, type Route } from '@/features/routing/osrm';
 import { distanceMeters } from '@/lib/geo';
 
-import { advance, crossedThreshold, formatEta, spokenDistance, spokenInstruction, spokenParts, stepStarts, voiceThresholds, type NavProgress } from './navigation';
+import { alternativesAhead, compareRoute, pickAlternatives } from './alternatives';
+import { advance, crossedThreshold, formatEta, movementHeading, spokenDistance, spokenInstruction, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress } from './navigation';
 import * as journeyItemsModule from './journey-items';
 import { hazardsAhead, journeyItems } from './journey-items';
 import { buildRouteIndex, corridor, pointAlong, projectPoint, remainingLine } from './route-geometry';
@@ -225,5 +226,107 @@ describe('route around a hazard', () => {
     expect(routeAvoiding([around], fog)?.id).toBe('around');
     expect(hazardCore(30_000)).toBe(HAZARD_CORE_M);
     expect(hazardCore(120)).toBe(120);
+  });
+});
+
+describe('direction of travel', () => {
+  const at = (lng: number, t: number, heading: number | null, speed: number | null): NavFix => ({
+    latitude: 24.85,
+    longitude: lng,
+    accuracy: 8,
+    timestamp: t * 1000,
+    heading,
+    speed,
+  });
+  const drive = (fixes: NavFix[], start: NavProgress | null = null) => {
+    let p = start;
+    const out: NavProgress[] = [];
+    for (const f of fixes) {
+      p = advance(route, index, starts, f, p);
+      out.push(p);
+    }
+    return out;
+  };
+
+  test('heading: GPS course when moving, else from movement, else unknown', () => {
+    expect(movementHeading(at(67.02, 1, 95, 10), null, 'driving')).toBe(95);
+    // Too slow for the GPS course: measured from the last point once 8 m away.
+    expect(movementHeading(at(67.021, 1, 95, 0.5), [67.02, 24.85], 'driving')).toBeCloseTo(90, 0);
+    expect(movementHeading(at(67.02002, 1, -1, 0), [67.02, 24.85], 'driving')).toBeNull();
+  });
+
+  test('going the right way: no warning, arrow along the road', () => {
+    const ps = drive([at(67.02, 1, 90, 12), at(67.0212, 2, 91, 12), at(67.0224, 3, 89, 12), at(67.0236, 4, 90, 12)]);
+    expect(ps.some((p) => p.wrongWay)).toBe(false);
+    expect(ps[3].heading).toBeCloseTo(90, 0);
+  });
+
+  test('turning round on the route: "wrong way", arrow turns, distance grows', () => {
+    const forward = drive([at(67.02, 1, 90, 12), at(67.0212, 2, 90, 12), at(67.0224, 3, 90, 12)]);
+    // 20 m steps back the way they came.
+    const back = drive([at(67.0222, 4, 270, 12), at(67.022, 5, 270, 12), at(67.0218, 6, 270, 12)], forward[2]);
+    expect(back[0].wrongWay).toBe(false);
+    expect(back[2].wrongWay).toBe(true);
+    expect(back[2].heading).toBeCloseTo(270, 0);
+    expect(back[2].remaining).toBeGreaterThan(forward[2].remaining + 50);
+    // The arrow is drawn where the traveller is.
+    expect(back[2].position[0]).toBeCloseTo(67.0218, 5);
+    // A new route once it goes on for 15 s, or 80 m back.
+    expect(wrongWayNeedsReroute(back[2], back[2].wrongSince! + 1000)).toBe(false);
+    expect(wrongWayNeedsReroute(back[2], back[2].wrongSince! + 15_000)).toBe(true);
+    const further = drive([at(67.0212, 7, 270, 12)], back[2]);
+    expect(wrongWayNeedsReroute(further[0], further[0].wrongSince! + 1000)).toBe(true);
+
+    // Turning back the right way clears it after two fixes.
+    const again = drive([at(67.022, 7, 90, 12), at(67.0222, 8, 90, 12)], back[2]);
+    expect(again[0].wrongWay).toBe(true);
+    expect(again[1].wrongWay).toBe(false);
+  });
+
+  test('a sudden big step back counts at once', () => {
+    const forward = drive([at(67.02, 1, 90, 12), at(67.0212, 2, 90, 12), at(67.0224, 3, 90, 12)]);
+    const back = drive([at(67.0212, 4, 270, 12)], forward[2]);
+    expect(back[0].wrongWay).toBe(true);
+  });
+
+  test('going backwards without a GPS course is still noticed', () => {
+    const forward = drive([at(67.02, 1, null, null), at(67.021, 2, null, null), at(67.022, 3, null, null)]);
+    const back = drive([at(67.021, 4, null, null), at(67.020, 5, null, null), at(67.019, 6, null, null)], forward[2]);
+    expect(forward.some((p) => p.wrongWay)).toBe(false);
+    expect(back[2].wrongWay).toBe(true);
+  });
+
+  test('GPS jitter while stopped is never "wrong way"', () => {
+    const fixes = [67.02, 67.02003, 67.01998, 67.02002, 67.01997, 67.02001].map((lng, i) => at(lng, i + 1, i % 2 ? 270 : 90, 0.2));
+    expect(drive(fixes).some((p) => p.wrongWay)).toBe(false);
+  });
+});
+
+describe('alternative routes', () => {
+  // Leaves the main route at vertex 20, runs 300 m north of it, rejoins at vertex 40.
+  const altCoords: [number, number][] = [
+    ...coords.slice(0, 21),
+    ...Array.from({ length: 19 }, (_, i) => [67.0 + (21 + i) * 0.001, 24.853] as [number, number]),
+    ...coords.slice(40),
+  ];
+  const altRoute: Route = { ...route, coordinates: altCoords, duration: route.duration + 240, createdAt: 2 };
+
+  test('finds where it splits off and labels the different part', () => {
+    const c = compareRoute(index, altRoute)!;
+    expect(c).not.toBeNull();
+    expect(Math.abs(c.splitAlong - index.cum[20])).toBeLessThan(120);
+    expect(c.label[1]).toBeCloseTo(24.853, 5);
+  });
+
+  test('the same road twice is not an alternative', () => {
+    expect(compareRoute(index, { ...route, createdAt: 3 })).toBeNull();
+    expect(pickAlternatives(route, index, [route, { ...route, createdAt: 3 }, altRoute])).toHaveLength(1);
+  });
+
+  test('time difference, and gone once its turn-off is behind', () => {
+    const [alt] = pickAlternatives(route, index, [altRoute]);
+    expect(alt.delta).toBe(240);
+    expect(alternativesAhead([alt], index.cum[10])).toHaveLength(1);
+    expect(alternativesAhead([alt], index.cum[30])).toHaveLength(0);
   });
 });

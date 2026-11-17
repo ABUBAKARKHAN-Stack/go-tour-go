@@ -7,8 +7,10 @@ import {
   Clock,
   Globe,
   Landmark,
+  LocateFixed,
   MapPin,
   MapPinned,
+  Pencil,
   SearchX,
   ShieldCheck,
   X,
@@ -28,7 +30,7 @@ import { searchPhoton } from '@/features/data/photon';
 import { useDataSync } from '@/features/data/sync';
 import { useDestinationsByDistance, useRatings } from '@/features/destinations/api';
 import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/categories';
-import { navigateTo } from '@/features/routing/navigate';
+import { navigateTo, parseJourneyParams, readPlace, type JourneyEnd, type JourneyParams } from '@/features/routing/navigate';
 import { formatDistance } from '@/lib/geo';
 import { haptics } from '@/lib/haptics';
 import { CSS_EASE_OUT } from '@/lib/motion';
@@ -44,6 +46,9 @@ type Row =
   | { type: 'landmark'; id: string; name: string; subtitle: string; category: DestinationCategory; latitude: number; longitude: number; distance: number | null };
 
 type Recent = { id: string; name: string; subtitle: string; latitude: number; longitude: number; landmarkId?: string };
+type Role = 'from' | 'to';
+/** A journey end, or null while it is being searched. */
+type End = JourneyEnd | null;
 
 
 function useDebounced<T>(value: T, ms: number) {
@@ -61,7 +66,8 @@ function useDebounced<T>(value: T, ms: number) {
  * come from Photon when online and the local results are thin.
  */
 export default function SearchScreen() {
-  const params = useLocalSearchParams<{ q?: string; category?: DestinationCategory; reverse?: string }>();
+  // `open`: which end to search (the other comes filled in from the map picker).
+  const params = useLocalSearchParams<JourneyParams & { q?: string; category?: DestinationCategory; open?: Role }>();
   const insets = useSafeAreaInsets();
   const [term, setTerm] = useState(params.q ?? '');
   const [category, setCategory] = useState<DestinationCategory | null>(params.category ?? null);
@@ -154,81 +160,145 @@ export default function SearchScreen() {
 
   const remember = (r: Recent) => setRecent([r, ...recent.filter((x) => x.id !== r.id)].slice(0, 8));
 
-  // Swapped: the place you search is where you start, and the route ends at your location.
-  const [reversed, setReversed] = useState(params.reverse === '1');
+  // The two ends of the journey: you, a chosen place, or null while it is being searched.
+  // Coming back from a planned route, the end being changed is open and the other is kept.
+  const [ends, setEnds] = useState<{ from: End; to: End }>(() => {
+    const start = readPlace(params, 'from');
+    const destination = readPlace(params, 'to');
+    if (params.open === 'from' && destination) return { from: null, to: destination };
+    if (params.open === 'to' && start) return { from: start, to: null };
+    const parsed = parseJourneyParams(params);
+    if (parsed) return parsed.to === 'me' ? { from: null, to: 'me' } : { from: parsed.from, to: null };
+    return params.reverse === '1' ? { from: null, to: 'me' } : { from: 'me', to: null };
+  });
+  const [editing, setEditing] = useState<Role>(() => (ends.from === null ? 'from' : 'to'));
+  const other = editing === 'from' ? ends.to : ends.from;
+  // Planning from you to a place: a landmark opens its page first (as before); otherwise straight to the route.
+  const direct = !(editing === 'to' && ends.from === 'me');
 
-  const choose = (row: Row) => {
-    if (reversed) {
-      remember({ id: row.id, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude, ...(row.type === 'landmark' ? { landmarkId: row.id } : {}) });
-      navigateTo({ id: row.type === 'landmark' ? row.id : `place:${row.id}`, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude }, { reverse: true });
+  /** Fills the end being edited; with both ends known, opens the route. */
+  const fill = (end: JourneyEnd) => {
+    const next = { ...ends, [editing]: end };
+    if (next.from && next.to && !(next.from === 'me' && next.to === 'me')) {
+      navigateTo(next.to, { from: next.from });
       return;
     }
-    if (row.type === 'landmark') {
-      remember({ id: row.id, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude, landmarkId: row.id });
+    setEnds(next);
+    setEditing(editing === 'from' ? 'to' : 'from');
+    setTerm('');
+  };
+
+  /** Opens an end for searching (tapping it). */
+  const edit = (role: Role) => {
+    if (role === editing) return;
+    haptics.select();
+    setEnds((e) => ({ ...e, [role]: null }));
+    setEditing(role);
+    setTerm('');
+  };
+
+  const swap = () => {
+    haptics.select();
+    setEnds((e) => ({ from: e.to, to: e.from }));
+    setEditing((r) => (r === 'from' ? 'to' : 'from'));
+  };
+
+  const choose = (row: Row) => {
+    const isLandmark = row.type === 'landmark';
+    remember({ id: row.id, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude, ...(isLandmark ? { landmarkId: row.id } : {}) });
+    if (isLandmark && !direct) {
       router.push({ pathname: '/destination/[id]', params: { id: row.id } });
       return;
     }
-    remember({ id: row.id, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude });
-    navigateTo({ id: `place:${row.id}`, name: row.name, latitude: row.latitude, longitude: row.longitude });
+    fill({ id: isLandmark ? row.id : `place:${row.id}`, name: row.name, subtitle: row.subtitle, latitude: row.latitude, longitude: row.longitude });
   };
 
-  /** A landmark from a list: its page normally; straight to the route when start and destination are swapped. */
+  /** A landmark from a list: its page when planning from you; otherwise it fills the open end. */
   const openLandmark = (d: { id: string; name: string; city: string; latitude: number; longitude: number }) => {
-    if (reversed) navigateTo({ id: d.id, name: d.name, subtitle: d.city, latitude: d.latitude, longitude: d.longitude }, { reverse: true });
+    if (direct) fill({ id: d.id, name: d.name, subtitle: d.city, latitude: d.latitude, longitude: d.longitude });
     else router.push({ pathname: '/destination/[id]', params: { id: d.id } });
   };
-  const pickOnMap = () => router.push({ pathname: '/journey/pick', params: reversed ? { reverse: '1' } : {} });
+  const pickOnMap = () =>
+    router.push({
+      pathname: '/journey/pick',
+      params: { role: editing, ...(other && other !== 'me' ? { otherName: other.name, otherLat: String(other.latitude), otherLng: String(other.longitude), otherId: other.id, ...(other.subtitle ? { otherSubtitle: other.subtitle } : {}) } : {}), ...(other ? {} : { otherNone: '1' }) },
+    });
 
   const openRecent = (r: Recent) => {
-    if (reversed) {
-      navigateTo({ id: r.landmarkId ?? `place:${r.id}`, name: r.name, subtitle: r.subtitle, latitude: r.latitude, longitude: r.longitude }, { reverse: true });
+    if (r.landmarkId && !direct) {
+      router.push({ pathname: '/destination/[id]', params: { id: r.landmarkId } });
       return;
     }
-    if (r.landmarkId) router.push({ pathname: '/destination/[id]', params: { id: r.landmarkId } });
-    else navigateTo({ id: `place:${r.id}`, name: r.name, latitude: r.latitude, longitude: r.longitude });
+    fill({ id: r.landmarkId ?? `place:${r.id}`, name: r.name, subtitle: r.subtitle, latitude: r.latitude, longitude: r.longitude });
   };
 
-  const mineRow = (role: 'From' | 'To') => (
-    <View className="min-h-14 flex-row items-center gap-3">
-      {role === 'From' ? <CircleDot color={colors.primary} size={20} /> : <MapPin color={colors.accent} size={20} />}
-      <View className="flex-1">
-        <Text className="text-xs text-faint">{role === 'From' ? tx('From') : tx('To')}</Text>
-        <Text numberOfLines={1} className="text-base font-semibold text-muted-foreground">
-          {tx('Your location')}
-        </Text>
-      </View>
-    </View>
-  );
-  const searchRow = (role: 'From' | 'To') => (
-    <View className="min-h-14 flex-row items-center gap-3">
-      {role === 'From' ? <CircleDot color={colors.primary} size={20} /> : <MapPin color={colors.accent} size={20} />}
-      <View className="flex-1">
-        <Text className="text-xs text-faint">{role === 'From' ? tx('From') : tx('To')}</Text>
-        <TextInput
-          autoFocus={!params.category}
-          value={term}
-          onChangeText={setTerm}
-          placeholder={role === 'From' ? tx('Where are you starting from?') : tx('City, area, landmark or address')}
-          placeholderTextColor={colors.faint}
-          className="p-0 text-base font-semibold text-heading"
-          returnKeyType="search"
-          accessibilityLabel={role === 'From' ? tx('Start') : tx('Destination')}
-        />
-      </View>
-      {term ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={tx('Clear')} onPress={() => setTerm('')} hitSlop={10}>
-          <X color={colors.faint} size={18} />
-        </Pressable>
-      ) : null}
-    </View>
-  );
+  /** One end of the journey: a search field while it is open, otherwise tap to change it. */
+  const endRow = (role: Role) => {
+    const end = ends[role];
+    const label = role === 'from' ? tx('From') : tx('To');
+    const icon = role === 'from' ? <CircleDot color={colors.primary} size={20} /> : <MapPin color={colors.accent} size={20} />;
+    if (role === editing) {
+      return (
+        <View className="min-h-14 flex-row items-center gap-3">
+          {icon}
+          <View className="flex-1">
+            <Text className="text-xs text-faint">{label}</Text>
+            <TextInput
+              autoFocus={!params.category}
+              value={term}
+              onChangeText={setTerm}
+              placeholder={role === 'from' ? tx('Where are you starting from?') : tx('City, area, landmark or address')}
+              placeholderTextColor={colors.faint}
+              className="p-0 text-base font-semibold text-heading"
+              returnKeyType="search"
+              accessibilityLabel={role === 'from' ? tx('Start') : tx('Destination')}
+            />
+          </View>
+          {term ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={tx('Clear')} onPress={() => setTerm('')} hitSlop={10}>
+              <X color={colors.faint} size={18} />
+            </Pressable>
+          ) : null}
+        </View>
+      );
+    }
+    const name = end === 'me' ? tx('Your location') : end ? end.name : role === 'from' ? tx('Choose a start') : tx('Choose a destination');
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${name}`}
+        accessibilityHint={tx('Change it')}
+        onPress={() => edit(role)}
+        className="min-h-14 flex-row items-center gap-3 active:opacity-70"
+      >
+        {icon}
+        <View className="flex-1">
+          <Text className="text-xs text-faint">{label}</Text>
+          <Text className={`text-base font-semibold ${end ? 'text-heading' : 'text-faint'}`}>{name}</Text>
+        </View>
+        <Pencil color={colors.faint} size={15} />
+      </Pressable>
+    );
+  };
+
+  // While an end is open and the other is a place, "Your location" is one tap away.
+  const meRow =
+    other !== 'me' ? (
+      <ResultRow
+        icon={LocateFixed}
+        tint="primary"
+        title={tx('Your location')}
+        subtitle={editing === 'from' ? tx('Start where you are') : tx('End where you are')}
+        onPress={() => fill('me')}
+      />
+    ) : null;
 
   const mapRow = (
     <ResultRow
       icon={MapPinned}
       tint="accent"
       title={tx('Choose on map')}
-      subtitle={reversed ? tx('Pick any spot as your start') : tx('Pick any spot as your destination')}
+      subtitle={editing === 'from' ? tx('Pick any spot as your start') : tx('Pick any spot as your destination')}
       onPress={pickOnMap}
     />
   );
@@ -257,22 +327,19 @@ export default function SearchScreen() {
 
         <View className="flex-row items-center gap-3 rounded-[20px] bg-card px-4 py-1" style={cardShadow}>
           <View className="flex-1">
-            {/* The searched place and your location trade places when swapped. */}
-            {reversed ? searchRow('From') : mineRow('From')}
+            {/* Either end can be changed: tap it to search. Swap trades them. */}
+            {endRow('from')}
             <View className="h-px bg-border" />
-            {reversed ? mineRow('To') : searchRow('To')}
+            {endRow('to')}
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={tx('Swap start and destination')}
-            onPress={() => {
-              haptics.select();
-              setReversed((r) => !r);
-            }}
+            onPress={swap}
             hitSlop={6}
             className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft active:opacity-70"
           >
-            <Animated.View style={{ transform: [{ rotate: reversed ? '180deg' : '0deg' }], transitionProperty: 'transform', transitionDuration: 220, transitionTimingFunction: CSS_EASE_OUT }}>
+            <Animated.View style={{ transform: [{ rotate: editing === 'from' ? '180deg' : '0deg' }], transitionProperty: 'transform', transitionDuration: 220, transitionTimingFunction: CSS_EASE_OUT }}>
               <ArrowUpDown color={colors.primary} size={18} />
             </Animated.View>
           </Pressable>
@@ -292,7 +359,7 @@ export default function SearchScreen() {
             browseList.length ? (
               <View className="gap-2.5">
                 {browseList.map((d) =>
-                  reversed ? (
+                  direct ? (
                     <ResultRow
                       key={d.id}
                       icon={Landmark}
@@ -314,6 +381,7 @@ export default function SearchScreen() {
             )
           ) : (
             <>
+              {meRow}
               {mapRow}
               {recent.length ? (
                 <View className="gap-1">
@@ -365,7 +433,12 @@ export default function SearchScreen() {
           contentContainerClassName="px-5"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           // Not in the results? Pick the spot on the map instead.
-          ListHeaderComponent={mapRow}
+          ListHeaderComponent={
+            <>
+              {meRow}
+              {mapRow}
+            </>
+          }
           renderSectionHeader={({ section }) => <SectionTitle title={section.title} />}
           renderItem={({ item }) => (
             <ResultRow

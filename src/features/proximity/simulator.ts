@@ -66,7 +66,7 @@ export const simulator = {
    * guidance, voice, landmark and hazard alerts can be shown without moving.
    * Runs in real time, so voice prompts come at the right distances.
    */
-  startAlongRoute(coordinates: [number, number][], name: string, speedKmh = 50) {
+  startAlongRoute(coordinates: [number, number][], name: string, speedKmh = 50, opts: { wrongWayAfter?: number } = {}) {
     simulator.stop();
     const index = buildRouteIndex(coordinates);
     if (index.total <= 0) return;
@@ -74,7 +74,10 @@ export const simulator = {
     // timed as on a real drive.
     const stepSeconds = 1;
     const stepMeters = (speedKmh / 3.6) * stepSeconds;
-    const total = Math.ceil(index.total / stepMeters) + 1;
+    // "Wrong way" demo: drive ahead a little, then turn round and drive back along the route.
+    const turnAt = opts.wrongWayAfter != null ? Math.min(opts.wrongWayAfter, index.total / 2) : null;
+    const distanceAt = (i: number) => (turnAt != null && i * stepMeters > turnAt ? Math.max(0, 2 * turnAt - i * stepMeters) : i * stepMeters);
+    const total = Math.ceil((turnAt != null ? 2 * turnAt : index.total) / stepMeters) + 1;
     saveProximityState({ ...loadProximityState(), lastFix: null });
     locationStore.set({ simulating: true });
     sim = { running: true, targetName: name, step: 0, total };
@@ -87,9 +90,18 @@ export const simulator = {
         simulator.stop();
         return;
       }
-      const p = pointAlong(index, i * stepMeters);
+      const p = pointAlong(index, distanceAt(i));
+      const backwards = turnAt != null && i * stepMeters > turnAt;
       t += stepSeconds * 1000;
-      locationStore.pushFix({ latitude: p.latitude, longitude: p.longitude, accuracy: 8, heading: p.bearing, speed: speedKmh / 3.6, timestamp: t, simulated: true });
+      locationStore.pushFix({
+        latitude: p.latitude,
+        longitude: p.longitude,
+        accuracy: 8,
+        heading: backwards ? (p.bearing + 180) % 360 : p.bearing,
+        speed: speedKmh / 3.6,
+        timestamp: t,
+        simulated: true,
+      });
       i += 1;
       sim = { ...sim, step: i };
       emit();
