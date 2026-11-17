@@ -3,8 +3,8 @@ import { distanceMeters } from '@/lib/geo';
 import { localDb } from '@/lib/local-db';
 import type { DestinationCategory, DestinationSummary, Place } from '@/lib/types';
 
-type DestinationRow = Omit<DestinationSummary, 'is_landmark' | 'featured'> & { is_landmark: number; featured: number };
-
+type DestinationRow = Omit<DestinationSummary, 'featured'> & { featured: number };
+ 
 function toSummary(r: DestinationRow): DestinationSummary {
   return {
     id: r.id,
@@ -19,19 +19,17 @@ function toSummary(r: DestinationRow): DestinationSummary {
     radius_m: r.radius_m,
     short_description: r.short_description,
     image_url: r.image_url,
-    is_landmark: r.is_landmark === 1,
-    popularity: r.popularity,
     featured: r.featured === 1,
     source: r.source,
   };
 }
 
 const DESTINATION_SELECT =
-  'SELECT id,slug,name,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,is_landmark,popularity,featured,source FROM destinations';
+  'SELECT id,slug,name,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,featured,source FROM destinations';
 
-/** Every landmark on the phone, featured and most popular first. */
+/** Every landmark on the phone, featured first. */
 export async function readLocalDestinations(): Promise<DestinationSummary[]> {
-  const rows = await localDb().getAllAsync<DestinationRow>(`${DESTINATION_SELECT} ORDER BY featured DESC, popularity DESC`);
+  const rows = await localDb().getAllAsync<DestinationRow>(`${DESTINATION_SELECT} ORDER BY featured DESC, name ASC`);
   return rows.map(toSummary);
 }
 
@@ -55,7 +53,7 @@ export async function searchLocal(text: string, near: Point, limit = 20): Promis
     urdu ? [pattern, urdu] : [pattern],
   );
   const landmarkRows = await db.getAllAsync<DestinationRow & { name_norm: string }>(
-    `SELECT id,slug,name,name_norm,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,is_landmark,popularity,featured,source
+    `SELECT id,slug,name,name_norm,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,featured,source
        FROM destinations WHERE name_norm LIKE ? ESCAPE '\\' ${urdu ? 'OR name_ur LIKE ?' : ''} LIMIT 200`,
     urdu ? [pattern, urdu] : [pattern],
   );
@@ -74,7 +72,7 @@ export async function searchLocal(text: string, near: Point, limit = 20): Promis
     .map(({ name_norm, ...r }) => {
       const d = toSummary(r);
       const distance = dist(d.latitude, d.longitude);
-      return { ...d, distance, score: scoreMatch(name_norm, q, d.popularity + (d.featured ? 20 : 0), distance) };
+      return { ...d, distance, score: scoreMatch(name_norm, q, d.featured ? 20 : 0, distance) };
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);

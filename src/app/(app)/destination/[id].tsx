@@ -476,9 +476,7 @@ export default function DestinationDetails() {
                 </Pressable>
               ) : null}
               {d.image_credit ? (
-                <Pressable accessibilityRole="link" disabled={!d.image_page_url} onPress={() => d.image_page_url && Linking.openURL(d.image_page_url)} hitSlop={6}>
-                  <Text className="text-xs text-faint">{tx('Photo: {0} {1}, Wikimedia Commons', { 0: d.image_credit, 1: d.image_license ? ` (${d.image_license})` : '' })}</Text>
-                </Pressable>
+                <Text className="text-xs text-faint">{tx('Photo: {0}, Wikimedia Commons', { 0: d.image_credit })}</Text>
               ) : null}
             </View>
           ) : null}

@@ -16,7 +16,7 @@ const PAGE = 1000;
 const INSERT_BATCH = 80;
 const PLACE_COLUMNS = 'id,name,name_ur,kind,district,province,latitude,longitude,rank';
 const DESTINATION_COLUMNS =
-  'id,slug,name,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,is_landmark,popularity,featured,source';
+  'id,slug,name,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,featured,source';
 
 type Dataset = 'places' | 'destinations';
 
@@ -136,7 +136,7 @@ async function replaceDestinations(rows: DestinationSummary[]) {
     await tx.execAsync('DELETE FROM destinations');
     for (let i = 0; i < rows.length; i += INSERT_BATCH / 2) {
       const batch = rows.slice(i, i + INSERT_BATCH / 2);
-      const values = batch.map(() => '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').join(',');
+      const values = batch.map(() => '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').join(',');
       const params = batch.flatMap((d) => [
         d.id,
         d.slug,
@@ -151,13 +151,11 @@ async function replaceDestinations(rows: DestinationSummary[]) {
         d.radius_m,
         d.short_description,
         d.image_url,
-        d.is_landmark ? 1 : 0,
-        d.popularity,
         d.featured ? 1 : 0,
         d.source,
       ]);
       await tx.runAsync(
-        `INSERT OR REPLACE INTO destinations (id,slug,name,name_norm,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,is_landmark,popularity,featured,source) VALUES ${values}`,
+        `INSERT OR REPLACE INTO destinations (id,slug,name,name_norm,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,featured,source) VALUES ${values}`,
         params,
       );
     }

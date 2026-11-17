@@ -35,8 +35,6 @@ CREATE TABLE IF NOT EXISTS destinations (
   radius_m INTEGER NOT NULL,
   short_description TEXT NOT NULL,
   image_url TEXT,
-  is_landmark INTEGER NOT NULL,
-  popularity INTEGER NOT NULL,
   featured INTEGER NOT NULL,
   source TEXT NOT NULL
 );
