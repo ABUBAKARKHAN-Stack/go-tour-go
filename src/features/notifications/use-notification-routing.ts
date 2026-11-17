@@ -47,6 +47,9 @@ function handleResponse(response: Notifications.NotificationResponse) {
     case 'offline-maps':
       router.push('/offline-maps');
       return;
+    case 'journey-wrong-way':
+      router.push('/journey/navigate');
+      return;
     default:
       return;
   }

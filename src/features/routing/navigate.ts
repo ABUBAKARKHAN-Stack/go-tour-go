@@ -1,27 +1,21 @@
 import { router } from 'expo-router';
 
-type Target = { id: string; name: string; latitude: number; longitude: number; subtitle?: string };
+import { journeyParams, type JourneyEnd } from './journey-params';
+
+export { journeyParams, parseJourneyParams, placeOnly, readPlace } from './journey-params';
+export type { JourneyEnd, JourneyParams, Target } from './journey-params';
 
 /**
  * One-tap navigation from anywhere (details, Home, the "You're near" card,
  * notification actions, search): opens the journey preview, which plans the
- * route from the current location with the landmarks and hazards on the way.
+ * route with the landmarks and hazards on the way. By default it goes from
+ * the traveller's location; `from` starts it at another place, and `reverse`
+ * plans from the place to the traveller.
  * Landmark ids are passed on so "Learn more" works on arrival; places from
  * search use ids like "place:n123", spots picked on the map "pin:<lat>, <lng>".
- * `replace` swaps the current screen (a map picker) for the journey preview;
- * `reverse` plans from the place to the traveller instead.
+ * `replace` swaps the current screen (a map picker) for the journey preview.
  */
-export function navigateTo(target: Target, opts: { replace?: boolean; reverse?: boolean } = {}) {
-  (opts.replace ? router.replace : router.push)({
-    pathname: '/journey',
-    params: {
-      name: target.name,
-      lat: String(target.latitude),
-      lng: String(target.longitude),
-      id: target.id,
-      ...(target.subtitle ? { subtitle: target.subtitle } : {}),
-      // From the place to your location (From/To swapped in the planner).
-      ...(opts.reverse ? { reverse: '1' } : {}),
-    },
-  });
+export function navigateTo(target: JourneyEnd, opts: { replace?: boolean; reverse?: boolean; from?: JourneyEnd } = {}) {
+  const ends = opts.reverse ? { from: target, to: 'me' as const } : { from: opts.from ?? 'me', to: target };
+  (opts.replace ? router.replace : router.push)({ pathname: '/journey', params: journeyParams(ends.from, ends.to) });
 }

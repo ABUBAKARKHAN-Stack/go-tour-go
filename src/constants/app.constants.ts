@@ -35,7 +35,9 @@ export const SHARE_SITE_URL = 'https://go-tour-go.expo.app';
 export const SERVICES = {
   /** Default map style; EXPO_PUBLIC_MAP_STYLE_URL overrides it. */
   mapStyle: 'https://tiles.openfreemap.org/styles/liberty',
-  /** OSRM routing by travel mode (FOSSGIS servers). */
+  /** Valhalla routing (FOSSGIS server): the main routing service. */
+  valhalla: 'https://valhalla1.openstreetmap.de/route',
+  /** OSRM routing by travel mode (FOSSGIS servers): the fallback. */
   routing: {
     driving: 'https://routing.openstreetmap.de/routed-car/route/v1/driving',
     cycling: 'https://routing.openstreetmap.de/routed-bike/route/v1/bike',

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import * as Updates from 'expo-updates';
-import { Bell, Database, FlaskConical, Map as MapIcon, Navigation, Play, RefreshCw, RotateCcw, Square, X } from 'lucide-react-native';
+import { Bell, Database, FlaskConical, Map as MapIcon, Navigation, Play, RefreshCw, RotateCcw, Square, Undo2, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, FlatList, Linking, Modal, Pressable, Share, View } from 'react-native';
 import { Text } from '@/components/text';
@@ -214,7 +214,19 @@ export default function SettingsScreen() {
                 router.push('/journey/navigate');
               }}
             />
-            <Text className="text-xs text-faint">{tx('Start a journey first (search a place, then Start journey), then come back here to drive it at 50 km/h.')}</Text>
+            <AppButton
+              label={tx('Drive the wrong way')}
+              icon={Undo2}
+              variant="secondary"
+              disabled={journey.phase !== 'active' || !journey.route}
+              onPress={() => {
+                if (!journey.route || !journey.target) return;
+                // 300 m ahead, then back along the route: shows the warning, the U-turn re-route and the arrow turning.
+                simulator.startAlongRoute(journey.route.coordinates, journey.target.name, 40, { wrongWayAfter: 300 });
+                router.push('/journey/navigate');
+              }}
+            />
+            <Text className="text-xs text-faint">{tx('Start a journey first (search a place, then Start journey), then come back here to drive it at 50 km/h, or to drive it the wrong way.')}</Text>
           </>
         )}
         <AppButton

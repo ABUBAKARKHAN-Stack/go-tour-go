@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, ListOrdered, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, ListOrdered, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, Route as RouteIcon, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { AppButton, IconButton } from '@/components/app-button';
 import { useIsOnline } from '@/components/offline-banner';
 import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
+import type { AltRoute } from '@/features/journey/alternatives';
 import { isOnRoute, type JourneyItem } from '@/features/journey/journey-items';
 import { JourneyMap } from '@/features/journey/journey-map';
 import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
@@ -17,6 +18,7 @@ import { getCurrentFix, requestBackgroundPermission, requestLocationPermission }
 import { useLastLocation, useLocationState } from '@/features/location/location-store';
 import { requestNotificationPermission } from '@/features/notifications/local-notifications';
 import { saveRouteOffline, useSavedRoutes } from '@/features/offline/saved-routes';
+import { journeyParams, navigateTo, parseJourneyParams, type JourneyParams } from '@/features/routing/navigate';
 import type { TravelMode } from '@/features/routing/osrm';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { usePreferences } from '@/lib/preferences';
@@ -55,9 +57,13 @@ const YOUR_LOCATION = tx('Your location');
 const START_RADIUS_M = 300;
 
 export default function JourneyPreview() {
-  // `reverse=1`: the place is where the route starts and it ends at your location (From/To swapped).
-  const params = useLocalSearchParams<{ name: string; lat: string; lng: string; id?: string; subtitle?: string; reverse?: string }>();
-  const reverse = params.reverse === '1';
+  // Either end can be you or a place: `reverse=1` ends the route at your location; `from*` starts it at a place.
+  const params = useLocalSearchParams<JourneyParams>();
+  const ends = useMemo(
+    () => parseJourneyParams(params),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [params.name, params.lat, params.lng, params.id, params.subtitle, params.reverse, params.fromName, params.fromLat, params.fromLng, params.fromId, params.fromSubtitle],
+  );
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [prefs, setPrefs] = usePreferences();
@@ -68,42 +74,45 @@ export default function JourneyPreview() {
   const online = useIsOnline();
   const [savedRoutes] = useSavedRoutes();
 
-  const target = useMemo(
-    () => ({
-      name: params.name ?? 'Destination',
-      latitude: Number(params.lat),
-      longitude: Number(params.lng),
-      id: params.id,
-      subtitle: params.subtitle,
-    }),
-    [params.name, params.lat, params.lng, params.id, params.subtitle],
-  );
-  const validTarget = Number.isFinite(target.latitude) && Number.isFinite(target.longitude);
+  const from = ends?.from ?? 'me';
+  const to = ends?.to ?? 'me';
+  /** The place the journey is about (for names, saving offline, the background notice). */
+  const place = to !== 'me' ? to : from !== 'me' ? from : null;
+  const usesMe = from === 'me' || to === 'me';
+  const fromLabel = from === 'me' ? YOUR_LOCATION : from.name;
+  const toLabel = to === 'me' ? YOUR_LOCATION : to.name;
 
-  // Plan once per destination (and again if location becomes available).
+  /** Plans the route; ends that are "you" use a fresh location fix. */
+  const planNow = async () => {
+    if (!ends) return;
+    const fix = usesMe ? await getCurrentFix() : null;
+    if (usesMe && !fix) return;
+    const end = (e: typeof from) => (e === 'me' ? { name: YOUR_LOCATION, latitude: fix!.latitude, longitude: fix!.longitude } : e);
+    journeyStore.plan(end(to), end(from), prefs.travelMode);
+  };
+
+  // Plan once per pair of ends (and again if location becomes available).
   const hasFix = Boolean(location);
   useEffect(() => {
-    if (!validTarget) return;
+    if (!ends) return;
     const current = journeyStore.get();
     if (current.phase === 'active') return;
-    const planned = reverse ? current.origin : current.target;
+    const sameEnd = (e: typeof from, got: { name: string; latitude: number; longitude: number } | null) =>
+      Boolean(got) && (e === 'me' ? got!.name === YOUR_LOCATION : got!.name !== YOUR_LOCATION && got!.latitude === e.latitude && got!.longitude === e.longitude);
     const same =
-      planned &&
-      planned.latitude === target.latitude &&
-      planned.longitude === target.longitude &&
-      (reverse ? current.target?.name === YOUR_LOCATION : current.target?.name !== YOUR_LOCATION) &&
-      (current.phase === 'preview' || current.phase === 'planning');
+      sameEnd(ends.to, current.target) && sameEnd(ends.from, current.origin) && (current.phase === 'preview' || current.phase === 'planning');
     if (same) return;
     let cancelled = false;
-    getCurrentFix().then((fix) => {
-      if (cancelled || !fix) return;
-      if (reverse) journeyStore.plan({ name: YOUR_LOCATION, latitude: fix.latitude, longitude: fix.longitude }, target, prefs.travelMode);
-      else journeyStore.plan(target, fix, prefs.travelMode);
+    const fixP = usesMe ? getCurrentFix() : Promise.resolve(null);
+    fixP.then((fix) => {
+      if (cancelled || (usesMe && !fix)) return;
+      const end = (e: typeof from) => (e === 'me' ? { name: YOUR_LOCATION, latitude: fix!.latitude, longitude: fix!.longitude } : e);
+      journeyStore.plan(end(ends.to), end(ends.from), prefs.travelMode);
     });
     return () => {
       cancelled = true;
     };
-  }, [target, validTarget, hasFix, prefs.travelMode, reverse]);
+  }, [ends, usesMe, hasFix, prefs.travelMode]);
 
   const sheetHeight = Math.min(height * 0.56, 520);
   const route = journey.route;
@@ -138,9 +147,9 @@ export default function JourneyPreview() {
     );
   };
 
-  // A flipped route starts at the place: guidance follows you, so starting needs you there; otherwise preview it.
-  const awayFromStart = reverse && journey.origin && location ? distanceMeters(location, journey.origin) : null;
-  const canStart = !reverse || (awayFromStart != null && awayFromStart <= START_RADIUS_M);
+  // A route that starts at a place: guidance follows you, so starting needs you there; otherwise preview it.
+  const awayFromStart = from !== 'me' && location ? distanceMeters(location, from) : null;
+  const canStart = from === 'me' || (awayFromStart != null && awayFromStart <= START_RADIUS_M);
 
   const start = async () => {
     if (!route) return;
@@ -163,17 +172,27 @@ export default function JourneyPreview() {
       }
       // Save the journey first: the background task reads it on its first update.
       journeyStore.start();
-      const background = backgroundAllowed ? await startJourneyUpdates(target.name) : 'no-permission';
+      const background = backgroundAllowed ? await startJourneyUpdates(journey.target?.name ?? toLabel) : 'no-permission';
       router.replace({ pathname: '/journey/navigate', params: { background: background === 'started' ? '1' : '0' } });
     } finally {
       setStarting(false);
     }
   };
 
-  // Tapping the route bar goes back to planning, with this destination filled in.
+  // Tapping the route bar goes back to planning, with both ends filled in.
   const editRoute = () => {
     if (journeyStore.get().phase !== 'active') journeyStore.stop();
-    router.replace({ pathname: '/search', params: { q: target.name, ...(reverse ? { reverse: '1' } : {}) } });
+    router.replace({ pathname: '/search', params: { q: place?.name ?? '', ...journeyParams(from, to) } });
+  };
+
+  // Swap start and destination (either can be you or a place).
+  const swap = () => {
+    haptics.select();
+    router.setParams({
+      name: undefined, lat: undefined, lng: undefined, id: undefined, subtitle: undefined, fromName: undefined, fromLat: undefined, fromLng: undefined, fromId: undefined, fromSubtitle: undefined,
+      reverse: '0',
+      ...journeyParams(to, from),
+    });
   };
 
   const back = () => {
@@ -182,7 +201,7 @@ export default function JourneyPreview() {
     else router.replace('/');
   };
 
-  if (!validTarget) {
+  if (!ends) {
     return (
       <View className="flex-1 justify-center bg-background" style={{ paddingTop: insets.top }}>
         <EmptyState title={tx('Destination missing')} message={tx('Choose a place to plan a journey.')} actionLabel={tx('Search places')} onAction={() => router.replace('/search')} />
@@ -190,7 +209,7 @@ export default function JourneyPreview() {
     );
   }
 
-  const needsLocation = locationState.permission !== 'granted' || locationState.servicesEnabled === false;
+  const needsLocation = usesMe && (locationState.permission !== 'granted' || locationState.servicesEnabled === false);
 
   return (
     <View className="flex-1 bg-background">
@@ -202,6 +221,11 @@ export default function JourneyPreview() {
         fix={location}
         follow={false}
         padding={{ top: insets.top + 84, bottom: sheetHeight }}
+        alternatives={journey.alternatives}
+        onSelectRoute={(alt) => {
+          haptics.select();
+          journeyStore.selectRoute(alt);
+        }}
       />
 
       <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-[20px] bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(21,56,79,0.10)' }}>
@@ -218,13 +242,13 @@ export default function JourneyPreview() {
           <View className="flex-1 gap-1">
             <View className="flex-row items-start gap-2">
               <CircleDot color={colors.primary} size={14} style={{ marginTop: 3 }} />
-              <Text className="flex-1 text-sm font-semibold text-heading">{reverse ? target.name : tx('Your location')}</Text>
+              <Text className="flex-1 text-sm font-semibold text-heading">{fromLabel}</Text>
             </View>
             <View className="flex-row items-start gap-2">
               <MapPin color={colors.accent} size={14} style={{ marginTop: 3 }} />
-              <Text className="flex-1 text-sm font-semibold text-heading">{reverse ? tx('Your location') : target.name}</Text>
+              <Text className="flex-1 text-sm font-semibold text-heading">{toLabel}</Text>
             </View>
-            <Text className="text-xs text-faint">{via ? tx('Fastest route · via {0}', { 0: via }) : target.subtitle ?? tx('Planning your route')}</Text>
+            <Text className="text-xs text-faint">{via ? tx('Via {0}', { 0: via }) : place?.subtitle ?? tx('Planning your route')}</Text>
           </View>
           <Pencil color={colors.faint} size={16} />
         </Pressable>
@@ -232,10 +256,7 @@ export default function JourneyPreview() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={tx('Swap start and destination')}
-          onPress={() => {
-            haptics.select();
-            router.setParams({ reverse: reverse ? '0' : '1' });
-          }}
+          onPress={swap}
           hitSlop={6}
           className="h-10 w-10 items-center justify-center rounded-full bg-primary-soft active:opacity-70"
         >
@@ -300,10 +321,7 @@ export default function JourneyPreview() {
                   <AppButton
                     label={tx('Try again')}
                     variant="secondary"
-                    onPress={async () => {
-                      const fix = await getCurrentFix();
-                      if (fix) journeyStore.plan(target, fix, prefs.travelMode);
-                    }}
+                    onPress={planNow}
                   />
                 </View>
               ) : (
@@ -316,6 +334,23 @@ export default function JourneyPreview() {
                         ? tx(' · {0} landmark{1}{2} on your way', { 0: landmarks.length, 1: landmarks.length === 1 ? '' : 's', 2: hazards.length ? ` and ${hazards.length} alert${hazards.length === 1 ? '' : 's'}` : '' })
                         : '' })}</Text>
                   </View>
+
+                  {journey.alternatives.length ? (
+                    // Other ways to go, like map apps: also grey on the map, tap either to switch.
+                    <View>
+                      <Text className="pb-1 text-[11px] font-bold tracking-[1.6px] text-faint">{tx('OTHER ROUTES')}</Text>
+                      {journey.alternatives.map((alt) => (
+                        <AltRow
+                          key={`${alt.route.createdAt}-${alt.route.distance}`}
+                          alt={alt}
+                          onPress={() => {
+                            haptics.select();
+                            journeyStore.selectRoute(alt);
+                          }}
+                        />
+                      ))}
+                    </View>
+                  ) : null}
 
                   {journey.items.length ? (
                     <View>
@@ -342,7 +377,7 @@ export default function JourneyPreview() {
             // Like map apps: a route that starts elsewhere can be previewed; guidance needs you at the start.
             <View className="flex-row flex-wrap items-center gap-x-1.5 pb-2.5">
               <Text className="text-sm text-muted-foreground">{tx('Starts {0} from you.', { 0: formatDistance(awayFromStart) })}</Text>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.setParams({ reverse: '0' })}>
+              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => navigateTo(from, { replace: true })}>
                 <Text className="text-sm font-semibold text-accent">{tx('Directions to the start')}</Text>
               </Pressable>
             </View>
@@ -369,6 +404,32 @@ export default function JourneyPreview() {
         </View>
       </View>
     </View>
+  );
+}
+
+function AltRow({ alt, onPress }: { alt: AltRoute; onPress: () => void }) {
+  const road = mainRoad(alt.route.steps);
+  const mins = Math.round(Math.abs(alt.delta) / 60);
+  const diff = mins < 1 ? tx('Same time') : alt.delta > 0 ? tx('{0} slower', { 0: formatEta(alt.delta) }) : tx('{0} faster', { 0: formatEta(-alt.delta) });
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${formatEta(alt.route.duration)}, ${formatDistance(alt.route.distance)}, ${diff}`}
+      accessibilityHint={tx('Use this route')}
+      onPress={onPress}
+      className="min-h-14 flex-row items-center gap-3 py-2 active:opacity-70"
+    >
+      <View className="h-10 w-10 items-center justify-center rounded-xl bg-muted">
+        <RouteIcon color={colors.mutedForeground} size={18} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-base font-semibold text-heading">
+          {formatEta(alt.route.duration)} · {formatDistance(alt.route.distance)}
+        </Text>
+        <Text className="text-xs text-faint">{road ? tx('Via {0}', { 0: road }) : tx('Another way')}</Text>
+      </View>
+      <Text className={`text-xs font-semibold ${alt.delta < -30 ? 'text-success' : 'text-muted-foreground'}`}>{diff}</Text>
+    </Pressable>
   );
 }
 

@@ -32,13 +32,25 @@ export type Route = {
   from: LatLng;
   to: LatLng & { id?: string; name?: string };
   createdAt: number;
+  /** Which routing service made it (Valhalla first, OSRM as the fallback). */
+  engine?: 'valhalla' | 'osrm';
+};
+
+/** Options for a route request. */
+export type RouteOptions = {
+  /** Direction the traveller is heading (degrees), so the route starts that way. */
+  heading?: number | null;
+  /** Ask for alternative routes too. */
+  alternatives?: boolean;
 };
 
 const BASE: Record<TravelMode, string> = SERVICES.routing;
 
-export function buildRouteUrl(mode: TravelMode, from: LatLng, to: LatLng, alternatives = false) {
+export function buildRouteUrl(mode: TravelMode, from: LatLng, to: LatLng, opts: RouteOptions = {}) {
   const coords = `${from.longitude.toFixed(6)},${from.latitude.toFixed(6)};${to.longitude.toFixed(6)},${to.latitude.toFixed(6)}`;
-  return `${BASE[mode]}/${coords}?overview=full&geometries=geojson&steps=true${alternatives ? '&alternatives=3' : ''}`;
+  // Heading: the route must leave in the direction of travel (45° either way), so a reroute gives a proper U-turn.
+  const bearing = opts.heading != null && Number.isFinite(opts.heading) ? `&bearings=${Math.round(((opts.heading % 360) + 360) % 360)},45;` : '';
+  return `${BASE[mode]}/${coords}?overview=full&geometries=geojson&steps=true${opts.alternatives ? '&alternatives=3' : ''}${bearing}`;
 }
 
 type OsrmStep = {
@@ -135,14 +147,19 @@ function toRoute(r: OsrmRoute, mode: TravelMode, from: LatLng, to: Route['to'], 
   return {
     mode,
     distance: r.distance,
-    // Public foot/bike profiles can be optimistic; floor at 4.8 km/h walking, 15 km/h cycling.
-    duration: mode === 'walking' ? Math.max(r.duration, r.distance / 1.33) : mode === 'cycling' ? Math.max(r.duration, r.distance / 4.2) : r.duration,
+    duration: realisticDuration(mode, r.duration, r.distance),
     coordinates: r.geometry.coordinates,
     steps,
     from,
     to,
     createdAt: now,
+    engine: 'osrm',
   };
+}
+
+/** Public foot/bike profiles can be optimistic; floor at 4.8 km/h walking, 15 km/h cycling. */
+export function realisticDuration(mode: TravelMode, duration: number, distance: number) {
+  return mode === 'walking' ? Math.max(duration, distance / 1.33) : mode === 'cycling' ? Math.max(duration, distance / 4.2) : duration;
 }
 
 function checkResponse(json: OsrmResponse) {
@@ -170,29 +187,29 @@ export function parseOsrmRoutes(json: OsrmResponse, mode: TravelMode, from: LatL
   return json.routes!.map((r) => toRoute(r, mode, from, to, now));
 }
 
-async function requestOsrm(mode: TravelMode, from: LatLng, to: LatLng, alternatives: boolean, signal?: AbortSignal): Promise<OsrmResponse> {
+/** Errors that mean the service itself failed (try the other engine), not "there is no road". */
+export class RoutingUnavailable extends Error {}
+
+async function requestOsrm(mode: TravelMode, from: LatLng, to: LatLng, opts: RouteOptions, signal?: AbortSignal): Promise<OsrmResponse> {
   let res: Response;
   try {
-    res = await fetch(buildRouteUrl(mode, from, to, alternatives), {
+    res = await fetch(buildRouteUrl(mode, from, to, opts), {
       signal,
       headers: { Accept: 'application/json', 'User-Agent': 'GoTourGo-FYP/1.0' },
     });
   } catch (error) {
     if ((error as Error)?.name === 'AbortError') throw error;
-    throw new Error(tx('Unable to calculate route. Check your internet connection.'));
+    throw new RoutingUnavailable(tx('Unable to calculate route. Check your internet connection.'));
   }
-  if (res.status === 429) throw new Error(tx('Routing service is busy. Try again shortly.'));
-  if (!res.ok) throw new Error(tx('Unable to calculate route.'));
+  if (res.status === 429) throw new RoutingUnavailable(tx('Routing service is busy. Try again shortly.'));
+  // OSRM answers 400 with code NoRoute/NoSegment in the body.
+  if (!res.ok && res.status !== 400) throw new RoutingUnavailable(tx('Unable to calculate route.'));
   return (await res.json()) as OsrmResponse;
 }
 
-export async function fetchRoute(mode: TravelMode, from: LatLng, to: Route['to'], signal?: AbortSignal): Promise<Route> {
-  return parseOsrmResponse(await requestOsrm(mode, from, to, false, signal), mode, from, to);
-}
-
-/** The best route plus up to three alternatives (used to go around hazards). */
-export async function fetchRoutes(mode: TravelMode, from: LatLng, to: Route['to'], signal?: AbortSignal): Promise<Route[]> {
-  return parseOsrmRoutes(await requestOsrm(mode, from, to, true, signal), mode, from, to);
+/** The best OSRM route, plus alternatives when asked (best first). */
+export async function fetchOsrmRoutes(mode: TravelMode, from: LatLng, to: Route['to'], opts: RouteOptions = {}, signal?: AbortSignal): Promise<Route[]> {
+  return parseOsrmRoutes(await requestOsrm(mode, from, to, opts, signal), mode, from, to);
 }
 
 /** Hand-off for full turn-by-turn navigation. */
