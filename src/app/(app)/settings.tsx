@@ -17,6 +17,7 @@ import { requestBackgroundPermission } from '@/features/location/location-provid
 import { locationStore, useLocationState } from '@/features/location/location-store';
 import { CHANNELS, notifyNow, requestNotificationPermission } from '@/features/notifications/local-notifications';
 import { registerGeofences, stopGeofences } from '@/features/proximity/geofence-task';
+import { simulateActiveJourney } from '@/features/journey/simulate';
 import { simulator, useSimulator } from '@/features/proximity/simulator';
 import { crashReport, useLastError } from '@/lib/crash-log';
 import { formatDistance } from '@/lib/geo';
@@ -209,9 +210,7 @@ export default function SettingsScreen() {
               variant="secondary"
               disabled={journey.phase !== 'active' || !journey.route}
               onPress={() => {
-                if (!journey.route || !journey.target) return;
-                simulator.startAlongRoute(journey.route.coordinates, journey.target.name);
-                router.push('/journey/navigate');
+                if (simulateActiveJourney()) router.push('/journey/navigate');
               }}
             />
             <AppButton
@@ -220,10 +219,8 @@ export default function SettingsScreen() {
               variant="secondary"
               disabled={journey.phase !== 'active' || !journey.route}
               onPress={() => {
-                if (!journey.route || !journey.target) return;
                 // 300 m ahead, then back along the route: shows the warning, the U-turn re-route and the arrow turning.
-                simulator.startAlongRoute(journey.route.coordinates, journey.target.name, 40, { wrongWayAfter: 300 });
-                router.push('/journey/navigate');
+                if (simulateActiveJourney({ wrongWay: true })) router.push('/journey/navigate');
               }}
             />
             <Text className="text-xs text-faint">{tx('Start a journey first (search a place, then Start journey), then come back here to drive it at 50 km/h, or to drive it the wrong way.')}</Text>

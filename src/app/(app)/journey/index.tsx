@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, ListOrdered, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, Route as RouteIcon, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, ListOrdered, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, Play, Route as RouteIcon, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import type { AltRoute } from '@/features/journey/alternatives';
 import { isOnRoute, type JourneyItem } from '@/features/journey/journey-items';
 import { JourneyMap } from '@/features/journey/journey-map';
 import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
+import { simulateActiveJourney } from '@/features/journey/simulate';
 import { hasBackgroundLocation, startJourneyUpdates } from '@/features/journey/journey-task';
 import { arrivalClock, formatEta } from '@/features/journey/navigation';
 import { getCurrentFix, requestBackgroundPermission, requestLocationPermission } from '@/features/location/location-provider';
@@ -177,6 +178,14 @@ export default function JourneyPreview() {
     } finally {
       setStarting(false);
     }
+  };
+
+  // Demo: start the journey and drive it at 50 km/h without moving (works for any start).
+  const simulate = () => {
+    if (!route) return;
+    haptics.select();
+    journeyStore.start();
+    if (simulateActiveJourney()) router.replace('/journey/navigate');
   };
 
   // Tapping the route bar goes back to planning, with both ends filled in.
@@ -389,6 +398,7 @@ export default function JourneyPreview() {
               active={Boolean(savedEntry)}
               onPress={() => route && journey.phase === 'preview' && saveOffline()}
             />
+            <IconButton icon={Play} label={tx('Simulate the drive')} onPress={() => route && journey.phase === 'preview' && simulate()} />
             <AppButton
               label={tx('Preview')}
               icon={ListOrdered}

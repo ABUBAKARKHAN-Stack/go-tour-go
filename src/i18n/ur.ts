@@ -1363,4 +1363,5 @@ export const ur: Record<string, string> = {
   "Preview the upcoming turns": "آنے والے موڑ دیکھیں",
   "Step {0} of {1} · done": "مرحلہ {0} از {1} · مکمل",
   "Upcoming turns": "آنے والے موڑ",
+  "Simulate the drive": "سفر کی نقل چلائیں",
 };

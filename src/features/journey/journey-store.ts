@@ -330,6 +330,8 @@ export const journeyStore = {
   selectRoute(alt: AltRoute) {
     const current = state.route;
     if (!current || !state.alternatives.includes(alt)) return;
+    // A re-route still on its way must not replace the route just chosen.
+    if (state.phase === 'active') cancelRouteRequests();
     const route = alt.route;
     indexRoute(route);
     // The route being left stays on the map as an alternative, so you can switch back
@@ -343,6 +345,8 @@ export const journeyStore = {
       alternatives,
       items: itemsFor(route),
       progress: state.phase === 'active' ? null : state.progress,
+      rerouting: false,
+      rerouteFailed: false,
     });
     if (state.phase === 'active') {
       persist(true);
