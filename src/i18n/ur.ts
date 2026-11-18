@@ -1358,4 +1358,9 @@ export const ur: Record<string, string> = {
   "You're going the wrong way. Make a U-turn when it is safe.": "آپ غلط سمت میں جا رہے ہیں۔ محفوظ ہو تو یو ٹرن لیں۔",
   "{0} faster": "{0} تیز",
   "{0} slower": "{0} سست",
+  "Back to navigation": "نیویگیشن پر واپس",
+  "Next · in {0}": "اگلا · {0} میں",
+  "Preview the upcoming turns": "آنے والے موڑ دیکھیں",
+  "Step {0} of {1} · done": "مرحلہ {0} از {1} · مکمل",
+  "Upcoming turns": "آنے والے موڑ",
 };
