@@ -23,7 +23,7 @@ export type Landmark = {
 };
 
 const SUMMARY_COLUMNS =
-  'id,slug,name,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,is_landmark,popularity,featured,source';
+  'id,slug,name,name_ur,category,city,region,latitude,longitude,radius_m,short_description,image_url,featured,source';
 
 /**
  * Translations are few (curated landmarks only), so they are fetched whole and
@@ -62,7 +62,7 @@ async function loadSummaries(): Promise<DestinationSummary[]> {
     .select(SUMMARY_COLUMNS)
     .eq('active', true)
     .order('featured', { ascending: false })
-    .order('popularity', { ascending: false })
+    .order('name', { ascending: true })
     .limit(1000);
   if (error) throw error;
   return (data ?? []) as unknown as DestinationSummary[];
@@ -182,9 +182,6 @@ export function useDestinationDetail(id: string | undefined) {
       entry_fee: null,
       best_time: null,
       wikipedia_url: null,
-      image_credit: null,
-      image_license: null,
-      image_page_url: null,
     };
   }, [summary, translations.data]);
 
