@@ -356,21 +356,25 @@ export const journeyStore = {
     }
   },
 
-  /** Shows a route saved for offline use in the preview, without asking the routing server. */
-  loadSaved(target: JourneyTarget, route: Route) {
+  /** Shows a route saved for offline use (and its saved alternatives) in the preview, without asking the routing server. */
+  loadSaved(target: JourneyTarget, route: Route, alternatives: Route[] = [], origin?: JourneyTarget) {
     if (state.phase === 'active') return;
     planController?.abort();
     cancelRouteRequests();
     indexRoute(route);
+    // The saved alternatives come back too, so you can switch with no signal.
+    planned = { [route.mode]: [route, ...alternatives] };
+    askedAlternatives = new Set([route.mode]);
     set({
       ...idle,
       voice: state.voice,
       phase: 'preview',
       target,
-      origin: { name: tx('Your location'), ...route.from },
+      origin: origin ?? { name: tx('Your location'), ...route.from },
       mode: route.mode,
       routes: { [route.mode]: route },
       route,
+      alternatives: alternativesFor(route, alternatives),
       items: itemsFor(route),
       error: null,
     });

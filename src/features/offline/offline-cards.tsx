@@ -203,10 +203,11 @@ export function SavedRouteRow({ saved }: { saved: SavedRoute }) {
         </View>
         <View className="flex-1">
           <Text className="text-base font-semibold text-heading">
-            {saved.target.name}
+            {saved.origin ? tx('{0} → {1}', { 0: saved.origin.name, 1: saved.target.name }) : saved.target.name}
           </Text>
           <Text className="text-xs text-faint">
             {tx('{0} · saved {1}', { 0: formatDistance(saved.route.distance), 1: new Date(saved.savedAt).toLocaleDateString() })}
+            {saved.alternatives?.length ? tx(' · +{0} other routes', { 0: saved.alternatives.length }) : ''}
           </Text>
         </View>
       </View>

@@ -123,7 +123,12 @@ export default function JourneyPreview() {
       router.push('/offline-maps');
       return;
     }
-    const saved = await saveRouteOffline(journey.target, route, { online });
+    // Every route offered is saved, so you can still switch with no signal.
+    const saved = await saveRouteOffline(journey.target, route, {
+      online,
+      alternatives: journey.alternatives.map((a) => ({ route: a.route, segment: a.segment })),
+      origin: from !== 'me' && journey.origin ? journey.origin : undefined,
+    });
     Alert.alert(
       tx('Route saved offline'),
       saved.map === 'covered'
