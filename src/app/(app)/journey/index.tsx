@@ -19,7 +19,7 @@ import { arrivalClock, formatEta } from '@/features/journey/navigation';
 import { getCurrentFix, requestBackgroundPermission, requestLocationPermission } from '@/features/location/location-provider';
 import { useLastLocation, useLocationState } from '@/features/location/location-store';
 import { requestNotificationPermission } from '@/features/notifications/local-notifications';
-import { saveRouteOffline, useSavedRoutes } from '@/features/offline/saved-routes';
+import { sameTrip, saveRouteOffline, savedModes, useSavedRoutes } from '@/features/offline/saved-routes';
 import { journeyParams, navigateTo, parseJourneyParams, type JourneyParams } from '@/features/routing/navigate';
 import type { TravelMode } from '@/features/routing/osrm';
 import { distanceMeters, formatDistance } from '@/lib/geo';
@@ -107,13 +107,15 @@ export default function JourneyPreview() {
   const hazards = journey.items.filter((i) => i.kind === 'hazard');
   const via = route ? viaRoad(route.steps, { urdu: isUrdu }) : null;
 
+  // One saved entry per trip; it counts as saved when it has every travel mode planned now
+  // (an older save with fewer modes is offered again, and replaced).
+  const tripOrigin = from !== 'me' ? journey.origin : null;
   const savedEntry =
     route && journey.target
       ? savedRoutes.find(
           (r) =>
-            r.route.mode === route.mode &&
-            Math.abs(r.target.latitude - journey.target!.latitude) < 1e-5 &&
-            Math.abs(r.target.longitude - journey.target!.longitude) < 1e-5,
+            sameTrip(r, journey.target!, tripOrigin) &&
+            (Object.keys(journey.routes) as TravelMode[]).every((m) => savedModes(r)[m]?.length),
         )
       : undefined;
 
@@ -123,11 +125,12 @@ export default function JourneyPreview() {
       router.push('/offline-maps');
       return;
     }
-    // Every route offered is saved, so you can still switch with no signal.
+    // Every travel mode and every route offered is saved, so you can still switch with no signal.
+    if (online) await journeyStore.loadAllAlternatives();
     const saved = await saveRouteOffline(journey.target, route, {
       online,
-      alternatives: journey.alternatives.map((a) => ({ route: a.route, segment: a.segment })),
-      origin: from !== 'me' && journey.origin ? journey.origin : undefined,
+      modes: journeyStore.routesToSave(),
+      origin: tripOrigin ?? undefined,
     });
     Alert.alert(
       tx('Route saved offline'),

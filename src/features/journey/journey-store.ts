@@ -356,28 +356,58 @@ export const journeyStore = {
     }
   },
 
-  /** Shows a route saved for offline use (and its saved alternatives) in the preview, without asking the routing server. */
-  loadSaved(target: JourneyTarget, route: Route, alternatives: Route[] = [], origin?: JourneyTarget) {
+  /**
+   * Shows a trip saved for offline use in the preview, without asking the
+   * routing server: every travel mode that was saved, each with its other
+   * routes, so mode and route can both be switched with no signal.
+   * `modes` lists each mode's routes, the main one first.
+   */
+  loadSaved(target: JourneyTarget, modes: Partial<Record<TravelMode, Route[]>>, preferred: TravelMode, origin?: JourneyTarget) {
     if (state.phase === 'active') return;
+    const available = MODES.filter((m) => modes[m]?.length);
+    const mode = modes[preferred]?.length ? preferred : available[0];
+    if (!mode) return;
     planController?.abort();
     cancelRouteRequests();
+    const routes: JourneyState['routes'] = {};
+    for (const m of available) routes[m] = modes[m]![0];
+    const route = routes[mode]!;
     indexRoute(route);
-    // The saved alternatives come back too, so you can switch with no signal.
-    planned = { [route.mode]: [route, ...alternatives] };
-    askedAlternatives = new Set([route.mode]);
+    planned = Object.fromEntries(available.map((m) => [m, modes[m]!]));
+    askedAlternatives = new Set(MODES);
     set({
       ...idle,
       voice: state.voice,
       phase: 'preview',
       target,
       origin: origin ?? { name: tx('Your location'), ...route.from },
-      mode: route.mode,
-      routes: { [route.mode]: route },
+      mode,
+      routes,
       route,
-      alternatives: alternativesFor(route, alternatives),
+      alternatives: alternativesFor(route, modes[mode]!),
       items: itemsFor(route),
       error: null,
     });
+  },
+
+  /** While planning: asks for the other routes of every travel mode (before saving the trip offline). */
+  async loadAllAlternatives() {
+    await Promise.allSettled(MODES.filter((m) => state.routes[m]).map((m) => journeyStore.loadAlternatives(m)));
+  },
+
+  /**
+   * Every route planned, by travel mode, the main one first; alternatives
+   * carry the stretch where they differ (only that needs extra offline map).
+   */
+  routesToSave(): Partial<Record<TravelMode, { route: Route; segment?: [number, number][] }[]>> {
+    const out: Partial<Record<TravelMode, { route: Route; segment?: [number, number][] }[]>> = {};
+    for (const m of MODES) {
+      const main = state.routes[m];
+      if (!main) continue;
+      const alts = m === state.mode ? state.alternatives : pickAlternatives(main, buildRouteIndex(main.coordinates), planned[m] ?? []);
+      out[m] = [{ route: main }, ...alts.map((a) => ({ route: a.route, segment: a.segment }))];
+    }
+    return out;
   },
 
   start() {
