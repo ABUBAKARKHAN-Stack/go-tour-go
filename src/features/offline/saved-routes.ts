@@ -2,6 +2,7 @@ import { OfflineManager } from '@maplibre/maplibre-react-native';
 import { router } from 'expo-router';
 
 import { journeyStore, type JourneyTarget } from '@/features/journey/journey-store';
+import { journeyParams } from '@/features/routing/journey-params';
 import type { Route } from '@/features/routing/osrm';
 import { env } from '@/lib/env';
 import { storage, useStorage } from '@/lib/storage';
@@ -12,7 +13,8 @@ import { corridorBoxes } from './map-choice';
 
 /**
  * "Save route offline": keeps the route itself (geometry, turn-by-turn steps)
- * so the journey can start with no signal, and the map along it. Where a
+ * and the other ways to go, so the journey can start, and switch route, with
+ * no signal; and the map along them. Where a
  * downloaded map already covers the route nothing more is fetched; otherwise
  * a corridor of small tile packs (about 1 km either side) is stored by
  * MapLibre for the online style.
@@ -21,6 +23,10 @@ export type SavedRoute = {
   id: string;
   target: JourneyTarget;
   route: Route;
+  /** The other routes offered with it (older saves have none). */
+  alternatives?: Route[];
+  /** Where it starts when that is a place rather than "Your location". */
+  origin?: JourneyTarget;
   savedAt: number;
   /** covered: a downloaded map covers it; packs: corridor packs; none: route only (saved offline). */
   map: 'covered' | 'packs' | 'none';
@@ -54,6 +60,9 @@ export function findSaved(target: JourneyTarget, route: Route) {
   );
 }
 
+/** A route and, for alternatives, the stretch that differs (only that needs extra map). */
+export type RouteToSave = { route: Route; segment?: [number, number][] };
+
 /** True when every part of the route is inside an installed map file. */
 export function routeCoveredByDownloads(route: Route) {
   const installed = installedMaps();
@@ -68,14 +77,21 @@ export function routeCoveredByDownloads(route: Route) {
   return true;
 }
 
-export async function saveRouteOffline(target: JourneyTarget, route: Route, opts: { online: boolean }): Promise<SavedRoute> {
+export async function saveRouteOffline(
+  target: JourneyTarget,
+  route: Route,
+  opts: { online: boolean; alternatives?: RouteToSave[]; origin?: JourneyTarget },
+): Promise<SavedRoute> {
   const existing = findSaved(target, route);
   if (existing) await deleteSavedRoute(existing.id);
-  const covered = routeCoveredByDownloads(route);
+  const alternatives = opts.alternatives ?? [];
+  const covered = [route, ...alternatives.map((a) => a.route)].every(routeCoveredByDownloads);
   const saved: SavedRoute = {
     id: `${Date.now()}`,
     target,
     route,
+    alternatives: alternatives.map((a) => a.route),
+    ...(opts.origin ? { origin: opts.origin } : {}),
     savedAt: Date.now(),
     map: covered ? 'covered' : opts.online ? 'packs' : 'none',
     packIds: [],
@@ -83,16 +99,17 @@ export async function saveRouteOffline(target: JourneyTarget, route: Route, opts
     error: null,
   };
   storage.set(KEY, [saved, ...list()]);
-  if (saved.map === 'packs') void downloadCorridor(saved);
+  // The map along the route, plus along the stretches where the alternatives differ.
+  if (saved.map === 'packs') void downloadCorridor(saved, [saved.route.coordinates, ...alternatives.map((a) => a.segment ?? a.route.coordinates)]);
   return saved;
 }
 
-async function downloadCorridor(saved: SavedRoute) {
+async function downloadCorridor(saved: SavedRoute, lines: [number, number][][]) {
   if (!limitSet) {
     OfflineManager.setTileCountLimit(50_000);
     limitSet = true;
   }
-  const boxes = corridorBoxes(saved.route.coordinates);
+  const boxes = lines.filter((l) => l.length > 1).flatMap((l) => corridorBoxes(l));
   const maxZoom = saved.route.distance > 300_000 ? 13 : 14;
   const progress = new Map<string, number>();
   const ids: string[] = [];
@@ -143,15 +160,7 @@ export async function deleteSavedRoute(id: string) {
 
 /** Opens the saved route in the journey preview; no route request is needed. */
 export function openSavedRoute(saved: SavedRoute) {
-  journeyStore.loadSaved(saved.target, saved.route);
-  router.push({
-    pathname: '/journey',
-    params: {
-      name: saved.target.name,
-      lat: String(saved.target.latitude),
-      lng: String(saved.target.longitude),
-      ...(saved.target.id ? { id: saved.target.id } : {}),
-      ...(saved.target.subtitle ? { subtitle: saved.target.subtitle } : {}),
-    },
-  });
+  journeyStore.loadSaved(saved.target, saved.route, saved.alternatives ?? [], saved.origin);
+  const end = (t: JourneyTarget) => ({ id: t.id ?? `pin:${t.latitude.toFixed(5)}, ${t.longitude.toFixed(5)}`, name: t.name, latitude: t.latitude, longitude: t.longitude, subtitle: t.subtitle });
+  router.push({ pathname: '/journey', params: journeyParams(saved.origin ? end(saved.origin) : 'me', end(saved.target)) });
 }
