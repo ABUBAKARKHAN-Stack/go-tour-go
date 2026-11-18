@@ -324,15 +324,18 @@ export const journeyStore = {
 
   /**
    * Switches to one of the alternative routes (tapped on the map or in the
-   * list). The route being left becomes an alternative in its place.
+   * list), while planning or during the journey. The route being left
+   * becomes an alternative in its place.
    */
   selectRoute(alt: AltRoute) {
     const current = state.route;
     if (!current || !state.alternatives.includes(alt)) return;
     const route = alt.route;
     indexRoute(route);
+    // The route being left stays on the map as an alternative, so you can switch back
+    // (during a journey, until its turn-off is behind you).
     const others = [current, ...state.alternatives.filter((a) => a !== alt).map((a) => a.route)];
-    const alternatives = state.phase === 'active' ? [] : alternativesFor(route, others);
+    const alternatives = alternativesFor(route, others);
     if (state.phase !== 'active') planned[state.mode] = [route, ...others];
     set({
       route,

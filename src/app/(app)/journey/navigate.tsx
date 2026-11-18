@@ -1,7 +1,9 @@
 import { useKeepAwake } from 'expo-keep-awake';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
+  ChevronDown,
   Flag,
+  ListOrdered,
   Landmark,
   LocateFixed,
   RefreshCw,
@@ -153,7 +155,13 @@ export default function JourneyNavigate() {
       />
 
       <View className="absolute left-3 right-3 overflow-hidden rounded-[20px] bg-primary" style={{ top: insets.top + 8, boxShadow: '0 8px 24px rgba(21,56,79,0.30)' }}>
-        <View className="flex-row items-center gap-4 px-4 py-4">
+        {/* Tap the next turn to look ahead through the turns, like map apps. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint={tx('Preview the upcoming turns')}
+          onPress={() => router.push('/journey/steps')}
+          className="flex-row items-center gap-4 px-4 py-4 active:opacity-80"
+        >
           <ManeuverIcon step={next} />
           <View className="flex-1">
             <Text className="font-display text-[30px] leading-9 text-white">{formatDistance(progress?.toManeuver ?? route.steps[0]?.distance ?? 0)}</Text>
@@ -161,7 +169,8 @@ export default function JourneyNavigate() {
               {next?.instruction ?? tx('Follow the route')}
             </Text>
           </View>
-        </View>
+          <ChevronDown color="#FFFFFF" size={20} />
+        </Pressable>
         {progress?.wrongWay && !journey.rerouting ? (
           // Going back along the route: say so plainly, like map apps.
           <View className="flex-row items-center gap-2 bg-destructive px-4 py-2.5">
@@ -217,6 +226,7 @@ export default function JourneyNavigate() {
           onPress={() => journeyStore.setVoice(!journey.voice)}
         />
         <MapButton icon={overview ? LocateFixed : RouteIcon} label={overview ? tx('Follow me') : tx('Show whole route')} onPress={() => setOverview((v) => !v)} />
+        <MapButton icon={ListOrdered} label={tx('Preview the upcoming turns')} onPress={() => router.push('/journey/steps')} />
         <MapButton icon={TriangleAlert} label={tx('Report hazard')} onPress={() => setReporting(true)} />
       </View>
 

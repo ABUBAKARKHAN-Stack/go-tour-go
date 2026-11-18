@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ArrowLeft, ChevronLeft, ChevronRight, Landmark, Maximize2, TriangleAlert } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Landmark, Maximize2, Navigation, TriangleAlert } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { FlatList, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { AppButton, IconButton } from '@/components/app-button';
 import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
 import { JourneyMap } from '@/features/journey/journey-map';
+import { useLastLocation } from '@/features/location/location-store';
 import { routeIndex, useJourney } from '@/features/journey/journey-store';
 import { ManeuverIcon } from '@/features/journey/maneuver-icon';
 import { stepStarts } from '@/features/journey/navigation';
@@ -29,9 +30,16 @@ export default function RouteSteps() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const journey = useJourney();
+  const fix = useLastLocation();
   const route = journey.route;
   const list = useRef<FlatList<number>>(null);
-  const [current, setCurrent] = useState(0);
+  // During a journey: open at the next turn, show where you are, and mark the turns already behind.
+  const active = journey.phase === 'active';
+  const doneUpTo = active ? (journey.progress?.stepIndex ?? 0) : -1;
+  const [current, setCurrent] = useState(() =>
+    active ? Math.min(Math.max(0, (journey.route?.steps.length ?? 1) - 1), (journey.progress?.stepIndex ?? 0) + 1) : 0,
+  );
+  const [startAt] = useState(current);
   // Null: the whole route in view.
   const [focused, setFocused] = useState(true);
 
@@ -72,17 +80,17 @@ export default function RouteSteps() {
         route={route}
         index={index}
         items={journey.items}
-        progress={null}
-        fix={null}
+        progress={active ? journey.progress : null}
+        fix={active ? fix : null}
         follow={false}
         focus={focus}
-        padding={{ top: insets.top + 72, bottom: CARD_AREA + insets.bottom }}
+        padding={{ top: insets.top + 72, bottom: CARD_AREA + (active ? 60 : 0) + insets.bottom }}
       />
 
       <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-[20px] bg-card px-3 py-2.5" style={{ top: insets.top + 8, ...cardShadow }}>
         <IconButton icon={ArrowLeft} flip label={tx('Go back')} onPress={() => router.back()} />
         <View className="flex-1">
-          <Text className="text-base font-semibold text-heading">{tx('Route preview')}</Text>
+          <Text className="text-base font-semibold text-heading">{active ? tx('Upcoming turns') : tx('Route preview')}</Text>
           <Text className="text-xs text-faint">{journey.target ? tx('To {0}', { 0: journey.target.name }) : ''}</Text>
         </View>
         <IconButton icon={Maximize2} label={tx('Whole route')} active={!focused} onPress={() => setFocused(false)} />
@@ -96,6 +104,7 @@ export default function RouteSteps() {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          initialScrollIndex={startAt}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
           onMomentumScrollEnd={(e) => {
             const i = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -109,16 +118,23 @@ export default function RouteSteps() {
             const to = starts[i + 1] ?? index.total;
             // What lies on this stretch of road.
             const onStretch = journey.items.filter((it) => it.along >= from && it.along < to).slice(0, 3);
+            const done = i <= doneUpTo;
+            // The next turn while navigating: how far it is from where you are now.
+            const ahead = active && i === doneUpTo + 1 && journey.progress ? journey.progress.toManeuver : null;
             return (
               <View style={{ width }} className="px-4">
-                <View className="gap-3 rounded-[24px] bg-card p-4" style={cardShadow}>
+                <View className="gap-3 rounded-[24px] bg-card p-4" style={[cardShadow, done ? { opacity: 0.6 } : null]}>
                   <View className="flex-row items-start gap-3">
                     <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary">
                       <ManeuverIcon step={step} size={26} />
                     </View>
                     <View className="flex-1 gap-0.5">
                       <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-faint">
-                        {tx('Step {0} of {1}', { 0: i + 1, 1: steps.length })}
+                        {done
+                          ? tx('Step {0} of {1} · done', { 0: i + 1, 1: steps.length })
+                          : ahead != null
+                            ? tx('Next · in {0}', { 0: formatDistance(ahead) })
+                            : tx('Step {0} of {1}', { 0: i + 1, 1: steps.length })}
                       </Text>
                       <Text className="text-[17px] font-semibold leading-6 text-heading">{step.instruction}</Text>
                       {step.distance > 0 && step.type !== 'arrive' ? (
@@ -145,6 +161,12 @@ export default function RouteSteps() {
           <AppButton label={tx('Previous')} icon={ChevronLeft} variant="secondary" size="sm" disabled={current === 0} onPress={() => go(current - 1)} className="flex-1" />
           <AppButton label={tx('Next')} icon={ChevronRight} variant="secondary" size="sm" disabled={current >= steps.length - 1} onPress={() => go(current + 1)} className="flex-1" />
         </View>
+        {active ? (
+          // Guidance keeps running underneath; this goes straight back to it.
+          <View className="px-4">
+            <AppButton label={tx('Back to navigation')} icon={Navigation} onPress={() => (router.canGoBack() ? router.back() : router.replace('/journey/navigate'))} />
+          </View>
+        ) : null}
       </View>
     </View>
   );
