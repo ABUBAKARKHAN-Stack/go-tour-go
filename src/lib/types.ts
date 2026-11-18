@@ -29,8 +29,6 @@ export type DestinationSummary = {
   radius_m: number;
   short_description: string;
   image_url: string | null;
-  is_landmark: boolean;
-  popularity: number;
   featured: boolean;
   source: 'curated' | 'osm';
 };
@@ -49,9 +47,6 @@ export type Destination = DestinationSummary & {
   entry_fee: string | null;
   best_time: string | null;
   wikipedia_url: string | null;
-  image_credit: string | null;
-  image_license: string | null;
-  image_page_url: string | null;
   /** Set when parts of the text shown are AI translations. */
   machine_translated?: boolean;
 };

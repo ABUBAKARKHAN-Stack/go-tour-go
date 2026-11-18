@@ -35,8 +35,6 @@ CREATE TABLE IF NOT EXISTS destinations (
   radius_m INTEGER NOT NULL,
   short_description TEXT NOT NULL,
   image_url TEXT,
-  is_landmark INTEGER NOT NULL,
-  popularity INTEGER NOT NULL,
   featured INTEGER NOT NULL,
   source TEXT NOT NULL
 );
@@ -48,9 +46,23 @@ let db: SQLiteDatabase | null = null;
 export function localDb(): SQLiteDatabase {
   if (!db) {
     db = openDatabaseSync('gotourgo-data.db');
+    dropOutdatedDestinations(db);
     db.execSync(SCHEMA);
   }
   return db;
+}
+
+/**
+ * Phones that had an older app keep the landmark table from then, with
+ * columns the server no longer has (is_landmark, popularity) that must not be
+ * empty, so new landmarks could never be stored. That copy is dropped and
+ * recreated; the next sync fills it again (an empty table always resyncs).
+ */
+function dropOutdatedDestinations(database: SQLiteDatabase) {
+  const columns = database.getAllSync<{ name: string }>('PRAGMA table_info(destinations)');
+  if (columns.some((c) => c.name === 'is_landmark' || c.name === 'popularity')) {
+    database.execSync('DROP TABLE destinations');
+  }
 }
 
 export function getMeta(key: string): string | null {

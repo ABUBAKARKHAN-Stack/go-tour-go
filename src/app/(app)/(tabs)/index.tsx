@@ -91,7 +91,10 @@ export default function Home() {
   const searchPress = usePressScale(0.98);
 
   const near = location ? sorted.slice(0, 8) : [];
-  const popular = useMemo(() => [...sorted].sort((a, b) => b.popularity - a.popularity).slice(0, 6), [sorted]);
+  const popular = useMemo(
+    () => [...sorted].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || a.name.localeCompare(b.name)).slice(0, 6),
+    [sorted],
+  );
   const savedPlaces = useMemo(() => sorted.filter((d) => saved.data?.includes(d.id)).slice(0, 8), [sorted, saved.data]);
   const current = (trips.data ?? []).filter((t) => t.status === 'in_progress');
   const upcoming = (trips.data ?? []).filter((t) => t.status === 'todo');

@@ -122,7 +122,9 @@ export default function ExploreScreen() {
   const nearby = useMemo(() => {
     const list = location
       ? visible.map((d) => ({ d, dist: distanceMeters(location, d) as number | null })).sort((a, b) => (a.dist ?? 0) - (b.dist ?? 0))
-      : [...visible].sort((a, b) => b.popularity - a.popularity).map((d) => ({ d, dist: null as number | null }));
+      : [...visible]
+          .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || a.name.localeCompare(b.name))
+          .map((d) => ({ d, dist: null as number | null }));
     return list.slice(0, 10);
   }, [visible, location]);
 
