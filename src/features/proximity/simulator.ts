@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { locationStore } from '@/features/location/location-store';
 import { emptyState } from '@/features/proximity/engine';
 import { loadProximityState, saveProximityState } from '@/features/proximity/proximity-store';
-import { buildRouteIndex, pointAlong } from '@/features/journey/route-geometry';
+import { buildRouteIndex, pointAlong, projectPoint } from '@/features/journey/route-geometry';
 import { destinationPoint, type LatLng } from '@/lib/geo';
 
 /**
@@ -66,32 +66,76 @@ export const simulator = {
    * guidance, voice, landmark and hazard alerts can be shown without moving.
    * Runs in real time, so voice prompts come at the right distances.
    */
-  startAlongRoute(coordinates: [number, number][], name: string, speedKmh = 50, opts: { wrongWayAfter?: number } = {}) {
+  startAlongRoute(
+    coordinates: [number, number][],
+    name: string,
+    speedKmh = 50,
+    opts: {
+      /** "Wrong way" demo: drive this far, then turn round and drive back along the route. */
+      wrongWayAfter?: number;
+      /**
+       * The route to drive now. When it changes (another route chosen, a new
+       * route after going off it), the drive carries on along the new one
+       * from where the car is, like a driver following the new directions.
+       * Returning null ends the drive (the journey ended).
+       */
+      follow?: () => [number, number][] | null | undefined;
+      /** Milliseconds between fixes in real time (tests run faster; fixes still say 1 s apart). */
+      tickMs?: number;
+    } = {},
+  ) {
     simulator.stop();
-    const index = buildRouteIndex(coordinates);
+    let coords = coordinates;
+    let index = buildRouteIndex(coords);
     if (index.total <= 0) return;
     // Real time (one fix a second, like navigation GPS), so voice guidance is
     // timed as on a real drive.
     const stepSeconds = 1;
     const stepMeters = (speedKmh / 3.6) * stepSeconds;
-    // "Wrong way" demo: drive ahead a little, then turn round and drive back along the route.
-    const turnAt = opts.wrongWayAfter != null ? Math.min(opts.wrongWayAfter, index.total / 2) : null;
-    const distanceAt = (i: number) => (turnAt != null && i * stepMeters > turnAt ? Math.max(0, 2 * turnAt - i * stepMeters) : i * stepMeters);
-    const total = Math.ceil((turnAt != null ? 2 * turnAt : index.total) / stepMeters) + 1;
+    let turnAt = opts.wrongWayAfter != null ? Math.min(opts.wrongWayAfter, index.total / 2) : null;
+    let along = 0;
+    let backwards = false;
+    let last = pointAlong(index, 0);
+    const stepsLeft = () => Math.ceil(((turnAt != null ? 2 * turnAt : index.total) - along) / stepMeters);
     saveProximityState({ ...loadProximityState(), lastFix: null });
     locationStore.set({ simulating: true });
-    sim = { running: true, targetName: name, step: 0, total };
+    sim = { running: true, targetName: name, step: 0, total: stepsLeft() + 1 };
     emit();
 
     let i = 0;
     let t = Date.now();
     timer = setInterval(() => {
-      if (i >= total) {
+      const now = opts.follow ? opts.follow() : coords;
+      if (now === null) {
         simulator.stop();
         return;
       }
-      const p = pointAlong(index, distanceAt(i));
-      const backwards = turnAt != null && i * stepMeters > turnAt;
+      if (now && now !== coords && now.length > 1) {
+        // Switched to another route: continue on it from the car's spot, going forward.
+        coords = now;
+        index = buildRouteIndex(coords);
+        along = projectPoint(index, last).along;
+        backwards = false;
+        turnAt = null;
+        sim = { ...sim, total: i + stepsLeft() + 1 };
+      }
+
+      if (backwards) {
+        along -= stepMeters;
+        if (along <= 0) {
+          simulator.stop();
+          return;
+        }
+      } else if (i > 0) {
+        along += stepMeters;
+        if (turnAt != null && along >= turnAt) {
+          backwards = true;
+          turnAt = null;
+        }
+      }
+      const end = along >= index.total;
+      const p = pointAlong(index, Math.min(along, index.total));
+      last = p;
       t += stepSeconds * 1000;
       locationStore.pushFix({
         latitude: p.latitude,
@@ -105,7 +149,8 @@ export const simulator = {
       i += 1;
       sim = { ...sim, step: i };
       emit();
-    }, stepSeconds * 1000);
+      if (end) simulator.stop();
+    }, opts.tickMs ?? stepSeconds * 1000);
   },
   stop() {
     if (timer) clearInterval(timer);
