@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, ListOrdered, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, Play, Route as RouteIcon, TriangleAlert, type LucideIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpDown, Bike, Car, CircleDot, ListOrdered, MapPin, Pencil, CheckCircle2, CloudDownload, Footprints, Landmark, MapPinOff, Play, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,10 +8,11 @@ import { AppButton, IconButton } from '@/components/app-button';
 import { useIsOnline } from '@/components/offline-banner';
 import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
-import type { AltRoute } from '@/features/journey/alternatives';
+import { AltRouteRow } from '@/features/journey/alt-route-row';
 import { isOnRoute, type JourneyItem } from '@/features/journey/journey-items';
 import { JourneyMap } from '@/features/journey/journey-map';
 import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
+import { viaRoad } from '@/features/journey/route-names';
 import { simulateActiveJourney } from '@/features/journey/simulate';
 import { hasBackgroundLocation, startJourneyUpdates } from '@/features/journey/journey-task';
 import { arrivalClock, formatEta } from '@/features/journey/navigation';
@@ -25,28 +26,13 @@ import { distanceMeters, formatDistance } from '@/lib/geo';
 import { usePreferences } from '@/lib/preferences';
 import { colors } from '@/lib/theme';
 import { haptics } from '@/lib/haptics';
-import { flipX, tx } from '@/lib/i18n';
+import { flipX, isUrdu, tx } from '@/lib/i18n';
 
 const MODES: { mode: TravelMode; label: string; icon: LucideIcon }[] = [
   { mode: 'driving', label: tx('Drive'), icon: Car },
   { mode: 'cycling', label: tx('Bike'), icon: Bike },
   { mode: 'walking', label: tx('Walk'), icon: Footprints },
 ];
-
-/** The road the route spends longest on, for "via …". */
-function mainRoad(steps: { name: string | null; distance: number }[]) {
-  const totals = new Map<string, number>();
-  for (const s of steps) if (s.name) totals.set(s.name, (totals.get(s.name) ?? 0) + s.distance);
-  let best: string | null = null;
-  let max = 0;
-  totals.forEach((d, name) => {
-    if (d > max) {
-      max = d;
-      best = name;
-    }
-  });
-  return best;
-}
 
 /**
  * Route preview (design screen 08): routes for each travel mode, time and
@@ -119,7 +105,7 @@ export default function JourneyPreview() {
   const route = journey.route;
   const landmarks = journey.items.filter((i) => i.kind === 'landmark');
   const hazards = journey.items.filter((i) => i.kind === 'hazard');
-  const via = route ? mainRoad(route.steps) : null;
+  const via = route ? viaRoad(route.steps, { urdu: isUrdu }) : null;
 
   const savedEntry =
     route && journey.target
@@ -336,9 +322,19 @@ export default function JourneyPreview() {
               ) : (
                 <>
                   <View className="gap-1">
-                    <Text className="font-display text-[30px] leading-9 text-foreground">
-                      {formatEta(route.duration)} · {formatDistance(route.distance)}
-                    </Text>
+                    <View className="flex-row items-center gap-2">
+                      <Text className="flex-1 font-display text-[30px] leading-9 text-foreground">
+                        {formatEta(route.duration)} · {formatDistance(route.distance)}
+                      </Text>
+                      {/* Secondary actions sit with the route they act on, so the main buttons below have room. */}
+                      <IconButton icon={Play} label={tx('Simulate the drive')} onPress={() => journey.phase === 'preview' && simulate()} />
+                      <IconButton
+                        icon={savedEntry ? CheckCircle2 : CloudDownload}
+                        label={savedEntry ? tx('Saved offline') : tx('Save offline')}
+                        active={Boolean(savedEntry)}
+                        onPress={() => journey.phase === 'preview' && saveOffline()}
+                      />
+                    </View>
                     <Text className="text-sm text-muted-foreground">{tx('Arrive {0} {1}', { 0: arrivalClock(route.duration), 1: landmarks.length || hazards.length
                         ? tx(' · {0} landmark{1}{2} on your way', { 0: landmarks.length, 1: landmarks.length === 1 ? '' : 's', 2: hazards.length ? ` and ${hazards.length} alert${hazards.length === 1 ? '' : 's'}` : '' })
                         : '' })}</Text>
@@ -349,9 +345,11 @@ export default function JourneyPreview() {
                     <View>
                       <Text className="pb-1 text-[11px] font-bold tracking-[1.6px] text-faint">{tx('OTHER ROUTES')}</Text>
                       {journey.alternatives.map((alt) => (
-                        <AltRow
+                        <AltRouteRow
                           key={alt.id}
                           alt={alt}
+                          main={route}
+                          mainItems={journey.items}
                           onPress={() => {
                             haptics.select();
                             journeyStore.selectRoute(alt);
@@ -391,21 +389,15 @@ export default function JourneyPreview() {
               </Pressable>
             </View>
           ) : null}
-          <View className="flex-row items-center gap-2">
-            <IconButton
-              icon={savedEntry ? CheckCircle2 : CloudDownload}
-              label={savedEntry ? tx('Saved offline') : tx('Save offline')}
-              active={Boolean(savedEntry)}
-              onPress={() => route && journey.phase === 'preview' && saveOffline()}
-            />
-            <IconButton icon={Play} label={tx('Simulate the drive')} onPress={() => route && journey.phase === 'preview' && simulate()} />
+          {/* Two main actions, equal room: preview the turns, or start. */}
+          <View className="flex-row items-center gap-3">
             <AppButton
               label={tx('Preview')}
               icon={ListOrdered}
               variant={canStart ? 'secondary' : 'primary'}
               disabled={!route || journey.phase !== 'preview'}
               onPress={() => router.push('/journey/steps')}
-              className={canStart ? undefined : 'flex-1'}
+              className="flex-1"
             />
             {canStart ? (
               <AppButton label={tx('Start journey')} onPress={start} loading={starting} disabled={!route || journey.phase !== 'preview'} className="flex-1" />
@@ -414,32 +406,6 @@ export default function JourneyPreview() {
         </View>
       </View>
     </View>
-  );
-}
-
-function AltRow({ alt, onPress }: { alt: AltRoute; onPress: () => void }) {
-  const road = mainRoad(alt.route.steps);
-  const mins = Math.round(Math.abs(alt.delta) / 60);
-  const diff = mins < 1 ? tx('Same time') : alt.delta > 0 ? tx('{0} slower', { 0: formatEta(alt.delta) }) : tx('{0} faster', { 0: formatEta(-alt.delta) });
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${formatEta(alt.route.duration)}, ${formatDistance(alt.route.distance)}, ${diff}`}
-      accessibilityHint={tx('Use this route')}
-      onPress={onPress}
-      className="min-h-14 flex-row items-center gap-3 py-2 active:opacity-70"
-    >
-      <View className="h-10 w-10 items-center justify-center rounded-xl bg-muted">
-        <RouteIcon color={colors.mutedForeground} size={18} />
-      </View>
-      <View className="flex-1">
-        <Text className="text-base font-semibold text-heading">
-          {formatEta(alt.route.duration)} · {formatDistance(alt.route.distance)}
-        </Text>
-        <Text className="text-xs text-faint">{road ? tx('Via {0}', { 0: road }) : tx('Another way')}</Text>
-      </View>
-      <Text className={`text-xs font-semibold ${alt.delta < -30 ? 'text-success' : 'text-muted-foreground'}`}>{diff}</Text>
-    </Pressable>
   );
 }
 

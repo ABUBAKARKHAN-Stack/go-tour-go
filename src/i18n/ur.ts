@@ -1364,4 +1364,8 @@ export const ur: Record<string, string> = {
   "Step {0} of {1} · done": "مرحلہ {0} از {1} · مکمل",
   "Upcoming turns": "آنے والے موڑ",
   "Simulate the drive": "سفر کی نقل چلائیں",
+  " +{0} more": " +{0} مزید",
+  "Also passes {0}": "راستے میں {0} بھی",
+  "Now: {0} · {1}": "ابھی: {0} · {1}",
+  "Other routes": "دوسرے راستے",
 };

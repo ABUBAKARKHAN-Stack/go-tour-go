@@ -4,6 +4,7 @@ import { parseOsrmResponse, type Route } from '@/features/routing/osrm';
 import { distanceMeters } from '@/lib/geo';
 
 import { alternativesAhead, compareRoute, pickAlternatives } from './alternatives';
+import { viaRoad } from './route-names';
 import { advance, crossedThreshold, formatEta, movementHeading, spokenDistance, spokenInstruction, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress } from './navigation';
 import * as journeyItemsModule from './journey-items';
 import { hazardsAhead, journeyItems } from './journey-items';
@@ -338,5 +339,27 @@ describe('alternative routes', () => {
     expect(pickAlternatives(route, index, [{ ...altRoute, createdAt: 9 }])[0].id).toBe(alt.id);
     expect(alternativesAhead([alt], index.cum[10])).toHaveLength(1);
     expect(alternativesAhead([alt], index.cum[30])).toHaveLength(0);
+  });
+});
+
+describe('via road', () => {
+  const main = [
+    { name: 'کورنگی روڈ', distance: 2000 },
+    { name: 'Korangi Road', distance: 900 },
+    { name: 'Shahrah-e-Faisal', distance: 200 },
+  ];
+  test('prefers a road named in the app language when it is a sizeable part', () => {
+    expect(viaRoad(main)).toBe('Korangi Road');
+    expect(viaRoad(main, { urdu: true })).toBe('کورنگی روڈ');
+    expect(viaRoad([{ name: 'کورنگی روڈ', distance: 2000 }, { name: 'Lane 4', distance: 100 }])).toBe('کورنگی روڈ');
+  });
+  test('an alternative is named after the road that sets it apart', () => {
+    const alt = [
+      { name: 'کورنگی روڈ', distance: 2000 },
+      { name: 'Shahrah-e-Quaideen', distance: 800 },
+    ];
+    expect(viaRoad(alt, { exclude: main })).toBe('Shahrah-e-Quaideen');
+    expect(viaRoad(main, { exclude: main })).toBe('Korangi Road');
+    expect(viaRoad([])).toBeNull();
   });
 });

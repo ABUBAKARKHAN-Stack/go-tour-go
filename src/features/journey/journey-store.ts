@@ -255,6 +255,7 @@ export const journeyStore = {
   /** Landmarks and hazards used to find what lies along routes. */
   setContext(landmarks: Landmark[], alerts: RoadAlert[]) {
     context = { landmarks, alerts };
+    itemsCache = new WeakMap();
     if (state.route && (state.phase === 'preview' || state.phase === 'active')) {
       set({ items: itemsFor(state.route) });
     }
@@ -573,4 +574,16 @@ export function useJourney() {
 
 export function routeIndex() {
   return index;
+}
+
+let itemsCache = new WeakMap<Route, JourneyItem[]>();
+
+/** Landmarks and hazards along any route (e.g. an alternative), worked out once per route. */
+export function itemsAlong(route: Route): JourneyItem[] {
+  let items = itemsCache.get(route);
+  if (!items) {
+    items = journeyItems(buildRouteIndex(route.coordinates), context.landmarks, context.alerts);
+    itemsCache.set(route, items);
+  }
+  return items;
 }

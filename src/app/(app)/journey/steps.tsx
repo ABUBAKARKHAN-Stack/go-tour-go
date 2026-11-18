@@ -1,18 +1,21 @@
 import { router } from 'expo-router';
-import { ArrowLeft, ChevronLeft, ChevronRight, Landmark, Maximize2, Navigation, TriangleAlert } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Landmark, Maximize2, Navigation, Route as RouteIcon, TriangleAlert } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { FlatList, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
+import { Sheet } from '@/components/sheet';
 import { EmptyState } from '@/components/states';
 import { Text } from '@/components/text';
 import { JourneyMap } from '@/features/journey/journey-map';
 import { useLastLocation } from '@/features/location/location-store';
-import { routeIndex, useJourney } from '@/features/journey/journey-store';
+import { AltRouteRow } from '@/features/journey/alt-route-row';
+import type { AltRoute } from '@/features/journey/alternatives';
+import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
 import { ManeuverIcon } from '@/features/journey/maneuver-icon';
-import { stepStarts } from '@/features/journey/navigation';
-import { buildRouteIndex, pointAlong } from '@/features/journey/route-geometry';
+import { formatEta, stepStarts } from '@/features/journey/navigation';
+import { buildRouteIndex, pointAlong, projectPoint } from '@/features/journey/route-geometry';
 import { formatDistance } from '@/lib/geo';
 import { haptics } from '@/lib/haptics';
 import { tx } from '@/lib/i18n';
@@ -57,6 +60,24 @@ export default function RouteSteps() {
     return { longitude: loc?.[0] ?? at.longitude, latitude: loc?.[1] ?? at.latitude, bearing: at.bearing };
   }, [route, index, focused, starts, current, steps]);
 
+  // Other ways to go, here too: see them on the map and in a list (with their landmarks), and switch.
+  const [routesOpen, setRoutesOpen] = useState(false);
+  const switchTo = (alt: AltRoute) => {
+    haptics.select();
+    journeyStore.selectRoute(alt);
+    setRoutesOpen(false);
+    // Start the new route's turns where you are now (navigating) or at its first turn.
+    let next = 0;
+    if (active && fix) {
+      const along = projectPoint(buildRouteIndex(alt.route.coordinates), fix).along;
+      const at = stepStarts(alt.route.steps).filter((st) => st <= along + 5).length - 1;
+      next = Math.min(alt.route.steps.length - 1, Math.max(0, at) + 1);
+    }
+    setCurrent(next);
+    setFocused(false); // the whole new route in view
+    requestAnimationFrame(() => list.current?.scrollToOffset({ offset: next * width, animated: false }));
+  };
+
   const go = (i: number) => {
     const next = Math.max(0, Math.min(steps.length - 1, i));
     if (next === current) return;
@@ -85,6 +106,8 @@ export default function RouteSteps() {
         follow={false}
         focus={focus}
         padding={{ top: insets.top + 72, bottom: CARD_AREA + (active ? 60 : 0) + insets.bottom }}
+        alternatives={journey.alternatives}
+        onSelectRoute={switchTo}
       />
 
       <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-[20px] bg-card px-3 py-2.5" style={{ top: insets.top + 8, ...cardShadow }}>
@@ -93,8 +116,30 @@ export default function RouteSteps() {
           <Text className="text-base font-semibold text-heading">{active ? tx('Upcoming turns') : tx('Route preview')}</Text>
           <Text className="text-xs text-faint">{journey.target ? tx('To {0}', { 0: journey.target.name }) : ''}</Text>
         </View>
+        {journey.alternatives.length ? (
+          <IconButton icon={RouteIcon} label={tx('Other routes')} badge={journey.alternatives.length} onPress={() => setRoutesOpen(true)} />
+        ) : null}
         <IconButton icon={Maximize2} label={tx('Whole route')} active={!focused} onPress={() => setFocused(false)} />
       </View>
+
+      <Sheet
+        visible={routesOpen}
+        onClose={() => setRoutesOpen(false)}
+        header={
+          <View className="pb-2">
+            <Text accessibilityRole="header" className="font-display text-[22px] leading-7 text-heading">
+              {tx('Other routes')}
+            </Text>
+            <Text className="text-xs text-faint">
+              {tx('Now: {0} · {1}', { 0: formatEta(route.duration), 1: formatDistance(route.distance) })}
+            </Text>
+          </View>
+        }
+      >
+        {journey.alternatives.map((alt) => (
+          <AltRouteRow key={alt.id} alt={alt} main={route} mainItems={journey.items} onPress={() => switchTo(alt)} />
+        ))}
+      </Sheet>
 
       <View className="absolute bottom-0 left-0 right-0 gap-3 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>
         <FlatList
