@@ -9,6 +9,7 @@ import type { Fix } from '@/features/location/location-store';
 import type { Route } from '@/features/routing/osrm';
 import { validHeading } from '@/features/map/nav-arrow';
 import { useMapStyle } from '@/features/offline/use-map-style';
+import { ROUTE_LAYOUT, routeCasingPaint, routeLinePaint } from '@/features/map/route-style';
 import { bearingTo } from '@/features/proximity/heading';
 import { boundsOf, distanceMeters } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
@@ -75,6 +76,8 @@ const STEADY_DEG = 8;
  */
 function JourneyMapBase({ route, index, items, progress, fix, follow, padding, focus, alternatives = [], onSelectRoute, onLoadError }: Props) {
   const mapStyle = useMapStyle();
+  // Walking routes are drawn as dots.
+  const mode = route?.mode;
   const remaining = useMemo<GeoJSON.Feature | null>(() => {
     if (!route) return null;
     const coordinates = index && progress ? remainingLine(index, progress.along) : route.coordinates;
@@ -199,15 +202,15 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
           type="line"
           id="journey-alternative-casing"
           beforeId={below('journey-alternative-casing')}
-          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.routeCasing, 'line-width': ROUTE_CASING_WIDTH as never }}
+          layout={ROUTE_LAYOUT}
+          paint={routeCasingPaint(mode, colors.routeCasing)}
         />
         <Layer
           type="line"
           id="journey-alternative-line"
           beforeId={below('journey-alternative-line')}
-          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': ALT_ROUTE, 'line-width': ROUTE_WIDTH as never }}
+          layout={ROUTE_LAYOUT}
+          paint={routeLinePaint(mode, ALT_ROUTE)}
         />
       </GeoJSONSource>
 
@@ -216,8 +219,8 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
           type="line"
           id="journey-travelled-line"
           beforeId={below('journey-travelled-line')}
-          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.borderStrong, 'line-width': ROUTE_WIDTH as never }}
+          layout={ROUTE_LAYOUT}
+          paint={routeLinePaint(mode, colors.borderStrong)}
         />
       </GeoJSONSource>
 
@@ -226,15 +229,15 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
           type="line"
           id="journey-route-casing"
           beforeId={below('journey-route-casing')}
-          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.routeCasing, 'line-width': ROUTE_CASING_WIDTH as never }}
+          layout={ROUTE_LAYOUT}
+          paint={routeCasingPaint(mode, colors.routeCasing)}
         />
         <Layer
           type="line"
           id="journey-route-line"
           beforeId={below('journey-route-line')}
-          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.route, 'line-width': ROUTE_WIDTH as never }}
+          layout={ROUTE_LAYOUT}
+          paint={routeLinePaint(mode, colors.route)}
         />
       </GeoJSONSource>
 
@@ -309,13 +312,6 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
     </Map>
   );
 }
-
-/**
- * Route width by zoom: thin when the whole route is in view, wider at street
- * level where you follow it. The white casing is a thin outline around it.
- */
-const ROUTE_WIDTH = ['interpolate', ['linear'], ['zoom'], 8, 2.5, 12, 3.5, 15, 5, 18, 7.5];
-const ROUTE_CASING_WIDTH = ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 5.5, 15, 7.5, 18, 10.5];
 
 /** Alternative routes: a muted grey-blue under the main route. */
 const ALT_ROUTE = '#9DB3C2';

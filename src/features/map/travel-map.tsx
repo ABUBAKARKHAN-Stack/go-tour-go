@@ -20,6 +20,7 @@ import type { Route } from '@/features/routing/osrm';
 import type { FriendLocation } from '@/features/safety/friend-locations';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { displayName } from '@/features/social/api';
+import { ROUTE_LAYOUT, routeCasingPaint, routeLinePaint } from './route-style';
 import { NavArrow } from '@/features/map/nav-arrow';
 import { useMapStyle } from '@/features/offline/use-map-style';
 import { boundsOf, circleRing } from '@/lib/geo';
@@ -219,14 +220,14 @@ function TravelMapBase(props: Props, ref: React.Ref<TravelMapHandle>) {
         <Layer
           type="line"
           id="route-casing"
-          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.background, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 5.5, 15, 7.5, 18, 10.5] as never, 'line-opacity': 0.8 }}
+          layout={ROUTE_LAYOUT}
+          paint={routeCasingPaint(props.route?.mode, colors.background, 0.8)}
         />
         <Layer
           type="line"
           id="route-line"
-          layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.route, 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2.5, 12, 3.5, 15, 5, 18, 7.5] as never }}
+          layout={ROUTE_LAYOUT}
+          paint={routeLinePaint(props.route?.mode, colors.route)}
         />
       </GeoJSONSource>
 

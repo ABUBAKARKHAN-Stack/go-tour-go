@@ -1369,4 +1369,5 @@ export const ur: Record<string, string> = {
   "Now: {0} · {1}": "ابھی: {0} · {1}",
   "Other routes": "دوسرے راستے",
   " · +{0} other routes": " · +{0} دوسرے راستے",
+  " · {0} routes": " · {0} راستے",
 };

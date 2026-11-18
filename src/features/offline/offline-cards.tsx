@@ -10,7 +10,9 @@ import { cardShadow, colors } from '@/lib/theme';
 
 import { offlineMap, type OfflineMapId } from './catalog';
 import { checkBeforeDownload, formatBytes, hasUpdate, offlineDownloads, WIFI_ONLY_ABOVE_BYTES, type DownloadItem } from './downloads';
-import { deleteSavedRoute, openSavedRoute, type SavedRoute } from './saved-routes';
+import { deleteSavedRoute, openSavedRoute, savedModes, type SavedRoute } from './saved-routes';
+import { formatEta } from '@/features/journey/navigation';
+import type { Route } from '@/features/routing/osrm';
 
 const ICONS: Record<OfflineMapId, LucideIcon> = {
   pakistan: Globe2,
@@ -187,6 +189,9 @@ const MODE_ICONS = { driving: Car, cycling: Bike, walking: Footprints } as const
 
 export function SavedRouteRow({ saved }: { saved: SavedRoute }) {
   const ModeIcon = MODE_ICONS[saved.route.mode] ?? RouteIcon;
+  // Every travel mode saved for this trip, with its time and how many routes it has.
+  const modes = Object.entries(savedModes(saved)).filter(([, list]) => list?.length) as [keyof typeof MODE_ICONS, Route[]][];
+  const routeCount = modes.reduce((n, [, list]) => n + list.length, 0);
   const mapText =
     saved.map === 'covered'
       ? tx('Map covered by your downloads')
@@ -207,10 +212,23 @@ export function SavedRouteRow({ saved }: { saved: SavedRoute }) {
           </Text>
           <Text className="text-xs text-faint">
             {tx('{0} · saved {1}', { 0: formatDistance(saved.route.distance), 1: new Date(saved.savedAt).toLocaleDateString() })}
-            {saved.alternatives?.length ? tx(' · +{0} other routes', { 0: saved.alternatives.length }) : ''}
+            {routeCount > 1 ? tx(' · {0} routes', { 0: routeCount }) : ''}
           </Text>
         </View>
       </View>
+      {modes.length > 1 ? (
+        <View className="flex-row flex-wrap gap-2">
+          {modes.map(([mode, list]) => {
+            const Icon = MODE_ICONS[mode] ?? RouteIcon;
+            return (
+              <View key={mode} className="flex-row items-center gap-1.5 rounded-full bg-primary-soft px-2.5 py-1">
+                <Icon color={colors.primary} size={14} />
+                <Text className="text-xs font-semibold text-heading">{formatEta(list[0].duration)}</Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
       {saved.map === 'packs' && saved.percent < 100 ? <ProgressBar value={saved.percent} /> : null}
       <Text className={`text-xs ${saved.error ? 'text-destructive' : saved.map === 'none' ? 'text-accent' : 'text-muted-foreground'}`}>{saved.error ?? mapText}</Text>
       <View className="flex-row gap-2">
