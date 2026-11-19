@@ -20,6 +20,8 @@ export type Landmark = {
   latitude: number;
   longitude: number;
   radius: number;
+  /** Photo for map pins (may be missing). */
+  image?: string | null;
 };
 
 const SUMMARY_COLUMNS =
@@ -77,6 +79,7 @@ export function toLandmark(d: DestinationSummary): Landmark {
     latitude: d.latitude,
     longitude: d.longitude,
     radius: d.radius_m,
+    image: d.image_url,
   };
 }
 
