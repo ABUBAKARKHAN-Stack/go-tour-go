@@ -21,7 +21,7 @@ import { clusterPins, type PinCluster } from './journey-clusters';
 import type { JourneyItem } from './journey-items';
 import { formatEta } from './navigation';
 import type { NavProgress } from './navigation';
-import { pointAlong, remainingLine, type RouteIndex } from './route-geometry';
+import { pointAlong, remainingLine, travelledLine, type RouteIndex } from './route-geometry';
 import { COUNTRY } from '@/constants/app.constants';
 
 type Props = {
@@ -66,7 +66,40 @@ const STACK = [
   'journey-focus-dot',
   'journey-user-arrow',
 ] as const;
-const below = (id: (typeof STACK)[number]) => STACK[STACK.indexOf(id) + 1];
+type StackId = (typeof STACK)[number];
+
+/**
+ * Route lines are drawn by sources that are rebuilt (new ids) whenever the
+ * route or its alternatives change, rather than updated in place: on Android
+ * an in-place update could leave the previous route on screen after
+ * switching. `suffixes` gives each layer its current id.
+ */
+function layerIds(suffixes: { alt: string; route: string }) {
+  const id = (base: StackId) =>
+    base.startsWith('journey-alternative') ? `${base}-${suffixes.alt}` : base.startsWith('journey-travelled') || base.startsWith('journey-route') ? `${base}-${suffixes.route}` : base;
+  return { id, below: (base: StackId) => id(STACK[STACK.indexOf(base) + 1]) };
+}
+
+const routeKeys = new WeakMap<Route, string>();
+let routeKeyCount = 0;
+/** A short id per route object (a new route, a switch or a re-route gets a new one). */
+function routeKey(route: Route | null) {
+  if (!route) return 'none';
+  let k = routeKeys.get(route);
+  if (!k) {
+    routeKeyCount += 1;
+    k = routeKeyCount.toString(36);
+    routeKeys.set(route, k);
+  }
+  return k;
+}
+
+/** Small stable hash of a string (for the alternatives' source id). */
+function hash(text: string) {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
 
 /** Camera glide between navigation fixes (about one a second). */
 const FOLLOW_MS = 1000;
@@ -88,10 +121,16 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
     return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } };
   }, [route, index, progress]);
 
-  const full = useMemo<GeoJSON.Feature | null>(
-    () => (route ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: route.coordinates } } : null),
-    [route],
-  );
+  // Only what is behind the traveller is drawn faded (not the whole route under the blue).
+  const travelled = useMemo<GeoJSON.Feature | GeoJSON.FeatureCollection>(() => {
+    if (!route || !index || !progress) return EMPTY;
+    const coordinates = travelledLine(index, progress.along);
+    return coordinates.length > 1 ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } } : EMPTY;
+  }, [route, index, progress]);
+
+  const rk = routeKey(route);
+  const ak = `${rk}-${hash(alternatives.map((a) => a.id).join(','))}`;
+  const L = layerIds({ alt: ak, route: rk });
 
   // Only the stretch where each alternative differs is drawn (and tappable):
   // shared roads stay the chosen route's, so a tap can't pick the wrong one.
@@ -212,7 +251,8 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
       <Images images={{ 'gtg-nav-arrow': require('../../../assets/map/nav-arrow.png') }} />
 
       <GeoJSONSource
-        id="journey-alternatives"
+        key={`alt-${ak}`}
+        id={`journey-alternatives-${ak}`}
         data={alternativeLines}
         hitbox={{ top: 14, bottom: 14, left: 14, right: 14 }}
         onPress={(e) => {
@@ -223,42 +263,42 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
       >
         <Layer
           type="line"
-          id="journey-alternative-casing"
-          beforeId={below('journey-alternative-casing')}
+          id={L.id('journey-alternative-casing')}
+          beforeId={L.below('journey-alternative-casing')}
           layout={ROUTE_LAYOUT}
           paint={routeCasingPaint(mode, colors.routeCasing)}
         />
         <Layer
           type="line"
-          id="journey-alternative-line"
-          beforeId={below('journey-alternative-line')}
+          id={L.id('journey-alternative-line')}
+          beforeId={L.below('journey-alternative-line')}
           layout={ROUTE_LAYOUT}
           paint={routeLinePaint(mode, ALT_ROUTE)}
         />
       </GeoJSONSource>
 
-      <GeoJSONSource id="journey-travelled" data={full && progress ? full : EMPTY}>
+      <GeoJSONSource key={`travelled-${rk}`} id={`journey-travelled-${rk}`} data={travelled}>
         <Layer
           type="line"
-          id="journey-travelled-line"
-          beforeId={below('journey-travelled-line')}
+          id={L.id('journey-travelled-line')}
+          beforeId={L.below('journey-travelled-line')}
           layout={ROUTE_LAYOUT}
           paint={routeLinePaint(mode, colors.borderStrong)}
         />
       </GeoJSONSource>
 
-      <GeoJSONSource id="journey-route" data={remaining ?? EMPTY}>
+      <GeoJSONSource key={`route-${rk}`} id={`journey-route-${rk}`} data={remaining ?? EMPTY}>
         <Layer
           type="line"
-          id="journey-route-casing"
-          beforeId={below('journey-route-casing')}
+          id={L.id('journey-route-casing')}
+          beforeId={L.below('journey-route-casing')}
           layout={ROUTE_LAYOUT}
           paint={routeCasingPaint(mode, colors.routeCasing)}
         />
         <Layer
           type="line"
-          id="journey-route-line"
-          beforeId={below('journey-route-line')}
+          id={L.id('journey-route-line')}
+          beforeId={L.below('journey-route-line')}
           layout={ROUTE_LAYOUT}
           paint={routeLinePaint(mode, colors.route)}
         />
@@ -268,7 +308,7 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
         <Layer
           type="circle"
           id="journey-dot"
-          beforeId={below('journey-dot')}
+          beforeId={L.below('journey-dot')}
           paint={{
             'circle-radius': 4.5,
             'circle-color': ['get', 'color'] as never,
@@ -287,13 +327,13 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
         <Layer
           type="circle"
           id="journey-focus-halo"
-          beforeId={below('journey-focus-halo')}
+          beforeId={L.below('journey-focus-halo')}
           paint={{ 'circle-radius': 16, 'circle-color': colors.primary, 'circle-opacity': 0.18 }}
         />
         <Layer
           type="circle"
           id="journey-focus-dot"
-          beforeId={below('journey-focus-dot')}
+          beforeId={L.below('journey-focus-dot')}
           paint={{ 'circle-radius': 7, 'circle-color': colors.primary, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 3 }}
         />
       </GeoJSONSource>

@@ -220,6 +220,14 @@ export function remainingLine(index: RouteIndex, along: number): [number, number
   return [[ax + (bx - ax) * t, ay + (by - ay) * t], ...index.coords.slice(i + 1)];
 }
 
+/** The route up to `along` metres (what has been travelled). */
+export function travelledLine(index: RouteIndex, along: number): [number, number][] {
+  if (index.coords.length < 2 || along <= 0) return [];
+  const ahead = remainingLine(index, along);
+  const cut = index.coords.length - (ahead.length - 1); // vertices already passed
+  return [...index.coords.slice(0, Math.max(1, cut)), ahead[0]];
+}
+
 /** The point `along` metres from the start, and the direction of travel there. */
 export function pointAlong(index: RouteIndex, along: number): { latitude: number; longitude: number; bearing: number } {
   const line = remainingLine(index, Math.max(0, Math.min(index.total, along)));
