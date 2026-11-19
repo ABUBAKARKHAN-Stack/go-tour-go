@@ -1370,4 +1370,7 @@ export const ur: Record<string, string> = {
   "Other routes": "دوسرے راستے",
   " · +{0} other routes": " · +{0} دوسرے راستے",
   " · {0} routes": " · {0} راستے",
+  "Its turn-off is already behind you.": "اس کا موڑ پیچھے رہ گیا ہے۔",
+  "That turn-off is behind you": "وہ موڑ پیچھے رہ گیا ہے",
+  "Too late for that route": "اس راستے کے لیے دیر ہو گئی",
 };

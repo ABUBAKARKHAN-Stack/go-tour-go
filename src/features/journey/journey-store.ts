@@ -14,8 +14,8 @@ import { hazardCore, hazardLookahead, hazardsAhead, journeyItems, routeAvoiding,
 import { hazardCard } from '@/features/alerts/hazard-card-store';
 import { CHANNELS, notifyNow } from '@/features/notifications/local-notifications';
 import { formatDistance } from '@/lib/geo';
-import { alternativesAhead, pickAlternatives, type AltRoute } from './alternatives';
-import { advance, crossedThreshold, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress, type SpokenPart } from './navigation';
+import { pickAlternatives, stillTakeable, takeableAlternatives, type AltRoute } from './alternatives';
+import { advance, crossedThreshold, offRouteThreshold, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress, type SpokenPart } from './navigation';
 import { buildRouteIndex, type RouteIndex } from './route-geometry';
 
 /**
@@ -97,6 +97,12 @@ let rerouteWait = REROUTE_MIN_INTERVAL_MS;
 let planned: Partial<Record<TravelMode, Route[]>> = {};
 /** Travel modes whose alternatives were already asked for in this plan. */
 let askedAlternatives = new Set<TravelMode>();
+/** The latest navigation fix (where the traveller really is, for switching routes). */
+let lastFix: NavFix | null = null;
+/** While navigating with no alternative left, fresh ones from here are asked for at most this often. */
+const ALTERNATIVES_REFRESH_MS = 120_000;
+let lastAltFetch = 0;
+let altRequest = 0;
 let lastPersist = 0;
 let planController: AbortController | null = null;
 /**
@@ -129,6 +135,8 @@ const listeners = new Set<() => void>();
 const eventListeners = new Set<(e: JourneyEvent) => void>();
 
 export type AvoidResult = 'switched' | 'none' | 'unavailable';
+/** "passed": during a journey, that route's turn-off is already behind the traveller. */
+export type SelectResult = 'switched' | 'passed' | 'none';
 
 export type JourneyEvent = { type: 'arrived' } | { type: 'rerouted' } | { type: 'off-route' } | { type: 'wrong-way' };
 
@@ -328,11 +336,21 @@ export const journeyStore = {
    * list), while planning or during the journey. The route being left
    * becomes an alternative in its place.
    */
-  selectRoute(alt: AltRoute) {
+  selectRoute(alt: AltRoute): SelectResult {
     const current = state.route;
-    if (!current || !state.alternatives.includes(alt)) return;
-    // A re-route still on its way must not replace the route just chosen.
-    if (state.phase === 'active') cancelRouteRequests();
+    if (!current || !state.alternatives.includes(alt)) return 'none';
+    if (state.phase === 'active') {
+      // Only a route you are still on can be taken: past its turn-off it would just send you back.
+      const here = lastFix ?? (state.progress ? { latitude: state.progress.position[1], longitude: state.progress.position[0] } : null);
+      if (here && !stillTakeable(alt, here, state.progress?.along ?? 0, offRouteThreshold(lastFix?.accuracy ?? null))) {
+        set({ alternatives: state.alternatives.filter((a) => a !== alt) });
+        speak('That turn-off is behind you');
+        return 'passed';
+      }
+      // A re-route still on its way must not replace the route just chosen.
+      cancelRouteRequests();
+      altRequest += 1;
+    }
     const route = alt.route;
     indexRoute(route);
     // The route being left stays on the map as an alternative, so you can switch back
@@ -353,6 +371,28 @@ export const journeyStore = {
       persist(true);
       speak('Switched to the other route');
       emit({ type: 'rerouted' });
+    }
+    return 'switched';
+  },
+
+  /**
+   * While navigating: other ways to go from where the traveller is now (and
+   * the way they face), as map apps keep offering them. Kept only if the
+   * journey is still on the same route when the answer comes.
+   */
+  async refreshAlternatives(from: NavFix, heading: number | null) {
+    if (state.phase !== 'active' || !state.route || !state.target) return;
+    lastAltFetch = Date.now();
+    const request = ++altRequest;
+    const route = state.route;
+    try {
+      const routes = await getRoutes(state.mode, from, state.target, { heading, alternatives: true });
+      if (request !== altRequest || state.phase !== 'active' || state.route !== route || !index) return;
+      const left = state.progress?.etaSeconds ?? route.duration;
+      const alternatives = pickAlternatives(route, index, routes, left);
+      if (alternatives.length) set({ alternatives });
+    } catch {
+      // Offline or busy: try again later.
     }
   },
 
@@ -415,6 +455,9 @@ export const journeyStore = {
     cancelRouteRequests();
     lastReroute = 0;
     rerouteWait = REROUTE_MIN_INTERVAL_MS;
+    lastFix = null;
+    lastAltFetch = 0;
+    altRequest += 1;
     // The alternatives from planning stay on the map until their turn-off is behind.
     set({ phase: 'active', startedAt: Date.now(), progress: null, rerouting: false, rerouteFailed: false, warned: [] });
     persist(true);
@@ -482,8 +525,11 @@ export const journeyStore = {
       emit({ type: 'arrived' });
       return;
     }
+    lastFix = fix;
     const ahead = hazardsAhead(state.items, progress.along, hazardLookahead(state.mode), state.warned);
-    const alternatives = alternativesAhead(state.alternatives, progress.along);
+    // An alternative stays only while you can still take it: once you're off it
+    // (you took the other road) or past its turn-off, it goes.
+    const alternatives = takeableAlternatives(state.alternatives, fix, progress.along, offRouteThreshold(fix.accuracy));
     set({
       progress,
       alternatives,
@@ -502,6 +548,15 @@ export const journeyStore = {
     }
     if (progress.offRoute || wrongWayNeedsReroute(progress, fix.timestamp)) {
       journeyStore.reroute(fix, progress.heading).catch(() => undefined);
+    } else if (
+      // No other way left: ask for fresh ones from here now and then (not near the end).
+      !alternatives.length &&
+      !state.rerouting &&
+      !progress.wrongWay &&
+      progress.remaining > 2000 &&
+      Date.now() - lastAltFetch > ALTERNATIVES_REFRESH_MS
+    ) {
+      journeyStore.refreshAlternatives(fix, progress.heading).catch(() => undefined);
     }
   },
 
@@ -524,6 +579,7 @@ export const journeyStore = {
       const route = routes[0];
       indexRoute(route);
       rerouteWait = REROUTE_MIN_INTERVAL_MS;
+      altRequest += 1; // the new route comes with its own alternatives
       set({
         route,
         routes: { ...state.routes, [state.mode]: route },
@@ -596,6 +652,8 @@ export const journeyStore = {
     Speech.stop();
     storage.remove(StorageKeys.activeJourney);
     indexRoute(null);
+    lastFix = null;
+    altRequest += 1;
     planned = {};
     askedAlternatives = new Set();
     set({ ...idle, voice: state.voice });

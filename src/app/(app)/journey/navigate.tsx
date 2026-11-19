@@ -151,7 +151,9 @@ export default function JourneyNavigate() {
         follow={!overview}
         padding={{ top: insets.top + 190, bottom: insets.bottom + 120 }}
         alternatives={journey.alternatives}
-        onSelectRoute={(alt) => journeyStore.selectRoute(alt)}
+        onSelectRoute={(alt) => {
+          if (journeyStore.selectRoute(alt) === 'passed') Alert.alert(tx('Too late for that route'), tx('Its turn-off is already behind you.'));
+        }}
       />
 
       <View className="absolute left-3 right-3 overflow-hidden rounded-[20px] bg-primary" style={{ top: insets.top + 8, boxShadow: '0 8px 24px rgba(21,56,79,0.30)' }}>

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { parseOsrmResponse, type Route } from '@/features/routing/osrm';
 import { distanceMeters } from '@/lib/geo';
 
-import { alternativesAhead, compareRoute, pickAlternatives } from './alternatives';
+import { alternativesAhead, compareRoute, pickAlternatives, stillTakeable, takeableAlternatives } from './alternatives';
 import { viaRoad } from './route-names';
 import { advance, crossedThreshold, formatEta, movementHeading, spokenDistance, spokenInstruction, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress } from './navigation';
 import * as journeyItemsModule from './journey-items';
@@ -330,6 +330,25 @@ describe('alternative routes', () => {
   test('the same road twice is not an alternative', () => {
     expect(compareRoute(index, { ...route, createdAt: 3 })).toBeNull();
     expect(pickAlternatives(route, index, [route, { ...route, createdAt: 3 }, altRoute])).toHaveLength(1);
+  });
+
+  test('takeable only while you are on it, before its turn-off', () => {
+    const [alt] = pickAlternatives(route, index, [altRoute]);
+    // On the shared road before the turn-off: can switch.
+    expect(stillTakeable(alt, { latitude: 24.85, longitude: 67.01 }, index.cum[10])).toBe(true);
+    // Took the other road (north of the main route): the main road is no longer this alternative's.
+    expect(stillTakeable(alt, { latitude: 24.85, longitude: 67.03 }, index.cum[30])).toBe(false);
+    // On the alternative's own road: it is the one you are on.
+    expect(stillTakeable(alt, { latitude: 24.853, longitude: 67.03 }, index.cum[20])).toBe(true);
+    // Unchanged list keeps its identity (no re-render).
+    const list = [alt];
+    expect(takeableAlternatives(list, { latitude: 24.85, longitude: 67.01 }, index.cum[10])).toBe(list);
+    expect(takeableAlternatives(list, { latitude: 24.85, longitude: 67.03 }, index.cum[30])).toHaveLength(0);
+  });
+
+  test('mid-journey alternatives compare with the time left', () => {
+    const [alt] = pickAlternatives(route, index, [altRoute], 300);
+    expect(alt.delta).toBe(altRoute.duration - 300);
   });
 
   test('time difference, and gone once its turn-off is behind', () => {

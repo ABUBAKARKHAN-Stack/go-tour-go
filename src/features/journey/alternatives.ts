@@ -71,8 +71,13 @@ export function compareRoute(
   return { splitAlong, label: alt.coordinates[k], segment: alt.coordinates.slice(before, (after < 0 ? alt.coordinates.length - 1 : after) + 1) };
 }
 
-/** Up to two alternatives that really differ from the main route, quickest first. */
-export function pickAlternatives(main: Route, mainIndex: RouteIndex, candidates: Route[]): AltRoute[] {
+/**
+ * Up to two alternatives that really differ from the main route, quickest
+ * first. `mainDuration` is what the main route still takes (alternatives
+ * fetched mid-journey start where the traveller is, so they compare with the
+ * time left, not the whole route).
+ */
+export function pickAlternatives(main: Route, mainIndex: RouteIndex, candidates: Route[], mainDuration = main.duration): AltRoute[] {
   const out: AltRoute[] = [];
   for (const r of candidates) {
     if (r === main) continue;
@@ -85,11 +90,39 @@ export function pickAlternatives(main: Route, mainIndex: RouteIndex, candidates:
       route: r,
       segment: c.segment,
       splitAlong: c.splitAlong,
-      delta: Math.round(r.duration - main.duration),
+      delta: Math.round(r.duration - mainDuration),
       label: c.label,
     });
   }
   return out.sort((a, b) => a.delta - b.delta).slice(0, MAX_ALTERNATIVES);
+}
+
+const indexes = new WeakMap<Route, RouteIndex>();
+
+/** A route's geometry index, built once per route. */
+export function routeIndexOf(route: Route): RouteIndex {
+  let idx = indexes.get(route);
+  if (!idx) {
+    idx = buildRouteIndex(route.coordinates);
+    indexes.set(route, idx);
+  }
+  return idx;
+}
+
+/**
+ * Can the traveller still take this alternative? Only while they are on it
+ * (the shared road before it turns off) and its turn-off isn't behind them.
+ * Once they leave it (they took the other road) it is gone, like in map apps.
+ */
+export function stillTakeable(alt: AltRoute, here: { latitude: number; longitude: number }, along: number, nearM = 40): boolean {
+  if (along > alt.splitAlong + 30) return false;
+  return projectPoint(routeIndexOf(alt.route), here).offRoute <= nearM;
+}
+
+/** The alternatives the traveller can still take (the same array when nothing changed). */
+export function takeableAlternatives(alts: AltRoute[], here: { latitude: number; longitude: number }, along: number, nearM = 40): AltRoute[] {
+  const left = alts.filter((a) => stillTakeable(a, here, along, nearM));
+  return left.length === alts.length ? alts : left;
 }
 
 /** Alternatives still ahead: the ones whose split point is not yet behind the traveller. */
