@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, Landmark, Maximize2, Navigation, Route as RouteIcon, TriangleAlert } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
-import { FlatList, useWindowDimensions, View } from 'react-native';
+import { Alert, FlatList, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
@@ -64,8 +64,11 @@ export default function RouteSteps() {
   const [routesOpen, setRoutesOpen] = useState(false);
   const switchTo = (alt: AltRoute) => {
     haptics.select();
-    journeyStore.selectRoute(alt);
     setRoutesOpen(false);
+    if (journeyStore.selectRoute(alt) !== 'switched') {
+      Alert.alert(tx('Too late for that route'), tx('Its turn-off is already behind you.'));
+      return;
+    }
     // Start the new route's turns where you are now (navigating) or at its first turn.
     let next = 0;
     if (active && fix) {
