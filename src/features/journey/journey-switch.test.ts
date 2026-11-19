@@ -122,3 +122,23 @@ describe('following a route that comes back past itself', () => {
     expect(alongs[alongs.length - 1]).toBeGreaterThan(3000);
   });
 });
+
+describe('finishing a journey', () => {
+  test('arriving clears the other routes; leaving the summary resets everything', () => {
+    journeyStore.stop();
+    journeyStore.loadSaved({ latitude: 24.85, longitude: 67.05, name: 'End' }, { driving: [mk(A, 600), mk(B, 700)] }, 'driving');
+    journeyStore.start();
+    let t = 500;
+    for (const lng of [67.0, 67.01, 67.02, 67.03, 67.04, 67.0498]) journeyStore.onFix(fixAt(lng, 24.85, t++));
+    const s = journeyStore.get();
+    expect(s.phase).toBe('arrived');
+    expect(s.alternatives).toHaveLength(0);
+    expect(s.route).not.toBeNull(); // the summary can still show where you went
+    journeyStore.stop(); // what leaving the arrived screen does
+    const after = journeyStore.get();
+    expect(after.phase).toBe('idle');
+    expect(after.route).toBeNull();
+    expect(after.alternatives).toHaveLength(0);
+    expect(after.progress).toBeNull();
+  });
+});

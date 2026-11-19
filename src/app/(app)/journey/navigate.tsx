@@ -62,6 +62,34 @@ export default function JourneyNavigate() {
     if (item) speak("You're near {0}", { 0: item.name });
   }, [nearId]);
 
+  // Leaving the arrived summary (Done, Explore, back or a swipe) resets the journey, so the
+  // next preview or simulation starts clean.
+  useEffect(
+    () => () => {
+      if (journeyStore.get().phase === 'arrived') {
+        simulator.stop();
+        journeyStore.stop();
+      }
+    },
+    [],
+  );
+
+  // Stopping a simulated drive: end the journey too (usual for a demo), or carry on with real GPS.
+  const stopSimulation = () =>
+    Alert.alert(tx('Stop the simulated drive?'), tx('End the journey too, or keep navigating from where you really are.'), [
+      { text: tx('Cancel'), style: 'cancel' },
+      { text: tx('Keep navigating'), onPress: () => simulator.stop() },
+      {
+        text: tx('End journey'),
+        style: 'destructive',
+        onPress: () => {
+          simulator.stop();
+          journeyStore.stop();
+          router.replace('/');
+        },
+      },
+    ]);
+
   const { route, progress, phase } = journey;
   if (phase === 'idle' || !route) {
     return (
@@ -210,7 +238,7 @@ export default function JourneyNavigate() {
           </View>
         ) : null}
         {sim.running ? (
-          <Pressable onPress={() => simulator.stop()} className="self-start rounded-full bg-info px-3 py-1.5">
+          <Pressable accessibilityRole="button" onPress={stopSimulation} className="self-start rounded-full bg-info px-3 py-1.5">
             <Text className="text-[11px] font-semibold text-white">{tx('Simulated drive · tap to stop')}</Text>
           </Pressable>
         ) : null}

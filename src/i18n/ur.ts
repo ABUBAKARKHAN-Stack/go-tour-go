@@ -1373,4 +1373,7 @@ export const ur: Record<string, string> = {
   "Its turn-off is already behind you.": "اس کا موڑ پیچھے رہ گیا ہے۔",
   "That turn-off is behind you": "وہ موڑ پیچھے رہ گیا ہے",
   "Too late for that route": "اس راستے کے لیے دیر ہو گئی",
+  "End the journey too, or keep navigating from where you really are.": "سفر بھی ختم کریں، یا جہاں آپ اصل میں ہیں وہاں سے رہنمائی جاری رکھیں۔",
+  "Keep navigating": "رہنمائی جاری رکھیں",
+  "Stop the simulated drive?": "نقلی سفر روکیں؟",
 };
