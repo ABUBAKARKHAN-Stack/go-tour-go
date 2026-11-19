@@ -4,6 +4,7 @@ import { parseOsrmResponse, type Route } from '@/features/routing/osrm';
 import { distanceMeters } from '@/lib/geo';
 
 import { alternativesAhead, compareRoute, pickAlternatives, stillTakeable, takeableAlternatives } from './alternatives';
+import { clusterPins, metersPerPixel } from './journey-clusters';
 import { viaRoad } from './route-names';
 import { advance, crossedThreshold, formatEta, movementHeading, spokenDistance, spokenInstruction, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress } from './navigation';
 import * as journeyItemsModule from './journey-items';
@@ -380,5 +381,27 @@ describe('via road', () => {
     expect(viaRoad(alt, { exclude: main })).toBe('Shahrah-e-Quaideen');
     expect(viaRoad(main, { exclude: main })).toBe('Korangi Road');
     expect(viaRoad([])).toBeNull();
+  });
+});
+
+describe('landmark pin groups', () => {
+  const at = (id: string, lat: number, lng: number) => ({ id, latitude: lat, longitude: lng });
+  // Three landmarks ~100 m apart, one 5 km away.
+  const pins = [at('a', 24.85, 67.0), at('b', 24.85, 67.001), at('c', 24.85, 67.002), at('d', 24.85, 67.05)];
+
+  test('zoomed out, close landmarks share one pin; far ones stay apart', () => {
+    const groups = clusterPins(pins, 12);
+    expect(groups.map((g) => g.members.map((m) => m.id))).toEqual([['a', 'b', 'c'], ['d']]);
+    expect(groups[0].lead.id).toBe('a');
+    expect(groups[0].longitude).toBeCloseTo(67.001, 5);
+  });
+
+  test('zoomed in, every landmark has its own pin', () => {
+    expect(clusterPins(pins, 17)).toHaveLength(4);
+  });
+
+  test('metres per pixel halves with each zoom level', () => {
+    expect(metersPerPixel(10, 0) / metersPerPixel(11, 0)).toBeCloseTo(2, 6);
+    expect(metersPerPixel(0, 0)).toBeCloseTo(78271.5, 0);
   });
 });

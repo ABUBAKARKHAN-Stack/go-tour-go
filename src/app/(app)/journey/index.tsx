@@ -229,6 +229,7 @@ export default function JourneyPreview() {
           haptics.select();
           journeyStore.selectRoute(alt);
         }}
+        onSelectLandmark={(id) => router.push({ pathname: '/destination/[id]', params: { id } })}
       />
 
       <View className="absolute left-4 right-4 flex-row items-center gap-3 rounded-[20px] bg-card px-3 py-2.5" style={{ top: insets.top + 8, boxShadow: '0 4px 14px rgba(21,56,79,0.10)' }}>

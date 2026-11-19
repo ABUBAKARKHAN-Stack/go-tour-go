@@ -17,6 +17,8 @@ export type JourneyItem = {
   along: number;
   /** Metres between the item and the route. */
   offRoute: number;
+  /** Landmark photo for its map pin (older saved journeys have none). */
+  image?: string | null;
   severity?: RoadAlert['severity'];
   alertType?: RoadAlert['alert_type'];
 };
@@ -43,6 +45,7 @@ export function journeyItems(index: RouteIndex, landmarks: Landmark[], alerts: R
         radius: h.item.radius,
         along: h.along,
         offRoute: h.offRoute,
+        image: h.item.image ?? null,
       }),
     );
   const landmarksOnWay =

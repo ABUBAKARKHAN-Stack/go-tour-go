@@ -1,4 +1,5 @@
-import { Camera, GeoJSONSource, Images, Layer, Map, ViewAnnotation } from '@maplibre/maplibre-react-native';
+import { Camera, GeoJSONSource, Images, Layer, Map, ViewAnnotation, type ViewAnnotationRef } from '@maplibre/maplibre-react-native';
+import { Image } from 'expo-image';
 import { Landmark, MapPin, TriangleAlert, type LucideIcon } from 'lucide-react-native';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -16,6 +17,7 @@ import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 
 import type { AltRoute } from './alternatives';
+import { clusterPins, type PinCluster } from './journey-clusters';
 import type { JourneyItem } from './journey-items';
 import { formatEta } from './navigation';
 import type { NavProgress } from './navigation';
@@ -40,6 +42,8 @@ type Props = {
   /** Other ways to go, drawn grey with their time difference; tapping one picks it. */
   alternatives?: AltRoute[];
   onSelectRoute?: (alt: AltRoute) => void;
+  /** Tapping a single landmark pin (a group zooms in instead). */
+  onSelectLandmark?: (id: string) => void;
   onLoadError?: () => void;
 };
 
@@ -74,7 +78,7 @@ const STEADY_DEG = 8;
  * strong, what was travelled faded), landmark and hazard markers along it,
  * the destination and the traveller.
  */
-function JourneyMapBase({ route, index, items, progress, fix, follow, padding, focus, alternatives = [], onSelectRoute, onLoadError }: Props) {
+function JourneyMapBase({ route, index, items, progress, fix, follow, padding, focus, alternatives = [], onSelectRoute, onSelectLandmark, onLoadError }: Props) {
   const mapStyle = useMapStyle();
   // Walking routes are drawn as dots.
   const mode = route?.mode;
@@ -124,17 +128,28 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
   // Each pin sits beside the route, on the side where the place is (right of
   // the road when it is on the road), so the route line stays visible; a small
   // dot marks the exact spot on the map.
-  const placed = useMemo(
-    () =>
-      items.map((item) => {
-        if (!index) return { item, perp: null as number | null };
-        const at = pointAlong(index, item.along);
-        const side =
-          distanceMeters(at, item) < 25 ? 1 : Math.sin(((bearingTo(at, item) - at.bearing) * Math.PI) / 180) >= 0 ? 1 : -1;
-        return { item, perp: (at.bearing + 90 * side + 360) % 360 };
-      }),
-    [items, index],
+  const sideOf = (item: JourneyItem): number | null => {
+    if (!index) return null;
+    const at = pointAlong(index, item.along);
+    const side = distanceMeters(at, item) < 25 ? 1 : Math.sin(((bearingTo(at, item) - at.bearing) * Math.PI) / 180) >= 0 ? 1 : -1;
+    return (at.bearing + 90 * side + 360) % 360;
+  };
+  // Hazards keep their own red pins (never grouped: warnings must stay visible).
+  const hazardPins = useMemo(() => items.filter((i) => i.kind === 'hazard').map((item) => ({ item, perp: sideOf(item) })), [items, index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Landmarks: photo pins with their names, grouped where they would overlap at this zoom.
+  const [zoom, setZoom] = useState<number | null>(null);
+  const viewZoom = zoom ?? (focus ? 17 : follow ? 16.5 : 11);
+  const landmarkGroups = useMemo(
+    () => clusterPins(items.filter((i) => i.kind === 'landmark'), viewZoom).map((g) => ({ group: g, perp: sideOf(g.lead) })),
+    [items, index, viewZoom], // eslint-disable-line react-hooks/exhaustive-deps
   );
+  // Tapping a group zooms the map to its landmarks (while not following the traveller).
+  const [groupView, setGroupView] = useState<{ route: Route | null; bounds: [number, number, number, number] } | null>(null);
+  const openGroup = (members: JourneyItem[]) => {
+    const b = boundsOf(members.map((m) => [m.longitude, m.latitude] as [number, number]));
+    if (b) setGroupView({ route, bounds: b });
+  };
   // The destination pin sits just past the end of the route, in the direction of arrival.
   const arrival = useMemo(() => {
     const c = route?.coordinates;
@@ -165,7 +180,10 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
     return [Math.round(Math.sin(t) * r), Math.round(-Math.cos(t) * r)];
   };
 
-  const cameraStop = focus
+  const groupBounds = groupView && groupView.route === route && !follow && !focus ? groupView.bounds : null;
+  const cameraStop = groupBounds
+    ? { bounds: groupBounds, padding: { top: padding.top + 60, bottom: padding.bottom + 60, left: 80, right: 80 }, duration: 700, easing: 'ease' as const }
+    : focus
     ? { center: [focus.longitude, focus.latitude] as [number, number], zoom: 17, pitch: 45, bearing: focus.bearing, padding: { top: padding.top, bottom: padding.bottom, left: 0, right: 0 }, duration: 900, easing: 'ease' as const }
     : follow && here
       ? // Linear glide over the time to the next fix, so the map moves continuously like a car's.
@@ -183,6 +201,11 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
       compassPosition={{ top: padding.top + 8, right: 12 }}
       attributionPosition={{ bottom: padding.bottom + 4, left: 8 }}
       onDidFailLoadingMap={onLoadError}
+      onRegionDidChange={(e) => {
+        // Quarter-zoom steps: enough to regroup pins, not on every tiny move.
+        const z = Math.round(e.nativeEvent.zoom * 4) / 4;
+        setZoom((prev) => (prev === z ? prev : z));
+      }}
     >
       {cameraStop ? <Camera {...cameraStop} /> : <Camera initialViewState={{ center: COUNTRY.center, zoom: 5 }} />}
 
@@ -277,18 +300,28 @@ function JourneyMapBase({ route, index, items, progress, fix, follow, padding, f
 
       <UserArrow to={here} heading={rawBearing} size={follow ? 0.8 : 0.62} glide={Boolean(progress)} />
 
-      {placed.map(({ item, perp }) => (
+      {landmarkGroups.map(({ group, perp }) => {
+        const key = `journey-lm-${group.lead.id}-${group.members.length}`;
+        return (
+          <LandmarkPin
+            key={key}
+            id={key}
+            group={group}
+            offset={perp == null ? [0, -PIN_GAP] : offsetToward(perp, PIN_GAP + 4)}
+            faded={Boolean(progress && group.members.every((m) => m.along < progress.along))}
+            onPress={() => (group.members.length > 1 ? openGroup(group.members) : onSelectLandmark?.(group.lead.id))}
+          />
+        );
+      })}
+
+      {hazardPins.map(({ item, perp }) => (
         <ViewAnnotation
           key={item.id}
           id={`journey-${item.id}`}
           lngLat={[item.longitude, item.latitude]}
           offset={perp == null ? [0, -PIN_GAP] : offsetToward(perp, PIN_GAP)}
         >
-          <PinHead
-            color={item.kind === 'hazard' ? colors.destructive : colors.primary}
-            icon={item.kind === 'hazard' ? TriangleAlert : Landmark}
-            faded={Boolean(progress && item.along < progress.along)}
-          />
+          <PinHead color={colors.destructive} icon={TriangleAlert} faded={Boolean(progress && item.along < progress.along)} />
         </ViewAnnotation>
       ))}
 
@@ -348,6 +381,64 @@ function AltPill({ delta }: { delta: number }) {
     </View>
   );
 }
+
+/**
+ * A landmark on the map: its photo in a round frame with the name under it
+ * (map apps' style). A group shows its first landmark's photo, a "+N" badge
+ * and "Name +N". On Android the pin is a picture of this view, so it is
+ * redrawn once the photo has loaded.
+ */
+function LandmarkPin({
+  id,
+  group,
+  offset,
+  faded,
+  onPress,
+}: {
+  id: string;
+  group: PinCluster<JourneyItem>;
+  offset: [number, number];
+  faded: boolean;
+  onPress: () => void;
+}) {
+  const ref = useRef<ViewAnnotationRef>(null);
+  const { lead, members } = group;
+  const more = members.length - 1;
+  const redraw = () => requestAnimationFrame(() => ref.current?.refresh());
+  return (
+    <ViewAnnotation ref={ref} id={id} lngLat={[group.longitude, group.latitude]} offset={offset} onPress={onPress}>
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={{ alignItems: 'center', opacity: faded ? 0.55 : 1, paddingTop: 6, paddingHorizontal: 8 }}
+      >
+        <View>
+          <View
+            className="items-center justify-center overflow-hidden rounded-full border-[2.5px] border-white bg-primary"
+            style={{ width: PHOTO_PIN, height: PHOTO_PIN }}
+          >
+            {lead.image ? (
+              <Image source={{ uri: lead.image }} style={{ width: PHOTO_PIN, height: PHOTO_PIN }} contentFit="cover" cachePolicy="memory-disk" onLoad={redraw} onError={redraw} />
+            ) : (
+              <Landmark color="#FFFFFF" size={18} />
+            )}
+          </View>
+          {more > 0 ? (
+            <View className="absolute items-center justify-center rounded-full border-2 border-white bg-accent px-1" style={{ top: -6, right: -8, minWidth: 22, height: 22 }}>
+              <Text className="text-[11px] font-bold text-white">+{more}</Text>
+            </View>
+          ) : null}
+        </View>
+        <View className="mt-1 rounded-md bg-card px-1.5 py-0.5" style={{ maxWidth: 130 }}>
+          <Text className="text-center text-[11px] font-semibold leading-[14px] text-heading">{more > 0 ? tx('{0} +{1}', { 0: lead.name, 1: more }) : lead.name}</Text>
+        </View>
+      </View>
+    </ViewAnnotation>
+  );
+}
+
+/** Photo pin size (px). */
+const PHOTO_PIN = 42;
 
 /** Keeps the last bearing until it changes by a few degrees, so the map doesn't wobble. */
 function useSteadyBearing(bearing: number) {
