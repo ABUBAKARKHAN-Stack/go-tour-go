@@ -9,7 +9,7 @@ import { viaRoad } from './route-names';
 import { advance, crossedThreshold, formatEta, movementHeading, spokenDistance, spokenInstruction, spokenParts, stepStarts, voiceThresholds, wrongWayNeedsReroute, type NavFix, type NavProgress } from './navigation';
 import * as journeyItemsModule from './journey-items';
 import { hazardsAhead, journeyItems } from './journey-items';
-import { buildRouteIndex, corridor, pointAlong, projectPoint, remainingLine } from './route-geometry';
+import { buildRouteIndex, corridor, pointAlong, projectPoint, remainingLine, travelledLine } from './route-geometry';
 
 // East along lat 24.85 for ~5 km, then north to 24.88 (~3.3 km). Karachi-ish.
 const coords: [number, number][] = [];
@@ -403,5 +403,19 @@ describe('landmark pin groups', () => {
   test('metres per pixel halves with each zoom level', () => {
     expect(metersPerPixel(10, 0) / metersPerPixel(11, 0)).toBeCloseTo(2, 6);
     expect(metersPerPixel(0, 0)).toBeCloseTo(78271.5, 0);
+  });
+});
+
+describe('travelled and remaining lines', () => {
+  test('meet where the traveller is and together make the route', () => {
+    const at = index.cum[30] + 40;
+    const behind = travelledLine(index, at);
+    const ahead = remainingLine(index, at);
+    expect(behind[behind.length - 1]).toEqual(ahead[0]);
+    expect(behind[0]).toEqual(coords[0]);
+    expect(ahead[ahead.length - 1]).toEqual(coords[coords.length - 1]);
+    // Every route vertex is on exactly one side.
+    expect(behind.length - 1 + ahead.length - 1).toBe(coords.length);
+    expect(travelledLine(index, 0)).toEqual([]);
   });
 });
