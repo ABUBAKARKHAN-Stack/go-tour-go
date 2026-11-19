@@ -521,7 +521,10 @@ export const journeyStore = {
     }
 
     if (progress.arrived) {
-      set({ progress, phase: 'arrived' });
+      // Arrived: nothing more to look for. The summary keeps the route; leaving it resets everything.
+      cancelRouteRequests();
+      altRequest += 1;
+      set({ progress, phase: 'arrived', alternatives: [], rerouting: false, rerouteFailed: false });
       storage.remove(StorageKeys.activeJourney);
       speak('You have arrived at {0}', { 0: state.target?.name ?? txEn('your destination') }, true);
       emit({ type: 'arrived' });

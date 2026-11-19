@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, Landmark, Maximize2, Navigation, Route as RouteIcon, TriangleAlert } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -43,6 +43,10 @@ export default function RouteSteps() {
     active ? Math.min(Math.max(0, (journey.route?.steps.length ?? 1) - 1), (journey.progress?.stepIndex ?? 0) + 1) : 0,
   );
   const [startAt] = useState(current);
+  // Arrived while looking ahead: back to navigation, which shows the arrival.
+  useEffect(() => {
+    if (journey.phase === 'arrived' && router.canGoBack()) router.back();
+  }, [journey.phase]);
   // Null: the whole route in view.
   const [focused, setFocused] = useState(true);
 
