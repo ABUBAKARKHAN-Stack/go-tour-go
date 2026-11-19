@@ -363,7 +363,9 @@ export const journeyStore = {
       routes: { ...state.routes, [state.mode]: route },
       alternatives,
       items: itemsFor(route),
-      progress: state.phase === 'active' ? null : state.progress,
+      // Placed on the new route at once (its first stretch near you), so the map and
+      // directions switch together instead of waiting for the next GPS fix.
+      progress: state.phase === 'active' ? (lastFix && index ? advance(route, index, starts, lastFix, null) : null) : state.progress,
       rerouting: false,
       rerouteFailed: false,
     });

@@ -85,6 +85,76 @@ export function projectPoint(index: RouteIndex, p: LatLng, window?: { from: numb
   return best!;
 }
 
+/**
+ * Places a point on the route the first time (journey start, a new or
+ * switched route): the *first* stretch of the route within `maxOff` metres,
+ * not the nearest anywhere. A route that loops back, or the other side of a
+ * divided road, can pass closer a few kilometres later; the traveller is at
+ * the start of a fresh route, or on the road it shares before turning off.
+ * Falls back to the nearest point when nothing is that close. With
+ * `window`, only those segments (following along: the stretch being driven
+ * wins over a later pass nearby).
+ */
+export function projectEarliest(index: RouteIndex, p: LatLng, maxOff: number, window?: { from: number; to: number }): Projection {
+  const last = index.coords.length - 2;
+  if (last < 0) return projectPoint(index, p);
+  const from = Math.max(0, window?.from ?? 0);
+  const to = Math.min(last, window?.to ?? last);
+  let best: Projection | null = null;
+  for (let i = from; i <= to; i++) {
+    const r = projectOnSegment(index, i, p);
+    if (r.dist <= maxOff) {
+      if (!best || r.dist < best.offRoute) {
+        const segLen = index.cum[i + 1] - index.cum[i];
+        best = { along: index.cum[i] + r.t * segLen, offRoute: r.dist, segment: i, point: r.point, bearing: r.bearing };
+      }
+    } else if (best) {
+      break; // left the first close stretch: later passes don't count
+    }
+  }
+  return best ?? projectPoint(index, p, window);
+}
+
+/**
+ * Following the traveller: the best point on the continuous stretch of road
+ * around their last segment that stays within `maxOff` metres (extended both
+ * ways, so reversing is followed too). Other parts of the route that come
+ * close (a loop, the far side of a divided road, the other leg of a bend)
+ * aren't jumped to. When the last segment is no longer close (a gap between
+ * fixes), the first close stretch ahead of it, then behind it, else the
+ * nearest point in `window`.
+ */
+export function projectContinuing(index: RouteIndex, p: LatLng, maxOff: number, around: number, window: { from: number; to: number }): Projection {
+  const last = index.coords.length - 2;
+  if (last < 0) return projectPoint(index, p);
+  const from = Math.max(0, window.from);
+  const to = Math.min(last, window.to);
+  const seg = Math.max(from, Math.min(to, around));
+  const at = (i: number) => {
+    const r = projectOnSegment(index, i, p);
+    const segLen = index.cum[i + 1] - index.cum[i];
+    return { along: index.cum[i] + r.t * segLen, offRoute: r.dist, segment: i, point: r.point, bearing: r.bearing } as Projection;
+  };
+  let best = at(seg);
+  if (best.offRoute > maxOff) {
+    // Moved on since the last fix (a gap): the first close stretch ahead, else behind (reversing).
+    const ahead = projectEarliest(index, p, maxOff, { from: seg, to });
+    if (ahead.offRoute <= maxOff) return ahead;
+    return projectEarliest(index, p, maxOff, { from, to });
+  }
+  for (let i = seg - 1; i >= from; i--) {
+    const r = at(i);
+    if (r.offRoute > maxOff) break;
+    if (r.offRoute < best.offRoute) best = r;
+  }
+  for (let i = seg + 1; i <= to; i++) {
+    const r = at(i);
+    if (r.offRoute > maxOff) break;
+    if (r.offRoute < best.offRoute) best = r;
+  }
+  return best;
+}
+
 export type CorridorHit<T> = { item: T; along: number; offRoute: number };
 
 const CELL = 0.01; // degrees, about 1.1 km
