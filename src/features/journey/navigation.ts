@@ -9,7 +9,7 @@ import { hasArabicScript } from '@/features/data/search-text';
 import { angleDiff, bearingTo } from '@/features/proximity/heading';
 import { distanceMeters } from '@/lib/geo';
 
-import { projectPoint, type RouteIndex } from './route-geometry';
+import { projectContinuing, projectEarliest, projectPoint, type RouteIndex } from './route-geometry';
 import { tx, txEn } from '@/lib/i18n';
 
 export type NavFix = {
@@ -120,9 +120,15 @@ export function advance(
   fix: NavFix,
   prev: NavProgress | null,
 ): NavProgress {
+  // Following along: search just around the last position. First fix on a route: its
+  // first close stretch (a later pass of a looping route can be nearer).
+  // Following along: the stretch being driven, around the last position (a loop or the
+  // other side of a divided road further on can pass nearer). First fix on a route:
+  // its first close stretch.
+  const near = offRouteThreshold(fix.accuracy);
   let proj = prev
-    ? projectPoint(index, fix, { from: prev.segment - WINDOW_BACK, to: prev.segment + WINDOW_AHEAD })
-    : projectPoint(index, fix);
+    ? projectContinuing(index, fix, near, prev.segment, { from: prev.segment - WINDOW_BACK, to: prev.segment + WINDOW_AHEAD })
+    : projectEarliest(index, fix, near);
   // Lost the thread (e.g. after a tunnel or a long gap): search everything.
   if (prev && proj.offRoute > 60) {
     const full = projectPoint(index, fix);

@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { locationStore } from '@/features/location/location-store';
 import { emptyState } from '@/features/proximity/engine';
 import { loadProximityState, saveProximityState } from '@/features/proximity/proximity-store';
-import { buildRouteIndex, pointAlong, projectPoint } from '@/features/journey/route-geometry';
+import { buildRouteIndex, pointAlong, projectEarliest } from '@/features/journey/route-geometry';
 import { destinationPoint, type LatLng } from '@/lib/geo';
 
 /**
@@ -114,7 +114,7 @@ export const simulator = {
         // Switched to another route: continue on it from the car's spot, going forward.
         coords = now;
         index = buildRouteIndex(coords);
-        along = projectPoint(index, last).along;
+        along = projectEarliest(index, last, 40).along; // the stretch the car is on, not a later pass nearby
         backwards = false;
         turnAt = null;
         sim = { ...sim, total: i + stepsLeft() + 1 };

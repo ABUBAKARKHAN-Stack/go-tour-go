@@ -15,7 +15,7 @@ import type { AltRoute } from '@/features/journey/alternatives';
 import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
 import { ManeuverIcon } from '@/features/journey/maneuver-icon';
 import { formatEta, stepStarts } from '@/features/journey/navigation';
-import { buildRouteIndex, pointAlong, projectPoint } from '@/features/journey/route-geometry';
+import { buildRouteIndex, pointAlong, projectEarliest } from '@/features/journey/route-geometry';
 import { formatDistance } from '@/lib/geo';
 import { haptics } from '@/lib/haptics';
 import { tx } from '@/lib/i18n';
@@ -72,7 +72,7 @@ export default function RouteSteps() {
     // Start the new route's turns where you are now (navigating) or at its first turn.
     let next = 0;
     if (active && fix) {
-      const along = projectPoint(buildRouteIndex(alt.route.coordinates), fix).along;
+      const along = projectEarliest(buildRouteIndex(alt.route.coordinates), fix, 60).along;
       const at = stepStarts(alt.route.steps).filter((st) => st <= along + 5).length - 1;
       next = Math.min(alt.route.steps.length - 1, Math.max(0, at) + 1);
     }
