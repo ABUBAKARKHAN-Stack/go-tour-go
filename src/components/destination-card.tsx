@@ -9,7 +9,7 @@ import { Text } from '@/components/text';
 import { useAuth } from '@/features/auth/auth-provider';
 import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { useSavedIds, useToggleSaved } from '@/features/saved/api';
-import { formatDistance } from '@/lib/geo';
+import { formatCrowDistance, formatDistance } from '@/lib/geo';
 import { usePressScale } from '@/lib/motion';
 import { colors, shadow } from '@/lib/theme';
 import type { DestinationSummary } from '@/lib/types';
@@ -68,8 +68,8 @@ function DestinationCardBase({ destination: d, distance, rating, variant = 'tile
   const press = usePressScale();
   const meta = DESTINATION_CATEGORIES[d.category];
   const open = () => router.push({ pathname: '/destination/[id]', params: { id: d.id } });
-  const where = `${d.city}${distance != null ? ` · ${formatDistance(distance)}` : ''}`;
-  const label = `${d.name}, ${meta.label}, ${d.city}${distance != null ? `, ${formatDistance(distance)} away` : ''}`;
+  const where = `${d.city}${distance != null ? ` · ${formatCrowDistance(distance)}` : ''}`;
+  const label = `${d.name}, ${meta.label}, ${d.city}${distance != null ? `, ${tx('about {0} in a straight line', { 0: formatDistance(distance) })}` : ''}`;
 
   if (variant === 'row') {
     return (

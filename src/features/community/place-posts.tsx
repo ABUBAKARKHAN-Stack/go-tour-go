@@ -14,6 +14,7 @@ import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 import type { CommunityPost } from '@/lib/types';
 import { useRequireAccount } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 const TILE = 148;
 
@@ -52,7 +53,7 @@ export function PlacePostsSection({ destinationId, name }: { destinationId: stri
             <Text className="px-3 text-center text-xs font-semibold text-primary">{tx('Post from here')}</Text>
           </Pressable>
         </ScrollView>
-      ) : feed.isLoading ? null : (
+      ) : isWaiting(feed) ? null : (
         <View className="items-center gap-2 rounded-2xl border border-dashed border-border px-4 py-5">
           <Camera color={colors.mutedForeground} size={22} />
           <Text className="text-center text-sm text-muted-foreground">{tx('No one has posted from {0} yet. Share what you see.', { 0: name })}</Text>

@@ -49,7 +49,7 @@ export default function FinishAccount() {
   if (!ready) {
     return (
       <AuthShell title={tx('Create your account')} subtitle={tx('Verifying link...')}>
-        <LoadingState variant="spinner" label={tx('Verifying link...')} />
+        <LoadingState variant="spinner" offlineAware label={tx('Verifying link...')} />
       </AuthShell>
     );
   }

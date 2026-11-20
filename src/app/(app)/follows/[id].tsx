@@ -21,6 +21,7 @@ import {
 } from '@/features/social/api';
 import { errorMessage } from '@/lib/errors';
 import { tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
 
 /** Followers and following of a traveller (client brief 6.1), with Follow / Unfollow on each row. */
 export default function FollowsScreen() {
@@ -48,7 +49,7 @@ export default function FollowsScreen() {
           { value: 'following', label: tx('Following ({0})', { 0: counts.data?.following ?? 0 }) },
         ]}
       />
-      {list.isLoading ? (
+      {isWaiting(list) ? (
         <LoadingState variant="list" />
       ) : list.isError ? (
         <ErrorState error={list.error} onRetry={list.refetch} />

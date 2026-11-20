@@ -24,6 +24,7 @@ import { persistOptions, queryClient } from '@/lib/query-client';
 import { StorageKeys, useStorage } from '@/lib/storage';
 import { colors } from '@/lib/theme';
 import '@/global.css';
+import { ToastHost } from '@/components/toast';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 installGlobalErrorHandler();
@@ -78,6 +79,7 @@ export default function RootLayout() {
             {isBackendConfigured ? (
               <AuthProvider>
                 <RootNavigator />
+                <ToastHost />
               </AuthProvider>
             ) : (
               <SplashHider>

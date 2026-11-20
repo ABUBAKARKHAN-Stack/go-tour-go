@@ -31,7 +31,7 @@ import { useDataSync } from '@/features/data/sync';
 import { useDestinationsByDistance, useRatings } from '@/features/destinations/api';
 import { CATEGORY_ORDER, DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import { navigateTo, parseJourneyParams, readPlace, type JourneyEnd, type JourneyParams } from '@/features/routing/navigate';
-import { formatDistance } from '@/lib/geo';
+import { formatCrowDistance } from '@/lib/geo';
 import { haptics } from '@/lib/haptics';
 import { CSS_EASE_OUT } from '@/lib/motion';
 import { StorageKeys, useStorage } from '@/lib/storage';
@@ -366,7 +366,7 @@ export default function SearchScreen() {
                       tint="primary"
                       title={d.name}
                       subtitle={`${DESTINATION_CATEGORIES[d.category].label} · ${d.city}`}
-                      right={d.distance != null ? formatDistance(d.distance) : undefined}
+                      right={d.distance != null ? formatCrowDistance(d.distance) : undefined}
                       onPress={() => openLandmark(d)}
                     />
                   ) : (
@@ -394,6 +394,7 @@ export default function SearchScreen() {
               {nearby.length ? (
                 <View className="gap-1">
                   <SectionTitle title={tx('FAMOUS PLACES NEAR YOU')} />
+                  <Text className="-mt-0.5 pb-1 text-xs text-faint">{tx('≈ straight-line distance; by road it is usually longer.')}</Text>
                   {nearby.map((d) => (
                     <ResultRow
                       key={d.id}
@@ -401,7 +402,7 @@ export default function SearchScreen() {
                       tint="primary"
                       title={d.name}
                       subtitle={`${DESTINATION_CATEGORIES[d.category].label} · ${d.city}`}
-                      right={d.distance != null ? formatDistance(d.distance) : undefined}
+                      right={d.distance != null ? formatCrowDistance(d.distance) : undefined}
                       onPress={() => openLandmark(d)}
                     />
                   ))}
@@ -446,7 +447,7 @@ export default function SearchScreen() {
               tint={item.type === 'landmark' ? 'primary' : 'accent'}
               title={item.name}
               subtitle={item.subtitle}
-              right={item.distance != null ? formatDistance(item.distance) : undefined}
+              right={item.distance != null ? formatCrowDistance(item.distance) : undefined}
               onPress={() => choose(item)}
             />
           )}

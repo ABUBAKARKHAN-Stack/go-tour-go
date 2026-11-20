@@ -23,7 +23,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
-import { Skeleton } from '@/components/skeleton';
 import { useTabBarSpace } from '@/components/tab-bar';
 import { Text } from '@/components/text';
 import { signOut } from '@/features/auth/api';
@@ -36,6 +35,8 @@ import { stopSharing } from '@/features/safety/sharing';
 import { useTrips } from '@/features/trips/api';
 import { cardShadow, colors } from '@/lib/theme';
 import { flipX, tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
+import { LoadingState } from '@/components/states';
 
 /**
  * Profile tab: who you are (the card opens your community profile, with its
@@ -89,7 +90,7 @@ export default function ProfileScreen() {
         {isGuest ? (
           <GuestCard />
         ) : profileLoading && !profile ? (
-          <Skeleton variant="list" label={tx('Loading...')} />
+          <LoadingState variant="list" />
         ) : (
           <View className="overflow-hidden rounded-[20px] bg-card" style={cardShadow}>
             <Pressable
@@ -190,7 +191,7 @@ function MyPosts({ userId, total, onSeeAll }: { userId: string | null; total: nu
           </Pressable>
         ) : null}
       </View>
-      {feed.isLoading ? (
+      {isWaiting(feed) ? (
         <View className="flex-row gap-2.5">
           {[0, 1, 2].map((i) => (
             <View key={i} className="rounded-2xl bg-muted" style={{ width: TILE, height: TILE }} />

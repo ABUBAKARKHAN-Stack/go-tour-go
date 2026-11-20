@@ -16,6 +16,7 @@ import { errorMessage } from '@/lib/errors';
 import { brandGradient, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 import { AccountRequired } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -64,7 +65,7 @@ function ChatScreenContent() {
         }
       />
       <KeyboardAvoidingView behavior="padding" className="flex-1">
-        {messages.isLoading ? (
+        {isWaiting(messages) ? (
           <LoadingState label={tx('Loading messages...')} />
         ) : messages.isError ? (
           <ErrorState error={messages.error} onRetry={messages.refetch} />

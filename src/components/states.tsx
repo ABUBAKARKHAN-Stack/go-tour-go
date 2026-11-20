@@ -1,8 +1,10 @@
-import { AlertTriangle, Inbox, type LucideIcon } from 'lucide-react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, Inbox, WifiOff, type LucideIcon } from 'lucide-react-native';
 import { ActivityIndicator, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
+import { useIsOnline } from '@/components/offline-banner';
 import { Skeleton } from '@/components/skeleton';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
@@ -16,7 +18,22 @@ export type LoadingVariant = 'spinner' | 'list' | 'cards' | 'feed' | 'profile' |
  * instead of jumping in under a spinner. "spinner" is for actions in progress
  * (searching, analysing a photo).
  */
-export function LoadingState({ label, variant = 'list' }: { label?: string; variant?: LoadingVariant }) {
+export function LoadingState({
+  label,
+  variant = 'list',
+  offlineAware = variant !== 'spinner',
+}: {
+  label?: string;
+  variant?: LoadingVariant;
+  /**
+   * Waiting for the server while offline would never end (the request waits
+   * for the connection), so say so instead. On by default except for
+   * "spinner", which is also used for work done on the phone.
+   */
+  offlineAware?: boolean;
+}) {
+  const online = useIsOnline();
+  if (offlineAware && !online) return <OfflineState />;
   const text = label ?? tx('Loading...');
   if (variant === 'spinner') {
     return (
@@ -63,14 +80,39 @@ export function ErrorState({
   title?: string;
   onRetry?: () => void;
 }) {
+  const online = useIsOnline();
+  // Offline, the reason is always the connection: say that plainly.
+  if (!online) return <OfflineState onRetry={onRetry} />;
   return (
     <View className="items-center justify-center gap-3 px-6 py-12" accessibilityRole="alert">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-destructive-soft">
         <AlertTriangle color={colors.destructive} size={26} />
       </View>
-      <Text className="text-center text-base font-semibold text-heading">{title}</Text>
+      <Text className="text-center text-base font-semibold text-heading">{tx(title)}</Text>
       <Text className="text-center text-sm text-muted-foreground">{errorMessage(error)}</Text>
       {onRetry ? <AppButton label={tx('Try again')} onPress={onRetry} variant="secondary" /> : null}
+    </View>
+  );
+}
+
+/**
+ * Shown instead of loading or an error while there is no internet: what is
+ * needed, and that it loads by itself once the connection is back ("Try
+ * again" asks right away).
+ */
+export function OfflineState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
+  const queryClient = useQueryClient();
+  const retry = onRetry ?? (() => void queryClient.refetchQueries({ type: 'active' }));
+  return (
+    <View className="items-center justify-center gap-3 px-6 py-12" accessibilityRole="alert">
+      <View className="h-16 w-16 items-center justify-center rounded-full bg-muted">
+        <WifiOff color={colors.mutedForeground} size={26} />
+      </View>
+      <Text className="text-center text-base font-semibold text-heading">{tx("You're offline")}</Text>
+      <Text className="text-center text-sm text-muted-foreground">
+        {message ?? tx('Connect to the internet to see this. It loads by itself when you are back online.')}
+      </Text>
+      <AppButton label={tx('Try again')} onPress={retry} variant="secondary" />
     </View>
   );
 }

@@ -59,12 +59,13 @@ import { displayName } from '@/features/social/api';
 import { timeAgo } from '@/features/safety/friend-locations';
 import { useTripActions, useTrips } from '@/features/trips/api';
 import { errorMessage } from '@/lib/errors';
-import { distanceMeters, formatDistance } from '@/lib/geo';
+import { formatCrowDistance, distanceMeters, formatDistance } from '@/lib/geo';
 import { EASE_OUT, usePressScale } from '@/lib/motion';
 import { usePreferences } from '@/lib/preferences';
 import { colors, shadow } from '@/lib/theme';
 import { flipX, isUrdu, tx } from '@/lib/i18n';
 import { useRequireAccount } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 const SPEECH_LANG: Record<string, string> = { en: 'en-US', ur: 'ur-PK' };
 
@@ -119,7 +120,8 @@ export default function DestinationDetails() {
   const { userId } = useAuth();
   const requireAccount = useRequireAccount();
   const [prefs] = usePreferences();
-  const { destination: d, isLoading, isError, error, refetch, isFallback } = useDestinationDetail(id);
+  const detail = useDestinationDetail(id);
+  const { destination: d, isError, error, refetch, isFallback } = detail;
   const all = useDestinations();
   const ratings = useRatings();
   const reviews = useReviews(d?.id);
@@ -149,7 +151,7 @@ export default function DestinationDetails() {
       .slice(0, 6);
   }, [all.data, d]);
 
-  if (isLoading && !d) {
+  if (isWaiting(detail) && !d) {
     return (
       <View className="flex-1 bg-background">
         <LoadingState variant="detail" label={tx('Loading destination...')} />
@@ -249,7 +251,7 @@ export default function DestinationDetails() {
     d.best_time ? { icon: CalendarDays, label: tx('Best time to visit'), value: d.best_time } : null,
     d.opening_hours ? { icon: Clock, label: tx('Hours'), value: d.opening_hours } : null,
     d.entry_fee ? { icon: Ticket, label: tx('Entry'), value: d.entry_fee } : null,
-    distance != null ? { icon: Car, label: tx('Distance from you'), value: formatDistance(distance) } : null,
+    distance != null ? { icon: Car, label: tx('Straight-line distance'), value: formatDistance(distance) } : null,
   ].filter((f): f is { icon: LucideIcon; label: string; value: string } => Boolean(f));
   const CategoryIcon = meta.icon;
 
@@ -305,7 +307,7 @@ export default function DestinationDetails() {
                     <Text className="text-[13px] text-muted-foreground">{tx('({0} reviews)', { 0: formatCount(rating.review_count) })}</Text>
                   </>
                 ) : null}
-                {distance != null ? <Text className="text-[13px] text-muted-foreground">{tx('{0} away', { 0: formatDistance(distance) })}</Text> : null}
+                {distance != null ? <Text className="text-[13px] text-muted-foreground">{tx('{0} away', { 0: formatCrowDistance(distance) })}</Text> : null}
               </View>
             </View>
             {/* Starts lower: the photo still reaches down on this side of the curve. */}
@@ -428,7 +430,7 @@ export default function DestinationDetails() {
               actionLabel={myReview ? tx('Edit your review') : tx('Write a review')}
               onAction={() => requireAccount(tx('write reviews')) && router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
             />
-            {reviews.isLoading ? (
+            {isWaiting(reviews) ? (
               <LoadingState label={tx('Loading reviews...')} />
             ) : reviews.isError ? (
               <ErrorState error={reviews.error} onRetry={reviews.refetch} />

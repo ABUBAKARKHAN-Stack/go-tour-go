@@ -16,6 +16,7 @@ import { useDestinationsByDistance, useRatings } from '@/features/destinations/a
 import { useSavedIds } from '@/features/saved/api';
 import { tx } from '@/lib/i18n';
 import { colors, shadow } from '@/lib/theme';
+import { isWaiting } from '@/lib/query-state';
 
 type Tab = 'all' | 'places' | 'posts';
 
@@ -71,8 +72,8 @@ function SavedAll({ onSeeAll }: { onSeeAll: (t: Tab) => void }) {
   const feed = useFeed({ saved: true });
   const posts = useMemo(() => feed.data?.pages.flat() ?? [], [feed.data]);
 
-  if (saved.isLoading && feed.isLoading) return <LoadingState label={tx('Loading saved places...')} />;
-  if (!places.length && !posts.length && !saved.isLoading && !feed.isLoading) {
+  if (isWaiting(saved) && isWaiting(feed)) return <LoadingState label={tx('Loading saved places...')} />;
+  if (!places.length && !posts.length && !isWaiting(saved) && !isWaiting(feed)) {
     return (
       <EmptyState
         icon={Bookmark}
@@ -125,7 +126,7 @@ function SavedPosts() {
   const { userId } = useAuth();
   const feed = useFeed({ saved: true });
   const posts = useMemo(() => feed.data?.pages.flat() ?? [], [feed.data]);
-  if (feed.isLoading) return <LoadingState variant="feed" label={tx('Loading saved posts...')} />;
+  if (isWaiting(feed)) return <LoadingState variant="feed" label={tx('Loading saved posts...')} />;
   if (feed.isError && !feed.data) return <ErrorState error={feed.error} onRetry={feed.refetch} />;
   return (
     <FlatList
@@ -157,7 +158,7 @@ function SavedPlaces() {
   const { saved, places } = useSavedPlaces();
   const cardW = Math.floor((width - 32 - 12) / 2);
 
-  if (saved.isLoading) return <LoadingState label={tx('Loading saved places...')} />;
+  if (isWaiting(saved)) return <LoadingState label={tx('Loading saved places...')} />;
   if (saved.isError && !saved.data) return <ErrorState error={saved.error} onRetry={saved.refetch} />;
   return (
     <FlatList

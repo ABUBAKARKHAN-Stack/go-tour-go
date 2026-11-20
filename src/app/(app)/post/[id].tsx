@@ -19,6 +19,7 @@ import { tx } from '@/lib/i18n';
 import { brandGradient, colors } from '@/lib/theme';
 import type { PostComment } from '@/lib/types';
 import { useRequireAccount } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -84,7 +85,7 @@ export default function PostDetail() {
 
   return (
     <Screen back title={tx('Post')} scroll={false} keyboard>
-      {post.isLoading ? (
+      {isWaiting(post) ? (
         <LoadingState variant="feed" />
       ) : post.isError ? (
         <ErrorState error={post.error} onRetry={post.refetch} />
@@ -105,7 +106,7 @@ export default function PostDetail() {
               </View>
             }
             ListEmptyComponent={
-              comments.isLoading ? (
+              isWaiting(comments) ? (
                 <LoadingState variant="list" />
               ) : (
                 <Text className="text-sm text-muted-foreground">{tx('No comments yet. Start the conversation.')}</Text>

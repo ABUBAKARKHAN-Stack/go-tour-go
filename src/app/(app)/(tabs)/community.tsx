@@ -26,6 +26,7 @@ import { PostCard } from '@/features/community/post-card';
 import { displayName, useFriendships, useMyFollowingIds } from '@/features/social/api';
 import { brandGradient, colors, shadow } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
 
 type FeedTab = 'all' | 'nearby' | 'following';
 
@@ -131,7 +132,7 @@ export default function CommunityScreen() {
           </View>
         }
         ListEmptyComponent={
-          feed.isLoading ? (
+          isWaiting(feed) ? (
             <LoadingState variant="feed" label={tx('Loading posts...')} />
           ) : feed.isError ? (
             <ErrorState error={feed.error} onRetry={feed.refetch} />

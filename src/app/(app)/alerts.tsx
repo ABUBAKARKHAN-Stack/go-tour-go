@@ -16,6 +16,7 @@ import { timeAgo } from '@/features/safety/friend-locations';
 import { distanceMeters, formatDistance } from '@/lib/geo';
 import { colors, severityColors, shadow } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
 
 export default function AlertsScreen() {
   const alerts = useRoadAlerts();
@@ -32,7 +33,7 @@ export default function AlertsScreen() {
       right={userId ? <AppButton label={tx('Report')} size="sm" variant="secondary" onPress={() => setReporting(true)} /> : undefined}
     >
       <ReportHazardSheet visible={reporting} onClose={() => setReporting(false)} />
-      {alerts.isLoading ? (
+      {isWaiting(alerts) ? (
         <LoadingState label={tx('Loading alerts...')} />
       ) : alerts.isError && !alerts.data ? (
         <ErrorState error={alerts.error} onRetry={alerts.refetch} />

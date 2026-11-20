@@ -13,6 +13,7 @@ import { errorMessage } from '@/lib/errors';
 import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 import { AccountRequired, useRequireAccount } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 type Tab = 'friends' | 'requests' | 'find';
 
@@ -38,7 +39,7 @@ function FriendsScreenContent() {
         ]}
       />
 
-      {friendships.isLoading ? (
+      {isWaiting(friendships) ? (
         <LoadingState />
       ) : friendships.isError && !friendships.data ? (
         <ErrorState error={friendships.error} onRetry={friendships.refetch} />
@@ -102,8 +103,8 @@ function FriendsScreenContent() {
           </View>
           {term.trim().length < 2 ? (
             <Text className="text-sm text-muted-foreground">{tx('Type at least 2 characters.')}</Text>
-          ) : search.isLoading ? (
-            <LoadingState variant="spinner" label={tx('Searching...')} />
+          ) : isWaiting(search) ? (
+            <LoadingState variant="spinner" offlineAware label={tx('Searching...')} />
           ) : search.isError ? (
             <ErrorState error={search.error} onRetry={search.refetch} />
           ) : (search.data ?? []).length === 0 ? (

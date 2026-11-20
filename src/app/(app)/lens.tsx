@@ -18,6 +18,8 @@ import { colors } from '@/lib/theme';
 import { compressImage } from '@/lib/upload';
 import { tx } from '@/lib/i18n';
 import { AiQuota } from '@/features/ai/ai-quota';
+import { errorMessage } from '@/lib/errors';
+import { onlineManager } from '@tanstack/react-query';
 
 /**
  * Visual Lens (FYP demo): photograph a landmark, sign or menu and get travel
@@ -56,6 +58,10 @@ export default function LensScreen() {
 
   const analyze = async () => {
     if (!uri) return;
+    if (!onlineManager.isOnline()) {
+      setError(tx("You're offline. Connect to the internet to analyse the photo."));
+      return;
+    }
     const id = ++request.current;
     setLoading(true);
     setError(null);
@@ -66,7 +72,7 @@ export default function LensScreen() {
       const found = await analyzeImage(small.base64, { question: question.trim() || undefined, locale: prefs.locale });
       if (id === request.current) setResult(found);
     } catch (e) {
-      if (id === request.current) setError(e instanceof Error ? e.message : 'AI service unavailable.');
+      if (id === request.current) setError(errorMessage(e, tx('AI service unavailable.')));
     } finally {
       if (id === request.current) setLoading(false);
     }
