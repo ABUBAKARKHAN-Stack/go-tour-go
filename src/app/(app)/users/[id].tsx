@@ -18,8 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton, IconButton } from '@/components/app-button';
 import { Avatar } from '@/components/avatar';
-import { Skeleton } from '@/components/skeleton';
-import { EmptyState, ErrorState } from '@/components/states';
+import { EmptyState, ErrorState, LoadingState } from '@/components/states';
 import { Text } from '@/components/text';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useRequireAccount } from '@/features/auth/guest-gate';
@@ -31,6 +30,7 @@ import { displayName, useFollowCounts, useFriendships, useProfile, useSocialActi
 import { errorMessage } from '@/lib/errors';
 import { tx } from '@/lib/i18n';
 import { brandGradient, colors } from '@/lib/theme';
+import { isWaiting } from '@/lib/query-state';
 
 type Tab = 'posts' | 'places';
 const GAP = 2;
@@ -202,8 +202,8 @@ export default function UserProfileScreen() {
         {me ? <IconButton icon={Settings} label={tx('Settings')} onPress={() => router.push('/settings')} /> : null}
       </View>
 
-      {profile.isLoading ? (
-        <Skeleton variant="profile" label={tx('Loading...')} />
+      {isWaiting(profile) ? (
+        <LoadingState variant="profile" />
       ) : profile.isError ? (
         <ErrorState error={profile.error} onRetry={profile.refetch} />
       ) : !p ? (
@@ -221,8 +221,8 @@ export default function UserProfileScreen() {
           onEndReachedThreshold={0.6}
           renderItem={({ item }) => <PostTile post={item} size={tile} />}
           ListEmptyComponent={
-            feed.isLoading ? (
-              <Skeleton variant="cards" label={tx('Loading...')} />
+            isWaiting(feed) ? (
+              <LoadingState variant="cards" />
             ) : (
               <EmptyState
                 icon={Grid3x3}

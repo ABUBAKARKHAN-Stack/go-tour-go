@@ -14,6 +14,7 @@ import { serverError, useZodForm } from '@/lib/forms';
 import { colors } from '@/lib/theme';
 import type { TrustedContact } from '@/lib/types';
 import { tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
 
 export default function TrustedContactsScreen() {
   const contacts = useTrustedContacts();
@@ -28,7 +29,7 @@ export default function TrustedContactsScreen() {
         <AppButton label={tx('Add trusted contact')} icon={UserPlus} variant="accent" onPress={() => setEditing({})} />
       )}
 
-      {contacts.isLoading ? (
+      {isWaiting(contacts) ? (
         <LoadingState />
       ) : contacts.isError ? (
         <ErrorState error={contacts.error} onRetry={contacts.refetch} />

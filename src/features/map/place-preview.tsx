@@ -12,7 +12,7 @@ import { DESTINATION_CATEGORIES } from '@/features/destinations/categories';
 import type { TravelMode } from '@/features/routing/osrm';
 import { getRoute } from '@/features/routing/routes';
 import { navigateTo } from '@/features/routing/navigate';
-import { distanceMeters, formatDistance, formatDuration, type LatLng } from '@/lib/geo';
+import { formatCrowDistance, distanceMeters, formatDuration, type LatLng } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
 import { usePreferences } from '@/lib/preferences';
 import { colors, shadow } from '@/lib/theme';
@@ -71,7 +71,7 @@ export function PlacePreview({ place, location, saved }: { place: DestinationSum
         </View>
         <Text className="text-xs text-muted-foreground">
           {DESTINATION_CATEGORIES[place.category].label} · {place.city}
-          {location ? ` · ${formatDistance(distanceMeters(location, place))}` : ''}
+          {location ? ` · ${formatCrowDistance(distanceMeters(location, place))}` : ''}
         </Text>
         <View className="flex-row flex-wrap items-center gap-x-3 gap-y-0.5">
           {rating ? (

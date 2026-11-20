@@ -10,7 +10,7 @@ import type { PlaceTag } from '@/features/community/upload-plan';
 import { KIND_LABEL } from '@/features/data/place-kinds';
 import { searchLocal } from '@/features/data/local-queries';
 import { useDestinationsByDistance } from '@/features/destinations/api';
-import { formatDistance } from '@/lib/geo';
+import { formatCrowDistance } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 
@@ -128,7 +128,7 @@ export function PlacePicker({ visible, onClose, onPick }: { visible: boolean; on
                   </Text>
                 ) : null}
               </View>
-              {item.distance != null ? <Text className="text-xs text-muted-foreground">{formatDistance(item.distance)}</Text> : null}
+              {item.distance != null ? <Text className="text-xs text-muted-foreground">{formatCrowDistance(item.distance)}</Text> : null}
             </Pressable>
           )}
         />

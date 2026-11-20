@@ -12,10 +12,11 @@ import { useLastLocation } from '@/features/location/location-store';
 import { LocationStatusCard } from '@/features/location/location-status-card';
 import { useNearbyServices } from '@/features/nearby/api';
 import { navigateTo } from '@/features/routing/navigate';
-import { formatDistance } from '@/lib/geo';
+import { formatCrowDistance } from '@/lib/geo';
 import { cardShadow, colors } from '@/lib/theme';
 import type { ServiceCategory } from '@/lib/types';
 import { tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
 
 const ORDER: ServiceCategory[] = ['restaurant', 'hotel', 'hospital', 'police', 'pharmacy', 'fuel', 'atm', 'shopping', 'attraction'];
 
@@ -44,7 +45,7 @@ export default function NearbyScreen() {
         <View className="px-4">
           <LocationStatusCard />
         </View>
-      ) : query.isLoading ? (
+      ) : isWaiting(query) ? (
         <LoadingState label={tx('Finding {0} nearby...', { 0: meta.label.toLowerCase() })} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={query.refetch} />
@@ -76,7 +77,7 @@ export default function NearbyScreen() {
                     {item.name}
                   </Text>
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-xs text-accent">{formatDistance(item.distance)}</Text>
+                    <Text className="text-xs text-accent">{formatCrowDistance(item.distance)}</Text>
                     {item.rating ? (
                       <View className="flex-row items-center gap-0.5">
                         <Star size={11} color={colors.primary} fill={colors.accent} />

@@ -25,6 +25,7 @@ import { serverError, useZodForm } from '@/lib/forms';
 import { brandGradient, colors, shadow } from '@/lib/theme';
 import type { DestinationSummary, TripItem, TripStatus } from '@/lib/types';
 import { tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
 
 type Filter = TripStatus | 'all';
 
@@ -101,7 +102,7 @@ export default function TripsScreen() {
         </BrandHeader>
       }
     >
-      {trips.isLoading ? (
+      {isWaiting(trips) ? (
         <LoadingState label={tx('Loading your trip...')} />
       ) : trips.isError && !trips.data ? (
         <ErrorState error={trips.error} onRetry={trips.refetch} />

@@ -14,6 +14,7 @@ import { displayName } from '@/features/social/api';
 import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 import { AccountRequired } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 function ConversationsScreenContent() {
   const { userId } = useAuth();
@@ -22,7 +23,7 @@ function ConversationsScreenContent() {
 
   return (
     <Screen back title={tx('Messages')} scroll={false}>
-      {q.isLoading ? (
+      {isWaiting(q) ? (
         <LoadingState label={tx('Loading conversations...')} />
       ) : q.isError && !q.data ? (
         <ErrorState error={q.error} onRetry={q.refetch} />

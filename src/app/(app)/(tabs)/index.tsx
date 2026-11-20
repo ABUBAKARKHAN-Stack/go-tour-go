@@ -47,7 +47,7 @@ import { navigateTo } from '@/features/routing/navigate';
 import { useSavedIds } from '@/features/saved/api';
 import { TRIP_STATUSES, useTrips } from '@/features/trips/api';
 import { useWeather } from '@/features/weather/api';
-import { formatDistance } from '@/lib/geo';
+import { formatCrowDistance, formatDistance } from '@/lib/geo';
 import { flipX, isUrdu, tx } from '@/lib/i18n';
 import { enterAt, usePressScale } from '@/lib/motion';
 import { brandGradient, colors, severityColors, shadow } from '@/lib/theme';
@@ -217,7 +217,7 @@ export default function Home() {
               <View className="flex-1 gap-0.5">
                 <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-accent">
                   {spotlightLabel}
-                  {spotlight.distance != null ? ` · ${formatDistance(spotlight.distance)}` : ''}
+                  {spotlight.distance != null ? ` · ${formatCrowDistance(spotlight.distance)}` : ''}
                 </Text>
                 <Text className="text-base font-semibold text-heading">
                   {spotlight.name}

@@ -62,6 +62,16 @@ export function formatDistance(meters: number): string {
   return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
 }
 
+/**
+ * A straight-line ("as the crow flies") distance, marked as approximate: by
+ * road it is usually longer (one-way streets, railway crossings, detours).
+ * Used in lists, where road distances would need a routing request each.
+ */
+export function formatCrowDistance(meters: number): string {
+  const d = formatDistance(meters);
+  return d ? `≈ ${d}` : '';
+}
+
 export function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds)) return '';
   const minutes = Math.max(1, Math.round(seconds / 60));

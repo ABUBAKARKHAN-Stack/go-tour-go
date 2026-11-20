@@ -14,6 +14,7 @@ import type { AppNotification } from '@/lib/types';
 import { tx } from '@/lib/i18n';
 import { navigateTo } from '@/features/routing/navigate';
 import { isShareToken } from '@/features/safety/share-links';
+import { isWaiting } from '@/lib/query-state';
 
 const ICONS = { friend_request: UserPlus, friend_accepted: UserPlus, message: MessageCircle, sos: ShieldAlert } as const;
 
@@ -43,7 +44,7 @@ export default function NotificationsScreen() {
 
   return (
     <Screen back title={tx('Notifications')} scroll={false} right={<IconButton icon={CheckCheck} label={tx('Mark all read')} onPress={() => markAll.mutate()} />}>
-      {inbox.isLoading ? (
+      {isWaiting(inbox) ? (
         <LoadingState />
       ) : inbox.isError && !inbox.data ? (
         <ErrorState error={inbox.error} onRetry={inbox.refetch} />

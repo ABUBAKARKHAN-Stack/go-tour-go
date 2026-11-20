@@ -37,6 +37,8 @@ export function useUsernameAvailability(username: string, opts?: { skip?: boolea
     },
   });
   if (opts?.skip || !USERNAME.test(name)) return 'idle';
+  // Waiting for a connection (offline): can't check now; sign-up checks again.
+  if (query.fetchStatus === 'paused') return 'unknown';
   if (name !== debounced || query.isFetching) return 'checking';
   if (query.isError) return 'unknown';
   if (query.data === true) return 'available';

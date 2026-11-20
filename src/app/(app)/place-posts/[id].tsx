@@ -12,6 +12,7 @@ import { PostCard } from '@/features/community/post-card';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 import { useRequireAccount } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 /** Every post tagged at one landmark, newest first (client brief 6.2). */
 export default function PlacePostsScreen() {
@@ -37,7 +38,7 @@ export default function PlacePostsScreen() {
           </View>
         }
         ListEmptyComponent={
-          feed.isLoading ? (
+          isWaiting(feed) ? (
             <LoadingState variant="feed" />
           ) : feed.isError ? (
             <ErrorState error={feed.error} onRetry={feed.refetch} />

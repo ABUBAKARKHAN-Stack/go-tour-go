@@ -16,6 +16,8 @@ import { usePost } from '@/features/community/api';
 import { takeViewerPost, viewerItems, type ViewerItem } from '@/features/community/media-viewer';
 import { displayName } from '@/features/social/api';
 import { tx } from '@/lib/i18n';
+import { isWaiting } from '@/lib/query-state';
+import { useIsOnline } from '@/components/offline-banner';
 
 /**
  * A post's photos and videos full screen on black: swipe sideways between
@@ -34,6 +36,7 @@ export default function MediaViewer() {
   const [current, setCurrent] = useState(start);
   // While a photo or video is zoomed in, swipes move it instead of paging or closing.
   const [zoomed, setZoomed] = useState(false);
+  const online = useIsOnline();
 
   // Swipe down to close: the photo follows the finger and the black fades.
   const y = useSharedValue(0);
@@ -64,7 +67,15 @@ export default function MediaViewer() {
       <Animated.View className="absolute inset-0 bg-black" style={backdropStyle} />
       {!post ? (
         <View className="flex-1 items-center justify-center">
-          {fetched.isLoading ? <ActivityIndicator color="#fff" /> : <Text className="text-white">{tx('Post not found')}</Text>}
+          {isWaiting(fetched) ? (
+            online ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="px-8 text-center text-white">{tx("You're offline. The photos load when you are back online.")}</Text>
+            )
+          ) : (
+            <Text className="text-white">{tx('Post not found')}</Text>
+          )}
         </View>
       ) : (
         <GestureDetector gesture={pan}>

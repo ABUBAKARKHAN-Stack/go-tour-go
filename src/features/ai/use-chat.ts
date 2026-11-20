@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AiAborted, streamAssistant, type ChatContext } from '@/features/ai/api';
@@ -7,6 +7,8 @@ import { useAuth } from '@/features/auth/auth-provider';
 import { useDestinationsByDistance } from '@/features/destinations/api';
 import { describeWeather, type Weather } from '@/features/weather/api';
 import { usePreferences } from '@/lib/preferences';
+import { tx } from '@/lib/i18n';
+import { errorMessage } from '@/lib/errors';
 
 export type { ChatMessage } from '@/features/ai/conversations';
 
@@ -105,6 +107,11 @@ export function useChat(context: ChatContext, opts: { place: string | null; plac
     async (text: string) => {
       const content = text.trim();
       if (!content || current.current) return false;
+      // Offline: say so before sending (nothing is used from the daily questions).
+      if (!onlineManager.isOnline()) {
+        setError(tx("You're offline. Connect to the internet to ask the AI guide."));
+        return false;
+      }
       const controller = new AbortController();
       current.current = controller;
       const replyId = `${Date.now()}-a`;
@@ -135,7 +142,7 @@ export function useChat(context: ChatContext, opts: { place: string | null; plac
         if (!controller.signal.aborted) save([...next, { id: replyId, role: 'assistant', content: answer }]);
       } catch (e) {
         if (e instanceof AiAborted || controller.signal.aborted) return true;
-        setError(e instanceof Error ? e.message : 'AI service unavailable.');
+        setError(errorMessage(e, tx('AI service unavailable.')));
       } finally {
         if (current.current === controller) {
           current.current = null;

@@ -17,6 +17,7 @@ import { useFriendships, useUserSearch } from '@/features/social/api';
 import { flipX, tx } from '@/lib/i18n';
 import { cardShadow, colors } from '@/lib/theme';
 import type { LucideIcon } from 'lucide-react-native';
+import { isWaiting } from '@/lib/query-state';
 
 type Tab = 'people' | 'posts' | 'places';
 
@@ -78,7 +79,7 @@ export default function CommunitySearchScreen() {
           <Text className="px-1 pt-2 text-sm text-muted-foreground">{tx('Type at least 2 letters to search.')}</Text>
         </View>
       ) : tab === 'people' ? (
-        people.isLoading ? (
+        isWaiting(people) ? (
           <LoadingState />
         ) : people.isError ? (
           <ErrorState error={people.error} onRetry={people.refetch} />
@@ -92,7 +93,7 @@ export default function CommunitySearchScreen() {
           </View>
         )
       ) : tab === 'posts' ? (
-        posts.isLoading ? (
+        isWaiting(posts) ? (
           <LoadingState variant="feed" />
         ) : posts.isError ? (
           <ErrorState error={posts.error} onRetry={posts.refetch} />

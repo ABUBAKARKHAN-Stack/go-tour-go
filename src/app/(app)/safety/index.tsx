@@ -26,6 +26,7 @@ import { cardShadow, colors } from '@/lib/theme';
 import { tx } from '@/lib/i18n';
 import { emergencyNumbers } from '@/features/safety/emergency';
 import { useRequireAccount } from '@/features/auth/guest-gate';
+import { isWaiting } from '@/lib/query-state';
 
 const EMERGENCY_NUMBERS = emergencyNumbers;
 
@@ -221,7 +222,7 @@ export default function SafetyScreen() {
           ) : (
             <Text className="text-xs text-destructive">{tx('Location unavailable. Your message says so.')}</Text>
           )}
-          {contacts.isLoading ? <LoadingState /> : null}
+          {isWaiting(contacts) ? <LoadingState /> : null}
           {(contacts.data ?? []).map((c) => (
             <AppButton key={c.id} label={tx('WhatsApp {0}', { 0: c.name })} icon={MessageCircle} variant="destructive" onPress={() => openWhatsApp(c.phone, sos.message)} />
           ))}
