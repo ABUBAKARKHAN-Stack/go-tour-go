@@ -11,7 +11,7 @@ import { Text } from '@/components/text';
 import { AltRouteRow } from '@/features/journey/alt-route-row';
 import { isOnRoute, type JourneyItem } from '@/features/journey/journey-items';
 import { JourneyMap } from '@/features/journey/journey-map';
-import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
+import { journeyStore, useJourney } from '@/features/journey/journey-store';
 import { viaRoad } from '@/features/journey/route-names';
 import { simulateActiveJourney } from '@/features/journey/simulate';
 import { hasBackgroundLocation, startJourneyUpdates } from '@/features/journey/journey-task';
@@ -218,7 +218,6 @@ export default function JourneyPreview() {
     <View className="flex-1 bg-background">
       <JourneyMap
         route={route}
-        index={routeIndex()}
         items={journey.items}
         progress={null}
         fix={location}

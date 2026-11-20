@@ -16,7 +16,7 @@ import { boundsOf, distanceMeters } from '@/lib/geo';
 import { tx } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 
-import type { AltRoute } from './alternatives';
+import { routeIndexOf, type AltRoute } from './alternatives';
 import { clusterPins, type PinCluster } from './journey-clusters';
 import type { JourneyItem } from './journey-items';
 import { formatEta } from './navigation';
@@ -26,7 +26,6 @@ import { COUNTRY } from '@/constants/app.constants';
 
 type Props = {
   route: Route | null;
-  index: RouteIndex | null;
   items: JourneyItem[];
   progress: NavProgress | null;
   fix: Fix | null;
@@ -111,8 +110,12 @@ const STEADY_DEG = 8;
  * strong, what was travelled faded), landmark and hazard markers along it,
  * the destination and the traveller.
  */
-function JourneyMapBase({ route, index, items, progress, fix, follow, padding, focus, alternatives = [], onSelectRoute, onSelectLandmark, onLoadError }: Props) {
+function JourneyMapBase({ route, items, progress, fix, follow, padding, focus, alternatives = [], onSelectRoute, onSelectLandmark, onLoadError }: Props) {
   const mapStyle = useMapStyle();
+  // The route's geometry index, from the route itself (cached per route). Never read
+  // from module state during render: the React Compiler caches such reads once, so a
+  // switched or re-routed journey kept cutting its line with the first route's geometry.
+  const index = useMemo<RouteIndex | null>(() => (route ? routeIndexOf(route) : null), [route]);
   // Walking routes are drawn as dots.
   const mode = route?.mode;
   const remaining = useMemo<GeoJSON.Feature | null>(() => {
