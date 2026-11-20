@@ -36,15 +36,22 @@ let state: LocationState = {
 
 const listeners = new Set<() => void>();
 const fixListeners = new Set<(fix: Fix) => void>();
+/** The latest real GPS fix, kept even while a simulation hides it. */
+let realFix: Fix | null = null;
 
 export const locationStore = {
   get: () => state,
   set(patch: Partial<LocationState>) {
+    const endingSimulation = state.simulating && patch.simulating === false;
     state = { ...state, ...patch };
+    // A simulation ended: back to where the traveller really is (the location
+    // provider also asks the GPS for a fresh fix).
+    if (endingSimulation) state = { ...state, fix: realFix };
     listeners.forEach((l) => l());
   },
   /** Publishes a new fix to UI subscribers and the proximity engine. */
   pushFix(fix: Fix) {
+    if (!fix.simulated) realFix = fix;
     // Ignore real GPS while a simulated journey is running.
     if (state.simulating && !fix.simulated) return;
     state = { ...state, fix, status: 'watching', error: null };

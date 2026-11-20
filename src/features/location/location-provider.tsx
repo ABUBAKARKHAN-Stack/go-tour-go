@@ -155,8 +155,9 @@ export async function requestBackgroundPermission(): Promise<boolean> {
 }
 
 export async function getCurrentFix(): Promise<Fix | null> {
-  const known = locationStore.get().fix;
-  if (known && Date.now() - known.timestamp < 60_000) return known;
+  const { fix: known, simulating } = locationStore.get();
+  // A simulated position only counts while the simulation runs.
+  if (known && (!known.simulated || simulating) && Date.now() - known.timestamp < 60_000) return known;
   try {
     const l = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     const fix = toFix(l);
@@ -177,6 +178,16 @@ export function openLocationSettings() {
 }
 
 export function LocationProvider({ children }: { children: ReactNode }) {
+  // When a simulated drive ends, fetch where the traveller really is now.
+  useEffect(() => {
+    let simulating = locationStore.get().simulating;
+    return locationStore.subscribe(() => {
+      const now = locationStore.get().simulating;
+      if (simulating && !now) getCurrentFix().catch(() => undefined);
+      simulating = now;
+    });
+  }, []);
+
   useEffect(() => {
     // Only start automatically when permission was granted before; first-time
     // permission is requested contextually from the map/home screens.
