@@ -1,13 +1,12 @@
 import { OfflineManager } from '@maplibre/maplibre-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Paths } from 'expo-file-system';
-import { HardDrive, Trash2, WifiOff } from 'lucide-react-native';
+import { HardDrive, Trash2 } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { Card, SectionHeader, ToggleRow } from '@/components/form';
-import { useIsOnline } from '@/components/offline-banner';
 import { Screen } from '@/components/screen';
 import { Text } from '@/components/text';
 import { OFFLINE_MAPS } from '@/features/offline/catalog';
@@ -35,7 +34,6 @@ export default function OfflineMapsScreen() {
   const downloads = useOfflineDownloads();
   const [savedRoutes] = useSavedRoutes();
   const [prefer, setPrefer] = usePreferDownloadedMap();
-  const online = useIsOnline();
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -55,13 +53,12 @@ export default function OfflineMapsScreen() {
   const hasCountry = items.pakistan.installed;
 
   return (
-    <Screen back title={tx('Offline Pakistan')} subtitle={tx('Maps that work without signal')}>
-      {!online ? (
-        <View className="flex-row items-center gap-2 rounded-2xl bg-muted px-3 py-2.5">
-          <WifiOff color={colors.primary} size={16} />
-          <Text className="flex-1 text-xs text-muted-foreground">{tx('You are offline. Downloaded maps and saved routes still work.')}</Text>
-        </View>
-      ) : null}
+    <Screen
+      back
+      title={tx('Offline Pakistan')}
+      subtitle={tx('Maps that work without signal')}
+      offlineMessage={tx('You are offline. Downloaded maps and saved routes still work.')}
+    >
 
       <Card className="gap-3">
         <View className="flex-row items-center gap-3">

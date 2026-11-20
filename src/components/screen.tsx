@@ -64,6 +64,8 @@ type ScreenProps = HeaderProps & {
   footer?: ReactNode;
   /** Full-bleed header that runs under the status bar (e.g. BrandHeader); replaces the header row. */
   hero?: ReactNode;
+  /** This screen's own words for the offline banner (it shows one banner, never two). */
+  offlineMessage?: string;
 };
 
 /** Standard screen scaffold: safe areas, header, offline banner, scroll and keyboard handling. */
@@ -77,6 +79,7 @@ export function Screen({
   refreshControl,
   footer,
   hero,
+  offlineMessage,
   ...header
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
@@ -102,7 +105,7 @@ export function Screen({
   const content = (
     <View className="flex-1 bg-background" style={hero ? undefined : { paddingTop: insets.top }}>
       {hero ?? (headerless ? null : <AppHeader {...header} />)}
-      <OfflineBanner />
+      <OfflineBanner message={offlineMessage} />
       {body}
       {footer ? (
         <View className="border-t border-border bg-background px-4 pt-3" style={{ paddingBottom: insets.bottom + 12 }}>

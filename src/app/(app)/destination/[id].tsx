@@ -431,9 +431,9 @@ export default function DestinationDetails() {
               onAction={() => requireAccount(tx('write reviews')) && router.push({ pathname: '/review/new', params: { destinationId: d.id } })}
             />
             {isWaiting(reviews) ? (
-              <LoadingState label={tx('Loading reviews...')} />
+              <LoadingState inline label={tx('Loading reviews...')} />
             ) : reviews.isError ? (
-              <ErrorState error={reviews.error} onRetry={reviews.refetch} />
+              <ErrorState inline error={reviews.error} onRetry={reviews.refetch} />
             ) : (reviews.data ?? []).length === 0 ? (
               <EmptyState
                 icon={MessageSquarePlus}

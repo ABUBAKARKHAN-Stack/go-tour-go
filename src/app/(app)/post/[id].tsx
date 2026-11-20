@@ -107,7 +107,7 @@ export default function PostDetail() {
             }
             ListEmptyComponent={
               isWaiting(comments) ? (
-                <LoadingState variant="list" />
+                <LoadingState inline variant="list" />
               ) : (
                 <Text className="text-sm text-muted-foreground">{tx('No comments yet. Start the conversation.')}</Text>
               )

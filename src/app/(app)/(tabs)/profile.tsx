@@ -90,7 +90,7 @@ export default function ProfileScreen() {
         {isGuest ? (
           <GuestCard />
         ) : profileLoading && !profile ? (
-          <LoadingState variant="list" />
+          <LoadingState inline variant="list" />
         ) : (
           <View className="overflow-hidden rounded-[20px] bg-card" style={cardShadow}>
             <Pressable

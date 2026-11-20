@@ -4,7 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AppButton } from '@/components/app-button';
-import { useIsOnline } from '@/components/offline-banner';
+import { useIsOnline, useRegisterOfflineCard } from '@/components/offline-banner';
 import { Skeleton } from '@/components/skeleton';
 import { errorMessage } from '@/lib/errors';
 import { colors } from '@/lib/theme';
@@ -22,9 +22,12 @@ export function LoadingState({
   label,
   variant = 'list',
   offlineAware = variant !== 'spinner',
+  inline = false,
 }: {
   label?: string;
   variant?: LoadingVariant;
+  /** A section of a larger page: offline, a one-line note instead of a full card. */
+  inline?: boolean;
   /**
    * Waiting for the server while offline would never end (the request waits
    * for the connection), so say so instead. On by default except for
@@ -33,7 +36,7 @@ export function LoadingState({
   offlineAware?: boolean;
 }) {
   const online = useIsOnline();
-  if (offlineAware && !online) return <OfflineState />;
+  if (offlineAware && !online) return inline ? <OfflineNote /> : <OfflineState />;
   const text = label ?? tx('Loading...');
   if (variant === 'spinner') {
     return (
@@ -75,14 +78,17 @@ export function ErrorState({
   error,
   title = 'Unable to load',
   onRetry,
+  inline = false,
 }: {
   error?: unknown;
   title?: string;
   onRetry?: () => void;
+  /** A section of a larger page: offline, a one-line note instead of a full card. */
+  inline?: boolean;
 }) {
   const online = useIsOnline();
   // Offline, the reason is always the connection: say that plainly.
-  if (!online) return <OfflineState onRetry={onRetry} />;
+  if (!online) return inline ? <OfflineNote /> : <OfflineState onRetry={onRetry} />;
   return (
     <View className="items-center justify-center gap-3 px-6 py-12" accessibilityRole="alert">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-destructive-soft">
@@ -101,6 +107,7 @@ export function ErrorState({
  * again" asks right away).
  */
 export function OfflineState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
+  useRegisterOfflineCard();
   const queryClient = useQueryClient();
   const retry = onRetry ?? (() => void queryClient.refetchQueries({ type: 'active' }));
   return (
@@ -113,6 +120,16 @@ export function OfflineState({ message, onRetry }: { message?: string; onRetry?:
         {message ?? tx('Connect to the internet to see this. It loads by itself when you are back online.')}
       </Text>
       <AppButton label={tx('Try again')} onPress={retry} variant="secondary" />
+    </View>
+  );
+}
+
+/** One line for a section of a page that needs the connection (the page says the rest). */
+export function OfflineNote() {
+  return (
+    <View className="flex-row items-center gap-2 rounded-xl bg-muted px-3 py-2.5" accessibilityRole="text">
+      <WifiOff color={colors.mutedForeground} size={15} />
+      <Text className="flex-1 text-sm text-muted-foreground">{tx('Loads when you are back online.')}</Text>
     </View>
   );
 }
