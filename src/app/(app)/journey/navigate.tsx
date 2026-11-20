@@ -23,7 +23,7 @@ import { AppButton } from '@/components/app-button';
 import { Text } from '@/components/text';
 import { ReportHazardSheet } from '@/features/alerts/report-hazard-sheet';
 import { JourneyMap } from '@/features/journey/journey-map';
-import { journeyStore, routeIndex, speak, useJourney } from '@/features/journey/journey-store';
+import { journeyStore, speak, useJourney } from '@/features/journey/journey-store';
 import { ManeuverIcon } from '@/features/journey/maneuver-icon';
 import { arrivalClock, formatEta } from '@/features/journey/navigation';
 import { useLastLocation } from '@/features/location/location-store';
@@ -126,7 +126,7 @@ export default function JourneyNavigate() {
     const tripItem = trips.data?.find((t) => t.destination_id === journey.target?.id);
     return (
       <View className="flex-1 bg-background">
-        <JourneyMap route={route} index={routeIndex()} items={journey.items} progress={progress} fix={fix} follow={false} padding={{ top: insets.top + 24, bottom: 300 }} />
+        <JourneyMap route={route} items={journey.items} progress={progress} fix={fix} follow={false} padding={{ top: insets.top + 24, bottom: 300 }} />
         <View className="absolute bottom-0 left-0 right-0 gap-4 rounded-t-[28px] bg-card px-6 pt-6" style={{ paddingBottom: insets.bottom + 16 }}>
           <View className="h-12 w-12 items-center justify-center rounded-full bg-success-soft">
             <Flag color={colors.success} size={22} />
@@ -172,7 +172,6 @@ export default function JourneyNavigate() {
     <View className="flex-1 bg-background">
       <JourneyMap
         route={route}
-        index={routeIndex()}
         items={journey.items}
         progress={progress}
         fix={fix}

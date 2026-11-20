@@ -11,8 +11,8 @@ import { Text } from '@/components/text';
 import { JourneyMap } from '@/features/journey/journey-map';
 import { useLastLocation } from '@/features/location/location-store';
 import { AltRouteRow } from '@/features/journey/alt-route-row';
-import type { AltRoute } from '@/features/journey/alternatives';
-import { journeyStore, routeIndex, useJourney } from '@/features/journey/journey-store';
+import { routeIndexOf, type AltRoute } from '@/features/journey/alternatives';
+import { journeyStore, useJourney } from '@/features/journey/journey-store';
 import { ManeuverIcon } from '@/features/journey/maneuver-icon';
 import { formatEta, stepStarts } from '@/features/journey/navigation';
 import { buildRouteIndex, pointAlong, projectEarliest } from '@/features/journey/route-geometry';
@@ -50,7 +50,7 @@ export default function RouteSteps() {
   // Null: the whole route in view.
   const [focused, setFocused] = useState(true);
 
-  const index = useMemo(() => (route ? (routeIndex() ?? buildRouteIndex(route.coordinates)) : null), [route]);
+  const index = useMemo(() => (route ? routeIndexOf(route) : null), [route]);
   const starts = useMemo(() => (route ? stepStarts(route.steps) : []), [route]);
   const steps = useMemo(() => route?.steps ?? [], [route]);
 
@@ -106,7 +106,6 @@ export default function RouteSteps() {
     <View className="flex-1 bg-background">
       <JourneyMap
         route={route}
-        index={index}
         items={journey.items}
         progress={active ? journey.progress : null}
         fix={active ? fix : null}
