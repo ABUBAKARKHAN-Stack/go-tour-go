@@ -1391,4 +1391,5 @@ export const ur: Record<string, string> = {
   "Something went wrong. Please try again.": "کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔",
   "No internet connection. Check your network and try again.": "انٹرنیٹ نہیں ہے۔ اپنا نیٹ ورک دیکھیں اور دوبارہ کوشش کریں۔",
   "That already exists.": "یہ پہلے سے موجود ہے۔",
+  "Loads when you are back online.": "انٹرنیٹ واپس آنے پر لوڈ ہو گا۔",
 };

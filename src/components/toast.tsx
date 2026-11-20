@@ -10,8 +10,8 @@ import { tx } from '@/lib/i18n';
 import { colors, shadow } from '@/lib/theme';
 
 /**
- * Short notices at the top of the screen that never block taps: losing and
- * regaining the connection, and actions waiting for it. One at a time; a new
+ * Short notices at the top of the screen that never block taps: the
+ * connection coming back, and actions waiting for it. One at a time; a new
  * one replaces the old.
  */
 type Toast = { id: number; text: string; icon: 'offline' | 'online' | 'queued' };
@@ -50,14 +50,14 @@ export function ToastHost() {
   const current = useSyncExternalStore(toast.subscribe, toast.get);
   const queryClient = useQueryClient();
 
-  // Connection lost / back (the same signal the data layer uses).
+  // Connection back (the same signal the data layer uses). Losing it isn't announced
+  // here: each screen already says so (its banner, or the "You're offline" card).
   useEffect(() => {
     let wasOnline = onlineManager.isOnline();
     return onlineManager.subscribe((online) => {
       if (online === wasOnline) return;
       wasOnline = online;
       if (online) toast.show(tx('Back online'), 'online', 2500);
-      else toast.show(tx('No internet connection. Showing saved data.'), 'offline', 4500);
     });
   }, []);
 

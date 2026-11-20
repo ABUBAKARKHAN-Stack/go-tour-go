@@ -222,7 +222,7 @@ export default function UserProfileScreen() {
           renderItem={({ item }) => <PostTile post={item} size={tile} />}
           ListEmptyComponent={
             isWaiting(feed) ? (
-              <LoadingState variant="cards" />
+              <LoadingState inline variant="cards" />
             ) : (
               <EmptyState
                 icon={Grid3x3}

@@ -222,7 +222,7 @@ export default function SafetyScreen() {
           ) : (
             <Text className="text-xs text-destructive">{tx('Location unavailable. Your message says so.')}</Text>
           )}
-          {isWaiting(contacts) ? <LoadingState /> : null}
+          {isWaiting(contacts) ? <LoadingState inline /> : null}
           {(contacts.data ?? []).map((c) => (
             <AppButton key={c.id} label={tx('WhatsApp {0}', { 0: c.name })} icon={MessageCircle} variant="destructive" onPress={() => openWhatsApp(c.phone, sos.message)} />
           ))}
